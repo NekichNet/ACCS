@@ -7,7 +7,6 @@ namespace accs.Repository.Context
     {
 		public DbSet<Unit> Units { get; set; }
 		public DbSet<Post> Posts { get; set; }
-		public DbSet<UnitPost> UnitPosts { get; set; }
 		public DbSet<Rank> Ranks { get; set; }
 		public DbSet<Subdivision> Subdivisions { get; set; }
 		public DbSet<Permission> Permissions { get; set; }

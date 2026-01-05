@@ -13,7 +13,7 @@ namespace accs.Models
 		public Rank Rank { get; set; }
 		public List<Doc> OwnDocs { get; set; }
 		public List<Doc> AssignedDocs { get; set; }
-		public List<UnitPost> Posts { get; set; } = new List<UnitPost>();
+		public List<Post> Posts { get; set; } = new List<Post>();
 		public List<Reward> Rewards { get; set; } = new List<Reward>();
 		public List<Activity> Activities { get; set; } = new List<Activity>();
 	}

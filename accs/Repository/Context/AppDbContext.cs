@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace accs.Repository.Context
 {
-    public class AppDbContext : DbContext
-    {
+	public class AppDbContext : DbContext
+	{
 		public DbSet<Unit> Units { get; set; }
 		public DbSet<Post> Posts { get; set; }
 		public DbSet<Rank> Ranks { get; set; }
@@ -14,6 +14,9 @@ namespace accs.Repository.Context
 		public DbSet<Reward> Rewards { get; set; }
 		public DbSet<DocType> DocTypes { get; set; }
 		public DbSet<Doc> Docs { get; set; }
+		public DbSet<Activity> Activities { get; set; }
+		public DbSet<Temporary> Temporaries { get; set; }
+		public DbSet<TemporaryType> TemporaryTypes { get; set; }
 
 		public AppDbContext(DbContextOptions<AppDbContext> options)
 			: base(options) { }

@@ -1,9 +1,12 @@
-﻿namespace accs.Models
+﻿using accs.Models.Configurations;
+using Microsoft.EntityFrameworkCore;
+
+namespace accs.Models
 {
-	public class Activity
+    [EntityTypeConfiguration(typeof(ActivityConfiguration))]
+    public class Activity
 	{
-		public int Id { get; set; }
 		public Unit Unit { get; set; }
-		public DateTime Date { get; set; } = DateTime.UtcNow;
+		public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.Today);
 	}
 }

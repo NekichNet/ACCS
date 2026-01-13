@@ -34,7 +34,7 @@ namespace accs
             builder.Services.AddScoped<IRankRepository, RankRepository>();
             builder.Services.AddScoped<IRewardRepository, RewardRepository>();
             builder.Services.AddScoped<ISubdivisionRepository, SubdivisionRepository>();
-            builder.Services.AddScoped<ITemporaryRepository, TemporaryRepository>();
+            builder.Services.AddScoped<IUnitStatusRepository, UnitStatusRepository>();
             builder.Services.AddScoped<IUnitRepository, UnitRepository>();
 
 			var discordConfig = new DiscordSocketConfig() { };

@@ -2,7 +2,7 @@
 
 namespace accs.Repository.Interfaces
 {
-    public interface ITemporaryRepository
+    public interface IUnitStatusRepository
     {
         Task Create(UnitStatus temporary);
         Task<List<UnitStatus>> ReadAll();

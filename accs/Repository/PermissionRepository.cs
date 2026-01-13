@@ -13,9 +13,9 @@ namespace accs.Repository
             _context = context;
         }
 
-        public async Task<Permission?> Read(int id)
+        public async Task<Permission?> Read(PermissionType permissionType)
         {
-            return _context.Permissions.Find(id);
+            return _context.Permissions.Find(permissionType);
         }
 
         public async Task<List<Permission>> ReadAll()

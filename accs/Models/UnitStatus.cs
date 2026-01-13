@@ -4,9 +4,9 @@
     {
         public int Id { get; set; }
         public Unit Unit { get; set; }
-        public Status TemporaryType { get; set; }
+        public Status Status { get; set; }
         public DateTime Start { get; set; } = DateTime.UtcNow;
         public DateTime End { get; set; }
-        public string? DocPath { get; set; }
+        public Doc? Doc { get; set; }
     }
 }

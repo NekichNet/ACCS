@@ -1,13 +1,50 @@
-﻿namespace accs.Models
+﻿using accs.Models.Configurations;
+using Microsoft.EntityFrameworkCore;
+
+namespace accs.Models
 {
+	[EntityTypeConfiguration(typeof(RankConfiguration))]
 	public class Rank
 	{
 		public int Id { get; set; }
-		public string Name { get; set; }
-		public string? DiscordRoleId { get; set; }
-		public List<Permission> Permissions { get; set; } = new List<Permission>();
+		public string Name { get; set; } = string.Empty;
+		public ulong? DiscordRoleId { get; set; }
+		public Rank? Previous { get; set; }
+		public Rank? Next { get; set; }
+		public HashSet<Permission> Permissions { get; set; } = new HashSet<Permission>();
 		public List<Unit> Units { get; set; } = new List<Unit>();
-		public Rank? Subordinate { get; set; } // Звание на 1 ступень младше
-		public Rank? Head { get; set; } // Звание на 1 ступень старше
+
+		public Rank(int id, string name, HashSet<Permission>? permissions = null)
+		{
+			Id = id;
+			Name = name;
+			if (permissions != null) Permissions = permissions;
+			DiscordRoleId = ulong.Parse(DotNetEnv.Env.GetString($"RANK{Id}_ROLE_ID", $"RANK{Id}_ROLE_ID Not found"));
+		}
+
+		public void InsertPrevious(Rank rank)
+		{
+			Previous?.Next = rank;
+			rank.Previous = Previous;
+			rank.Next = this;
+			Previous = rank;
+		}
+
+		public void InsertNext(Rank rank)
+		{
+			Next?.Previous = rank;
+			rank.Next = Next;
+			rank.Previous = this;
+			Next = rank;
+		}
+
+		public HashSet<Permission> GetPermissionsRecursive()
+		{
+			HashSet<Permission> permissions = [.. Permissions];
+			if (Previous != null)
+				foreach (Permission permission in Previous.GetPermissionsRecursive())
+					permissions.Add(permission);
+			return permissions;
+		}
 	}
 }

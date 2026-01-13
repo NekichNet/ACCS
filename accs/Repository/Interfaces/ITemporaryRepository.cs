@@ -4,10 +4,10 @@ namespace accs.Repository.Interfaces
 {
     public interface ITemporaryRepository
     {
-        Task Create(Temporary temporary);
-        Task<List<Temporary>> ReadAll();
-        Task<Temporary?> Read(int id);
-        Task Update(Temporary temporary);
-        Task Delete(Temporary temporary);
+        Task Create(UnitStatus temporary);
+        Task<List<UnitStatus>> ReadAll();
+        Task<UnitStatus?> Read(int id);
+        Task Update(UnitStatus temporary);
+        Task Delete(UnitStatus temporary);
     }
 }

@@ -16,6 +16,7 @@ namespace accs.Repository
         public async Task Create(Rank rank)
         {
             _context.Ranks.Add(rank);
+
             _context.SaveChanges();
         }
 

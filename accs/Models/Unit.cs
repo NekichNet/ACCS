@@ -7,14 +7,15 @@ namespace accs.Models
 	{
 		[Key]
 		[DatabaseGenerated(DatabaseGeneratedOption.None)]
-		public string DiscordId { get; set; }
+		public ulong DiscordId { get; set; }
 		public string Nickname { get; set; }
-		public string? SteamId { get; set; }
+		public ulong? SteamId { get; set; }
 		public Rank Rank { get; set; }
 		public List<Doc> OwnDocs { get; set; }
 		public List<Doc> AssignedDocs { get; set; }
 		public List<Post> Posts { get; set; } = new List<Post>();
 		public List<Reward> Rewards { get; set; } = new List<Reward>();
 		public List<Activity> Activities { get; set; } = new List<Activity>();
+		public List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
 	}
 }

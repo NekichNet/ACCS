@@ -1,6 +1,10 @@
 using accs.Repository;
 using accs.Repository.Context;
 using accs.Repository.Interfaces;
+using accs.Services;
+using accs.Services.Interfaces;
+using Discord;
+using Discord.WebSocket;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +21,8 @@ namespace accs
 
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddTransient<ILogService, LogService>();
+
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString));
 
@@ -31,7 +37,13 @@ namespace accs
             builder.Services.AddScoped<ITemporaryRepository, TemporaryRepository>();
             builder.Services.AddScoped<IUnitRepository, UnitRepository>();
 
-            var app = builder.Build();
+			var discordConfig = new DiscordSocketConfig() { };
+
+            builder.Services.AddSingleton(discordConfig);
+            builder.Services.AddSingleton<DiscordSocketClient>();
+            builder.Services.AddSingleton<IDiscordBotService, DiscordBotService>();
+
+			var app = builder.Build();
 
             app.Run();
         }

@@ -2,7 +2,7 @@
 {
     public enum PermissionType
     {
-        VerifyActivity = 1,
+        ConfirmActivity = 1,
         VacationAccess = 2,
         GiveReprimandGratitude = 3,
         ForceVacation = 4,

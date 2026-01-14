@@ -24,7 +24,7 @@ namespace accs.Repository.Context
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			/* Разрешения */
-			Permission verifyActivity = new Permission { Type = PermissionType.VerifyActivity, Description = "Верифицирование своей и чужой активности." };
+			Permission confirmActivity = new Permission { Type = PermissionType.ConfirmActivity, Description = "Подтверждение своей и чужой активности." };
 			Permission vacationAccess = new Permission { Type = PermissionType.VacationAccess, Description = "Разрешение на выход в отпуск." };
 			Permission giveReprimandGratitude = new Permission { Type = PermissionType.GiveReprimandGratitude, Description = "Возможность выдавать выговора и благодарности нижестоящим бойцам." };
 			Permission forceVacation = new Permission { Type = PermissionType.ForceVacation, Description = "Возможность отправлять в отпуск нижестоящих бойцов." };
@@ -44,7 +44,7 @@ namespace accs.Repository.Context
 				new Rank(2, "Рядовой"),
 				new Rank(3, "Ефрейтор", new HashSet<Permission> { vacationAccess }),
 				new Rank(4, "Мл. Сержант"),
-				new Rank(5, "Сержант", new HashSet<Permission> { verifyActivity }),
+				new Rank(5, "Сержант", new HashSet<Permission> { confirmActivity }),
 				new Rank(6, "Ст. Сержант"),
 				new Rank(7, "Старшина"),
 				new Rank(8, "Прапорщик"),
@@ -133,7 +133,7 @@ namespace accs.Repository.Context
 
 
 			modelBuilder.Entity<Permission>().HasData(
-				verifyActivity, vacationAccess, giveReprimandGratitude, forceVacation, changeRanks,
+				confirmActivity, vacationAccess, giveReprimandGratitude, forceVacation, changeRanks,
 				changePosts, assignRewards, manageStructure, manageRewards, manageDocTypes, administrator
 			);
 			modelBuilder.Entity<Rank>().HasData(ranks);

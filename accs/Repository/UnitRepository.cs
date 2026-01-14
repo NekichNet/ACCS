@@ -13,23 +13,23 @@ namespace accs.Repository
             _context = context;
         }
 
-        public async Task Create(Unit unit)
+        public async Task CreateAsync(Unit unit)
         {
             _context.Units.Add(unit);
             _context.SaveChanges();
         }
 
-        public async Task<Unit?> Read(string discordId)
+        public async Task<Unit?> ReadAsync(ulong discordId)
         {
             return _context.Units.Find(discordId);
         }
 
-        public async Task<List<Unit>> ReadAll()
+        public async Task<List<Unit>> ReadAllAsync()
         {
             return _context.Units.ToList();
         }
 
-        public async Task Update(Unit unit)
+        public async Task UpdateAsync(Unit unit)
         {
             _context.Units.Update(unit);
             _context.SaveChanges();

@@ -13,29 +13,29 @@ namespace accs.Repository
             _context = context;
         }
 
-        public async Task Create(Rank rank)
+        public async Task CreateAsync(Rank rank)
         {
             _context.Ranks.Add(rank);
             _context.SaveChanges();
         }
 
-        public async Task Delete(Rank rank)
+        public async Task DeleteAsync(Rank rank)
         {
             _context.Ranks.Remove(rank);
             _context.SaveChanges();
         }
 
-        public async Task<Rank?> Read(int id)
+        public async Task<Rank?> ReadAsync(int id)
         {
             return _context.Ranks.Find(id);
         }
 
-        public async Task<List<Rank>> ReadAll()
+        public async Task<List<Rank>> ReadAllAsync()
         {
             return _context.Ranks.ToList();
         }
 
-        public async Task Update(Rank rank)
+        public async Task UpdateAsync(Rank rank)
         {
             _context.Ranks.Update(rank);
             _context.SaveChanges();

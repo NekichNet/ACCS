@@ -14,7 +14,7 @@ namespace accs.Services
 
         private SocketGuild _guild;
 
-		public DiscordBotService(DiscordSocketClient client, ILogService logger)
+		public DiscordBotService(DiscordSocketClient client, ILogService logger, IServiceProvider serviceProvider)
         {
 			_client = client;
 			_interaction = new InteractionService(_client.Rest);
@@ -24,8 +24,13 @@ namespace accs.Services
 				await Task.CompletedTask;
 				Console.WriteLine(msg);
 			};
+			_client.ButtonExecuted += async (interaction) =>
+			{
+				var ctx = new SocketInteractionContext<SocketMessageComponent>(_client, interaction);
+				await _interaction.ExecuteCommandAsync(ctx, serviceProvider);
+			};
 
-            string token = DotNetEnv.Env.GetString("TOKEN", "Token not found");
+			string token = DotNetEnv.Env.GetString("TOKEN", "Token not found");
             if (token == "Token not found") { throw _logger.ExceptionAsync(token).Result; }
 
             string guildIdString = DotNetEnv.Env.GetString("SERVER_ID", "Server id not found");
@@ -39,6 +44,7 @@ namespace accs.Services
 			_guild = _client.GetGuild(guildId);
 			if (_guild == null) { throw _logger.ExceptionAsync("Guild is null!").Result; }
 			if (!_guild.IsConnected) { throw _logger.ExceptionAsync("Not connected to guild!").Result; }
+			_interaction.RegisterCommandsToGuildAsync(guildId);
 		}
 
         public async Task<bool> AddUserRoles(ulong userId, IEnumerable<ulong> roleIds)

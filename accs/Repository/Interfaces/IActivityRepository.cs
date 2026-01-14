@@ -4,9 +4,9 @@ namespace accs.Repository.Interfaces
 {
 	public interface IActivityRepository
 	{
-		Task Create(Activity activity);
-		Task<List<Activity>> ReadAll();
-		Task<List<Activity>> ReadByDate(DateOnly date);
-		Task<bool> Exists(Activity activity);
+		Task CreateAsync(Activity activity);
+		Task<List<Activity>> ReadAllAsync();
+		Task<List<Activity>> ReadAllWithDateAsync(DateOnly date);
+		Task<Activity?> ReadAsync(Unit unit, DateOnly date);
 	}
 }

@@ -4,9 +4,9 @@ namespace accs.Repository.Interfaces
 {
     public interface IUnitRepository
     {
-        Task Create(Unit unit);
-        Task<List<Unit>> ReadAll();
-        Task<Unit?> Read(string discordId);
-        Task Update(Unit unit);
+        Task CreateAsync(Unit unit);
+        Task<List<Unit>> ReadAllAsync();
+        Task<Unit?> ReadAsync(ulong discordId);
+        Task UpdateAsync(Unit unit);
     }
 }

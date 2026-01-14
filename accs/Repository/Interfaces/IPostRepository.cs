@@ -4,10 +4,10 @@ namespace accs.Repository.Interfaces
 {
     public interface IPostRepository
     {
-        Task Create(Post post);
-        Task<List<Post>> ReadAll();
-        Task<Post?> Read(int id);
-        Task Update(Post post);
-        Task Delete(Post post);
+        Task CreateAsync(Post post);
+        Task<List<Post>> ReadAllAsync();
+        Task<Post?> ReadAsync(int id);
+        Task UpdateAsync(Post post);
+        Task DeleteAsync(Post post);
     }
 }

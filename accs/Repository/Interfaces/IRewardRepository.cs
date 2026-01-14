@@ -4,10 +4,10 @@ namespace accs.Repository.Interfaces
 {
     public interface IRewardRepository
     {
-        Task Create(Reward reward);
-        Task<List<Reward>> ReadAll();
-        Task<Reward?> Read(int id);
-        Task Update(Reward reward);
-        Task Delete(Reward reward);
+        Task CreateAsync(Reward reward);
+        Task<List<Reward>> ReadAllAsync();
+        Task<Reward?> ReadAsync(int id);
+        Task UpdateAsync(Reward reward);
+        Task DeleteAsync(Reward reward);
     }
 }

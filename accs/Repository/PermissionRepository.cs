@@ -13,12 +13,12 @@ namespace accs.Repository
             _context = context;
         }
 
-        public async Task<Permission?> Read(PermissionType permissionType)
+        public async Task<Permission?> ReadAsync(PermissionType permissionType)
         {
             return _context.Permissions.Find(permissionType);
         }
 
-        public async Task<List<Permission>> ReadAll()
+        public async Task<List<Permission>> ReadAllAsync()
         {
             return _context.Permissions.ToList();
         }

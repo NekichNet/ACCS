@@ -14,25 +14,29 @@ namespace accs.Repository
             _context = context;
         }
 
-        public async Task Create(Activity activity)
+        public async Task CreateAsync(Activity activity)
         {
-            _context.Activities.Add(activity);
+            Activity? checkActivity = await ReadAsync(activity.Unit, activity.Date);
+            if (checkActivity != null)
+                checkActivity.Confirmed = checkActivity.Confirmed || activity.Confirmed;
+            else
+                _context.Activities.Add(activity);
             _context.SaveChanges();
         }
 
-        public async Task<List<Activity>> ReadAll()
+        public async Task<List<Activity>> ReadAllAsync()
         {
             return _context.Activities.ToList();
         }
 
-        public async Task<List<Activity>> ReadByDate(DateOnly date)
+        public async Task<List<Activity>> ReadAllWithDateAsync(DateOnly date)
         {
             return _context.Activities.Where(a => a.Date == date).ToList();
         }
 
-        public async Task<bool> Exists(Activity activity)
+        public async Task<Activity?> ReadAsync(Unit unit, DateOnly date)
         {
-            return _context.Activities.Contains(activity);
+            return _context.Activities.Find(new { unit, date });
         }
     }
 }

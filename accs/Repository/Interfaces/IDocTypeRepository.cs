@@ -4,10 +4,10 @@ namespace accs.Repository.Interfaces
 {
     public interface IDocTypeRepository
     {
-        Task Create(DocType docType);
-        Task<List<DocType>> ReadAll();
-        Task<DocType?> Read(int id);
-        Task Update(DocType docType);
-        Task Delete(DocType docType);
+        Task CreateAsync(DocType docType);
+        Task<List<DocType>> ReadAllAsync();
+        Task<DocType?> ReadAsync(int id);
+        Task UpdateAsync(DocType docType);
+        Task DeleteAsync(DocType docType);
     }
 }

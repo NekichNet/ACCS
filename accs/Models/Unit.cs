@@ -17,5 +17,19 @@ namespace accs.Models
 		public List<Reward> Rewards { get; set; } = new List<Reward>();
 		public List<Activity> Activities { get; set; } = new List<Activity>();
 		public List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
+
+		public HashSet<Permission> GetPermissions()
+		{
+			HashSet<Permission> permissions = Rank.GetPermissionsRecursive();
+			foreach (Post post in Posts)
+				foreach (Permission permission in post.GetPermissionsRecursive())
+					permissions.Add(permission);
+			return permissions;
+		}
+
+		public bool HasPermission(PermissionType permissionType)
+		{
+			return GetPermissions().Where(p => p.Type == permissionType || p.Type == PermissionType.Administrator).Any();
+		}
 	}
 }

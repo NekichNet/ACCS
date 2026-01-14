@@ -4,10 +4,10 @@ namespace accs.Repository.Interfaces
 {
     public interface IUnitStatusRepository
     {
-        Task Create(UnitStatus temporary);
-        Task<List<UnitStatus>> ReadAll();
-        Task<UnitStatus?> Read(int id);
-        Task Update(UnitStatus temporary);
-        Task Delete(UnitStatus temporary);
+        Task CreateAsync(UnitStatus unitStatus);
+        Task<List<UnitStatus>> ReadAllAsync();
+        Task<UnitStatus?> ReadAsync(int id);
+        Task UpdateAsync(UnitStatus unitStatus);
+        Task DeleteAsync(UnitStatus unitStatus);
     }
 }

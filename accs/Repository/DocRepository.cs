@@ -13,29 +13,29 @@ namespace accs.Repository
             _context = context;
         }
 
-        public async Task Create(Doc doc)
+        public async Task CreateAsync(Doc doc)
         {
             _context.Docs.Add(doc);
             _context.SaveChanges();
         }
 
-        public async Task Delete(Doc doc)
+        public async Task DeleteAsync(Doc doc)
         {
             _context.Docs.Remove(doc);
             _context.SaveChanges();
         }
         
-        public async Task<Doc?> Read(int id)
+        public async Task<Doc?> ReadAsync(int id)
         {
             return _context.Docs.Find(id);
         }
 
-        public async Task<List<Doc>> ReadAll()
+        public async Task<List<Doc>> ReadAllAsync()
         {
             return _context.Docs.ToList();
         }
 
-        public async Task Update(Doc doc)
+        public async Task UpdateAsync(Doc doc)
         {
             _context.Docs.Update(doc);
             _context.SaveChanges();

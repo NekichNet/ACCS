@@ -4,10 +4,10 @@ namespace accs.Repository.Interfaces
 {
     public interface ISubdivisionRepository
     {
-        Task Create(Subdivision subdivision);
-        Task<List<Subdivision>> ReadAll();
-        Task<Subdivision?> Read(int id);
-        Task Update(Subdivision subdivision);
-        Task Delete(Subdivision subdivision);
+        Task CreateAsync(Subdivision subdivision);
+        Task<List<Subdivision>> ReadAllAsync();
+        Task<Subdivision?> ReadAsync(int id);
+        Task UpdateAsync(Subdivision subdivision);
+        Task DeleteAsync(Subdivision subdivision);
     }
 }

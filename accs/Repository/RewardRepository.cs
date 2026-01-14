@@ -13,29 +13,29 @@ namespace accs.Repository
             _context = context;
         }
 
-        public async Task Create(Reward reward)
+        public async Task CreateAsync(Reward reward)
         {
             _context.Rewards.Add(reward);
             _context.SaveChanges();
         }
 
-        public async Task Delete(Reward reward)
+        public async Task DeleteAsync(Reward reward)
         {
             _context.Rewards.Remove(reward);
             _context.SaveChanges();
         }
 
-        public async Task<Reward?> Read(int id)
+        public async Task<Reward?> ReadAsync(int id)
         {
             return _context.Rewards.Find(id);
         }
 
-        public async Task<List<Reward>> ReadAll()
+        public async Task<List<Reward>> ReadAllAsync()
         {
             return _context.Rewards.ToList();
         }
 
-        public async Task Update(Reward reward)
+        public async Task UpdateAsync(Reward reward)
         {
             _context.Rewards.Update(reward);
             _context.SaveChanges();

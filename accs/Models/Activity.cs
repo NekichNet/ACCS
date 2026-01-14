@@ -8,5 +8,6 @@ namespace accs.Models
 	{
 		public Unit Unit { get; set; }
 		public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+		public bool Confirmed { get; set; } = false;
 	}
 }

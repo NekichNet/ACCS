@@ -42,9 +42,13 @@ namespace accs.DiscordBot.Interactions
 
             if (ids.Any())
             {
-                // Сделать Select Menu с выбором игроков
+                SelectMenuBuilder menuBuilder = new SelectMenuBuilder()
+                    .WithPlaceholder("Редактировать список")
+                    .WithCustomId($"activity-menu-{today}"); // здесь добавляем кнопки
+
+
 				ComponentBuilder builder = new ComponentBuilder();
-				builder.WithButton("Верифицировать", $"verify_{today}:" + String.Join(",", ids));
+				builder.WithButton("Подтвердить", $"activity-verify-{today}");
 
                 await ReplyAsync("", components: builder.Build());
 			}

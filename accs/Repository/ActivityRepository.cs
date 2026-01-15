@@ -16,12 +16,8 @@ namespace accs.Repository
 
         public async Task CreateAsync(Activity activity)
         {
-            Activity? checkActivity = await ReadAsync(activity.Unit, activity.Date);
-            if (checkActivity != null)
-                checkActivity.Confirmed = checkActivity.Confirmed || activity.Confirmed;
-            else
-                _context.Activities.Add(activity);
-            _context.SaveChanges();
+			_context.Activities.Add(activity);
+			_context.SaveChanges();
         }
 
         public async Task<List<Activity>> ReadAllAsync()
@@ -34,9 +30,9 @@ namespace accs.Repository
             return _context.Activities.Where(a => a.Date == date).ToList();
         }
 
-        public async Task<Activity?> ReadAsync(Unit unit, DateOnly date)
+        public async Task<bool> ExistsAsync(Activity activity)
         {
-            return _context.Activities.Find(new { unit, date });
+            return _context.Activities.Contains(activity);
         }
     }
 }

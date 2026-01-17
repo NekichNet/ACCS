@@ -1,5 +1,6 @@
 ﻿using accs.Models.Configurations;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Metadata.Ecma335;
 
 namespace accs.Models
 {
@@ -19,6 +20,11 @@ namespace accs.Models
 		public Post(string envRoleString)
 		{
 			DiscordRoleId = ulong.Parse(DotNetEnv.Env.GetString(envRoleString, $"{envRoleString} Not found"));
+		}
+
+		public string GetFullName()
+		{
+			return Subdivision == null ? Name : Name + " " + Subdivision.Name;
 		}
 
 		public HashSet<Permission> GetPermissionsRecursive()

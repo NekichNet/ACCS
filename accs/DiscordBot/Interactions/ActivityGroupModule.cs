@@ -51,7 +51,7 @@ namespace accs.DiscordBot.Interactions
                     ComponentBuilder builder = new ComponentBuilder();
                     builder.WithButton("Подтвердить", $"activity-verify-{today}");
 
-                    await ReplyAsync("", components: builder.Build());
+                    await ReplyAsync("Требуется подтверждение", components: builder.Build());
                 }
             }
             catch (Exception ex)
@@ -62,7 +62,7 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [SlashCommand("screenshot", "зафиксировать активность по скриншоту")]
+        [SlashCommand("screenshot", "Зафиксировать активность по скриншоту")]
         public async Task FixScreenshotCommand([ChannelTypes(ChannelType.Text, ChannelType.Forum)] IChannel channel, IAttachment screenshot)
         {
             await DeferAsync();  // это шоб команда не таймаутилась при долгой обработке
@@ -116,7 +116,7 @@ namespace accs.DiscordBot.Interactions
 
 
         [SlashCommand("me", "зафиксировать свою активность")]
-        public async Task FixMeCommand([ChannelTypes(ChannelType.Text, ChannelType.Forum)] IChannel channel, IAttachment screenshot)
+        public async Task FixMeCommand()
         {
             try
             {

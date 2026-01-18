@@ -17,6 +17,7 @@ namespace accs.Repository.Context
 		public DbSet<Activity> Activities { get; set; }
 		public DbSet<UnitStatus> UnitStatuses { get; set; }
 		public DbSet<Status> Statuses { get; set; }
+		public DbSet<Ticket> Tickets { get; set; }
 
 		public AppDbContext(DbContextOptions<AppDbContext> options)
 			: base(options) { }

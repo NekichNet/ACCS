@@ -4,6 +4,7 @@ using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -23,12 +24,13 @@ namespace accs.DiscordBot.Interactions
             _logService = logService;
         }
 
-        [SlashCommand("voice", "всех бойцов в голосовом канале")]
+        [HasPermission(PermissionType.ConfirmActivity)]
+        [SlashCommand("voice", "Всех бойцов в голосовом канале")]
         public async Task FixVoiceCommand([ChannelTypes(ChannelType.Voice, ChannelType.Forum)] IChannel channel)
         {
             try
             {
-                List<string> ids = new List<string>();
+                List<Unit> units = new List<Unit>();
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
                 await foreach (IUser user in channel.GetUsersAsync())
                 {
@@ -37,21 +39,32 @@ namespace accs.DiscordBot.Interactions
                     if (unit != null)
                     {
                         await _activityRepository.CreateAsync(new Activity() { Unit = unit, Date = today });
-                        ids.Add(unit.DiscordId.ToString());
+                        units.Add(unit);
                     }
                 }
 
-                if (ids.Any())
+                if (units.Any())
                 {
                     SelectMenuBuilder menuBuilder = new SelectMenuBuilder()
                         .WithPlaceholder("Редактировать список")
-                        .WithCustomId($"activity-menu-{today}"); // здесь добавляем кнопки
+                        .WithCustomId($"activity-menu-{today}")
+                        .WithMinValues(0)
+                        .WithMaxValues(units.Count);
 
+                    foreach (var unit in units)
+                    {
+                        menuBuilder.AddOption(unit.Nickname, unit.DiscordId.ToString());
+                    }
 
                     ComponentBuilder builder = new ComponentBuilder();
+                    builder.WithSelectMenu(menuBuilder);
                     builder.WithButton("Подтвердить", $"activity-verify-{today}");
 
-                    await ReplyAsync("", components: builder.Build());
+                    await ReplyAsync("Список бойцов сформирован", components: builder.Build());
+                }
+                else
+                {
+                    await ReplyAsync("Бойцы не найдены");
                 }
             }
             catch (Exception ex)
@@ -62,6 +75,7 @@ namespace accs.DiscordBot.Interactions
         }
 
 
+        [HasPermission(PermissionType.ConfirmActivity)]
         [SlashCommand("screenshot", "зафиксировать активность по скриншоту")]
         public async Task FixScreenshotCommand([ChannelTypes(ChannelType.Text, ChannelType.Forum)] IChannel channel, IAttachment screenshot)
         {
@@ -130,13 +144,15 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                await _activityRepository.CreateAsync(new Activity()
-                {
-                    Unit = unit,
-                    Date = today
-                });
+                SelectMenuBuilder menuBuilder = new SelectMenuBuilder()
+                    .WithPlaceholder("Редактировать список")
+                    .WithCustomId($"activity-menu-{today}")
+                    .WithMinValues(0)
+                    .WithMaxValues(1)
+                    .AddOption(unit.Nickname, unit.DiscordId.ToString());
 
                 ComponentBuilder builder = new ComponentBuilder()
+                    .WithSelectMenu(menuBuilder)
                     .WithButton("Подтвердить", $"activity-verify-{today}");
 
                 string message = $"Обнаружен боец: {unit.Nickname}";
@@ -167,14 +183,17 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                await _activityRepository.CreateAsync(new Activity()
-                {
-                    Unit = unit,
-                    Date = today
-                });
+                SelectMenuBuilder menuBuilder = new SelectMenuBuilder()
+                    .WithPlaceholder("Редактировать список")
+                    .WithCustomId($"activity-menu-{today}")
+                    .WithMinValues(0)
+                    .WithMaxValues(1)
+                    .AddOption(unit.Nickname, unit.DiscordId.ToString());
 
                 ComponentBuilder builder = new ComponentBuilder()
+                    .WithSelectMenu(menuBuilder)
                     .WithButton("Подтвердить", $"activity-verify-{today}");
+
                 string message = $"Обнаружен боец: {unit.Nickname}";
                 await ReplyAsync(message, components: builder.Build());
             }
@@ -184,5 +203,63 @@ namespace accs.DiscordBot.Interactions
                 await ReplyAsync("Ошибка при фиксации активности выбранного пользователя");
             }
         }
+
+
+        [HasPermission(PermissionType.ConfirmActivity)]
+        [ComponentInteraction("activity-verify-*")]
+        public async Task VerifyActivity(string dateRaw)
+        {
+            try
+            {
+                if (!DateOnly.TryParse(dateRaw, out DateOnly date))
+                {
+                    await RespondAsync("Ошибка: неверный формат даты", ephemeral: true);
+                    return;
+                }
+
+                // Получаем компонент взаимодействия
+                var component = Context.Interaction as SocketMessageComponent;
+                if (component == null)
+                {
+                    await RespondAsync("Ошибка взаимодействия", ephemeral: true);
+                    return;
+                }
+
+                // тут я пытался получить SelectMenu из активностей
+                var menu = component.Data as SelectMenuComponentData;
+
+                if (menu == null || menu.Values == null || !menu.Values.Any())
+                {
+                    await RespondAsync("Список бойцов пуст или не найден", ephemeral: true);
+                    return;
+                }
+
+                // Создаём активности только сейчас — после подтверждения
+                foreach (var idStr in menu.Values)
+                {
+                    if (ulong.TryParse(idStr, out ulong id))
+                    {
+                        Unit? unit = await _unitRepository.ReadAsync(id);
+
+                        if (unit != null)
+                        {
+                            await _activityRepository.CreateAsync(new Activity()
+                            {
+                                Unit = unit,
+                                Date = date
+                            });
+                        }
+                    }
+                }
+
+                await RespondAsync($"Активность за {date} подтверждена для {menu.Values.Count} бойцов.");
+            }
+            catch (Exception ex)
+            {
+                await _logService.WriteAsync($"Error in VerifyActivity: {ex.Message}", LoggingLevel.Error);
+                await RespondAsync("Ошибка при подтверждении активности", ephemeral: true);
+            }
+        }
+
     }
 }

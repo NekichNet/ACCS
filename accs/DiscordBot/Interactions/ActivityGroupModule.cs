@@ -60,7 +60,7 @@ namespace accs.DiscordBot.Interactions
                     builder.WithSelectMenu(menuBuilder);
                     builder.WithButton("Подтвердить", $"activity-verify-{today}");
 
-                    await ReplyAsync("Список бойцов сформирован", components: builder.Build());
+                    await ReplyAsync("Требуется подтверждение", components: builder.Build());
                 }
                 else
                 {
@@ -130,7 +130,7 @@ namespace accs.DiscordBot.Interactions
 
 
         [SlashCommand("me", "зафиксировать свою активность")]
-        public async Task FixMeCommand([ChannelTypes(ChannelType.Text, ChannelType.Forum)] IChannel channel, IAttachment screenshot)
+        public async Task FixMeCommand()
         {
             try
             {

@@ -9,13 +9,12 @@ namespace accs.DiscordBot.Interactions
 {
     [IsUnit()]
     [InChannels("ACTIVITY_CHANNEL_ID")]
-    [Group("fix", "Зафиксировать активность")]
+    [Group("fix", "Фиксирование активности")]
     public class ActivityGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private IActivityRepository _activityRepository;
         private IUnitRepository _unitRepository;
         private ILogService _logService;
-        private bool _autoVerify = false;
 
         public ActivityGroupModule(IActivityRepository activityRepository, IUnitRepository unitRepository, ILogService logService)
         {
@@ -24,7 +23,7 @@ namespace accs.DiscordBot.Interactions
             _logService = logService;
         }
 
-        [SlashCommand("voice", "всех бойцов в голосовом канале")]
+        [SlashCommand("voice", "Всех бойцов в голосовом канале")]
         public async Task FixVoiceCommand([ChannelTypes(ChannelType.Voice, ChannelType.Forum)] IChannel channel)
         {
             try

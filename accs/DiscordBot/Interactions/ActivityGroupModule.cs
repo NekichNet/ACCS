@@ -9,13 +9,12 @@ namespace accs.DiscordBot.Interactions
 {
     [IsUnit()]
     [InChannels("ACTIVITY_CHANNEL_ID")]
-    [Group("fix", "Зафиксировать активность")]
+    [Group("fix", "Фиксирование активности")]
     public class ActivityGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private IActivityRepository _activityRepository;
         private IUnitRepository _unitRepository;
         private ILogService _logService;
-        private bool _autoVerify = false;
 
         public ActivityGroupModule(IActivityRepository activityRepository, IUnitRepository unitRepository, ILogService logService)
         {

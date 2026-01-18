@@ -12,7 +12,7 @@ namespace accs.Services
 		private InteractionService _interaction;
 		private ILogService _logger;
 
-        private SocketGuild _guild;
+        public SocketGuild Guild { get; set; }
 
 		public DiscordBotService(DiscordSocketClient client, ILogService logger, IServiceProvider serviceProvider)
         {
@@ -41,15 +41,15 @@ namespace accs.Services
             if (_client.LoginState != LoginState.LoggedIn) { throw _logger.ExceptionAsync("Cannot log in!").Result; }
 			_client.StartAsync();
 
-			_guild = _client.GetGuild(guildId);
-			if (_guild == null) { throw _logger.ExceptionAsync("Guild is null!").Result; }
-			if (!_guild.IsConnected) { throw _logger.ExceptionAsync("Not connected to guild!").Result; }
+			Guild = _client.GetGuild(guildId);
+			if (Guild == null) { throw _logger.ExceptionAsync("Guild is null!").Result; }
+			if (!Guild.IsConnected) { throw _logger.ExceptionAsync("Not connected to guild!").Result; }
 			_interaction.RegisterCommandsToGuildAsync(guildId);
 		}
 
         public async Task<bool> AddUserRoles(ulong userId, IEnumerable<ulong> roleIds)
         {
-            SocketGuildUser user = _guild.GetUser(userId);
+            SocketGuildUser user = Guild.GetUser(userId);
 			await user.AddRolesAsync(roleIds);
 			_logger.WriteAsync("Added roles " + String.Join(", ", roleIds.Select(o => o.ToString()))
 				+ " to " + (user?.Username).ToString()
@@ -60,7 +60,7 @@ namespace accs.Services
 
         public async Task<bool> RemoveUserRoles(ulong userId, IEnumerable<ulong> roleIds)
         {
-			SocketGuildUser user = _guild.GetUser(userId);
+			SocketGuildUser user = Guild.GetUser(userId);
 			await user.RemoveRolesAsync(roleIds);
 			_logger.WriteAsync("Removed roles " + String.Join(", ", roleIds.Select(o => o.ToString()))
 				+ " from " + user.Username
@@ -71,7 +71,7 @@ namespace accs.Services
 
 		public async Task<bool> BanUser(ulong userId)
 		{
-			SocketGuildUser user = _guild.GetUser(userId);
+			SocketGuildUser user = Guild.GetUser(userId);
 			await user.BanAsync();
 			_logger.WriteAsync("Banned " + user.Username + " with id " + userId,
 				user == null ? LoggingLevel.Error : LoggingLevel.Debug);
@@ -80,7 +80,7 @@ namespace accs.Services
 
 		public async Task<bool> KickUser(ulong userId)
 		{
-			SocketGuildUser user = _guild.GetUser(userId);
+			SocketGuildUser user = Guild.GetUser(userId);
 			await user.KickAsync();
 			_logger.WriteAsync("Kicked " + user.Username + " with id " + userId,
 				user == null ? LoggingLevel.Error : LoggingLevel.Debug);

@@ -1,10 +1,10 @@
-﻿using accs.DiscordBot.Preconditions;
+﻿using Discord.WebSocket;
+using accs.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -207,7 +207,7 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.ConfirmActivity)]
         [ComponentInteraction("activity-verify-*")]
-        public async Task VerifyActivity(string dateRaw)
+        public async Task VerifyActivityHandler(string dateRaw)
         {
             try
             {
@@ -217,25 +217,23 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                // Получаем компонент взаимодействия
-                var component = Context.Interaction as SocketMessageComponent;
+                var component = (SocketMessageComponent)Context.Interaction;
+                var selectedIds = component.Data.Values;
+
                 if (component == null)
                 {
                     await RespondAsync("Ошибка взаимодействия", ephemeral: true);
                     return;
                 }
 
-                // тут я пытался получить SelectMenu из активностей
-                var menu = component.Data as SelectMenuComponentData;
-
-                if (menu == null || menu.Values == null || !menu.Values.Any())
+                if (selectedIds == null || !selectedIds.Any())
                 {
                     await RespondAsync("Список бойцов пуст или не найден", ephemeral: true);
                     return;
                 }
 
                 // Создаём активности только сейчас — после подтверждения
-                foreach (var idStr in menu.Values)
+                foreach (var idStr in selectedIds)
                 {
                     if (ulong.TryParse(idStr, out ulong id))
                     {
@@ -252,7 +250,7 @@ namespace accs.DiscordBot.Interactions
                     }
                 }
 
-                await RespondAsync($"Активность за {date} подтверждена для {menu.Values.Count} бойцов.");
+                await RespondAsync($"Активность за {date} подтверждена для {selectedIds.Count()} бойцов.");
             }
             catch (Exception ex)
             {
@@ -261,5 +259,46 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
+
+        [HasPermission(PermissionType.ConfirmActivity)]
+        [ComponentInteraction("activity-menu-*")]
+        public async Task ActivityMenuHandler(string dateRaw, string[] selectedIds)
+        {
+            try
+            {
+                var component = (SocketMessageComponent)Context.Interaction;
+
+                var originalMenu = component.Data as SocketMessageComponentData;
+
+                SelectMenuBuilder menuBuilder = new SelectMenuBuilder()
+                    .WithCustomId($"activity-menu-{dateRaw}")
+                    .WithPlaceholder("Редактировать список")
+                    .WithMinValues(0)
+                    .WithMaxValues(selectedIds.Length);
+
+                foreach (var id in selectedIds)
+                {
+                    Unit? unit = await _unitRepository.ReadAsync(ulong.Parse(id));
+                    if (unit != null)
+                        menuBuilder.AddOption(unit.Nickname, id);
+                }
+
+                ComponentBuilder builder = new ComponentBuilder()
+                    .WithSelectMenu(menuBuilder)
+                    .WithButton("Подтвердить", $"activity-verify-{dateRaw}");
+
+                // сохраняет выбранные значения в сообщении
+                await component.UpdateAsync(msg =>
+                {
+                    msg.Content = "Список обновлён";
+                    msg.Components = builder.Build();
+                });
+            }
+            catch (Exception ex)
+            {
+                await _logService.WriteAsync($"Error in ActivityMenuHandler: {ex.Message}", LoggingLevel.Error);
+                await RespondAsync("Ошибка при обновлении списка", ephemeral: true);
+            }
+        }
     }
 }

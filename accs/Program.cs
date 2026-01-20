@@ -42,6 +42,7 @@ namespace accs
             builder.Services.AddSingleton(discordConfig);
             builder.Services.AddSingleton<DiscordSocketClient>();
             builder.Services.AddSingleton<IDiscordBotService, DiscordBotService>();
+            builder.Services.AddSingleton<IOCRService, IOCRService>();
 
 			var app = builder.Build();
 

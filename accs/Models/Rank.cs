@@ -14,7 +14,7 @@ namespace accs.Models
 		public HashSet<Permission> Permissions { get; set; } = new HashSet<Permission>();
 		public List<Unit> Units { get; set; } = new List<Unit>();
 
-		public Rank(int id, string name, HashSet<Permission>? permissions = null)
+        public Rank(int id, string name, HashSet<Permission>? permissions = null)
 		{
 			Id = id;
 			Name = name;

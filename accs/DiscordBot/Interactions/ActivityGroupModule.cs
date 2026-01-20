@@ -158,7 +158,7 @@ namespace accs.DiscordBot.Interactions
 
 
         [SlashCommand("user", "зафиксировать активность указанного бойца")]
-        public async Task FixUserCommand(IUser user, string unitId)
+        public async Task FixUserCommand(IUser user)
         {
             try
             {

@@ -76,7 +76,7 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.ConfirmActivity)]
         [SlashCommand("screenshot", "зафиксировать активность по скриншоту")]
-        public async Task FixScreenshotCommand([ChannelTypes(ChannelType.Text, ChannelType.Forum)] IChannel channel, IAttachment screenshot)
+        public async Task FixScreenshotCommand(IAttachment screenshot)
         {
             await DeferAsync();  // это шоб команда не таймаутилась при долгой обработке
 
@@ -142,15 +142,9 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                //SelectMenuBuilder menuBuilder = new SelectMenuBuilder()
-                //    .WithPlaceholder("Редактировать список")
-                //    .WithCustomId($"activity-menu-{today}")
-                //    .WithMinValues(0)
-                //    .WithMaxValues(1)
-                //    .AddOption(unit.Nickname, unit.DiscordId.ToString());
 
                 ComponentBuilder builder = new ComponentBuilder()
-                    .WithButton("Подтвердить", $"activity-verify-{today}");
+                    .WithButton("Подтвердить", $"activity-verify-{today}-{unit.DiscordId}");
 
                 string message = $"Обнаружен боец: {unit.Nickname}";
 
@@ -180,7 +174,7 @@ namespace accs.DiscordBot.Interactions
                 }
 
                 ComponentBuilder builder = new ComponentBuilder()
-                    .WithButton("Подтвердить", $"activity-verify-{today}");
+                    .WithButton("Подтвердить", $"activity-verify-{today}-{unit.DiscordId}");
 
                 string message = $"Обнаружен боец: {unit.Nickname}";
                 await ReplyAsync(message, components: builder.Build());
@@ -235,7 +229,8 @@ namespace accs.DiscordBot.Interactions
                 }
                 else
                 {
-                    await RespondAsync("Ошибка: неверный формат ID бойца", ephemeral: true);
+                    await RespondAsync("Ошибка: неверный формат ID бойца");
+                    await _logService.WriteAsync("Ошибка: неверный формат ID бойца", LoggingLevel.Error);
                     return;
                 }
             }
@@ -249,21 +244,19 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.ConfirmActivity)]
         [ComponentInteraction("activity-menu-*")]
-        public async Task ActivityMenuHandler(string dateRaw, string[] selectedIds)
+        public async Task ActivityMenuHandler(string dateRaw, SocketMessageComponent component)
         {
             try
             {
-                var component = (SocketMessageComponent)Context.Interaction;
-
-                var originalMenu = component.Data as SocketMessageComponentData;
+                var originalMenu = component.Data;
 
                 SelectMenuBuilder menuBuilder = new SelectMenuBuilder()
                     .WithCustomId($"activity-menu-{dateRaw}")
                     .WithPlaceholder("Редактировать список")
                     .WithMinValues(0)
-                    .WithMaxValues(selectedIds.Length);
+                    .WithMaxValues(originalMenu.Values.Count());
 
-                foreach (var id in selectedIds)
+                foreach (var id in originalMenu.Values)
                 {
                     Unit? unit = await _unitRepository.ReadAsync(ulong.Parse(id));
                     if (unit != null)

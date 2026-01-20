@@ -43,15 +43,60 @@ namespace accs.DiscordBot.Interactions
 				.WithColor(Color.DarkGreen);
 
 			ComponentBuilder component = new ComponentBuilder()
-				.WithButton("Вступить", "ticket-button-invite", ButtonStyle.Success, new Emoji("U+1FA96"), row: 0)
-				.WithButton("Сотрудничать", "ticket-button-friend", ButtonStyle.Primary, new Emoji("U+1F91D"), row: 0)
-				.WithButton("Инструктор", "ticket-button-lesson", ButtonStyle.Primary, new Emoji("U+1F9D1"), row: 1)
-				.WithButton("Техподдержка", "ticket-button-tech", ButtonStyle.Secondary, new Emoji("U+1F198"), row: 1)
-				.WithButton("Пожаловаться", "ticket-button-report", ButtonStyle.Danger, new Emoji("U+1F46E"), row: 2)
-				.WithButton("Отставка", "ticket-button-retirement", ButtonStyle.Danger, new Emoji("U+1FAE1"), row: 2)
-				.WithButton("Спонсировать", "ticket-button-donation", ButtonStyle.Premium, new Emoji("U+1F4B5"), row: 3);
+				.WithButton("Вступить", "invite-button", ButtonStyle.Success, new Emoji("U+1FA96"), row: 0)
+				.WithButton("Сотрудничать", "friend-button", ButtonStyle.Primary, new Emoji("U+1F91D"), row: 0)
+				.WithButton("Инструктор", "lesson-button", ButtonStyle.Primary, new Emoji("U+1F9D1"), row: 1)
+				.WithButton("Техподдержка", "tech-button", ButtonStyle.Secondary, new Emoji("U+1F198"), row: 1)
+				.WithButton("Пожаловаться", "report-button", ButtonStyle.Danger, new Emoji("U+1F46E"), row: 2)
+				.WithButton("Отставка", "retirement-button", ButtonStyle.Danger, new Emoji("U+1FAE1"), row: 2)
+				.WithButton("Спонсировать", "donation-button", ButtonStyle.Premium, new Emoji("U+1F4B5"), row: 3);
 
 			await _channel.SendMessageAsync(embed: embed.Build(), components: component.Build());
 		}
-    }
+
+		[IsUnit(false)]
+		[ComponentInteraction("invite-button")]
+		public async Task CreateInviteTicket()
+		{
+			throw new NotImplementedException();
+		}
+
+		[IsUnit(false)]
+		[ComponentInteraction("friend-button")]
+		public async Task CreateFriendTicket()
+		{
+			throw new NotImplementedException();
+		}
+
+		[ComponentInteraction("lesson-button")]
+		public async Task CreateLessonTicket()
+		{
+			throw new NotImplementedException();
+		}
+
+		[ComponentInteraction("tech-button")]
+		public async Task CreateTechTicket()
+		{
+			throw new NotImplementedException();
+		}
+
+		[ComponentInteraction("report-button")]
+		public async Task CreateReportTicket()
+		{
+			throw new NotImplementedException();
+		}
+
+		[IsUnit()]
+		[ComponentInteraction("retirement-button")]
+		public async Task CreateRetirementTicket()
+		{
+			throw new NotImplementedException();
+		}
+
+		[ComponentInteraction("donation-button")]
+		public async Task CreateDonationTicket()
+		{
+			throw new NotImplementedException();
+		}
+	}
 }

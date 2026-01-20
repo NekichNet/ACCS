@@ -43,13 +43,15 @@ namespace accs.DiscordBot.Interactions
 				.WithColor(Color.DarkGreen);
 
 			ComponentBuilder component = new ComponentBuilder()
-				.WithButton("Вступить в клан", "ticket-button-invite", ButtonStyle.Success, new Emoji("U+1FA96"), row: 0)
-				.WithButton("Сотрудничество", "ticket-button-friend", ButtonStyle.Primary, new Emoji("U+1F91D"), row: 1)
-				.WithButton("Пожертвование", "ticket-button-donation", ButtonStyle.Premium, new Emoji("U+1F4B5"), row: 1)
-				.WithButton("Пожаловаться", "ticket-button-report", ButtonStyle.Danger, new Emoji("U+1F91D"), row: 2)
-				.WithButton("Техподдержка", "ticket-button-tech", ButtonStyle.Secondary, new Emoji("U+1F91D"), row: 2);
+				.WithButton("Вступить", "ticket-button-invite", ButtonStyle.Success, new Emoji("U+1FA96"), row: 0)
+				.WithButton("Сотрудничать", "ticket-button-friend", ButtonStyle.Primary, new Emoji("U+1F91D"), row: 0)
+				.WithButton("Инструктор", "ticket-button-lesson", ButtonStyle.Primary, new Emoji("U+1F9D1"), row: 1)
+				.WithButton("Техподдержка", "ticket-button-tech", ButtonStyle.Secondary, new Emoji("U+1F198"), row: 1)
+				.WithButton("Пожаловаться", "ticket-button-report", ButtonStyle.Danger, new Emoji("U+1F46E"), row: 2)
+				.WithButton("Отставка", "ticket-button-retirement", ButtonStyle.Danger, new Emoji("U+1FAE1"), row: 2)
+				.WithButton("Спонсировать", "ticket-button-donation", ButtonStyle.Premium, new Emoji("U+1F4B5"), row: 3);
 
-			await _channel.SendMessageAsync(embed: embed.Build());
+			await _channel.SendMessageAsync(embed: embed.Build(), components: component.Build());
 		}
     }
 }

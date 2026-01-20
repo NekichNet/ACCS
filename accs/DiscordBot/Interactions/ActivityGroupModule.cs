@@ -35,7 +35,6 @@ namespace accs.DiscordBot.Interactions
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
                 await foreach (IUser user in channel.GetUsersAsync())
                 {
-                    //await _logService.WriteAsync($"Voice channel user: {user.Username} unit: {unit?.Nickname}", LoggingLevel.Debug);
                     Unit? unit = await _unitRepository.ReadAsync(user.Id);
                     if (unit != null)
                     {
@@ -244,35 +243,49 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.ConfirmActivity)]
         [ComponentInteraction("activity-menu-*")]
-        public async Task ActivityMenuHandler(string dateRaw, SocketMessageComponent component)
+        public async Task ActivityMenuHandler(string dateRaw)
         {
             try
             {
-                var originalMenu = component.Data;
-
-                SelectMenuBuilder menuBuilder = new SelectMenuBuilder()
-                    .WithCustomId($"activity-menu-{dateRaw}")
-                    .WithPlaceholder("Редактировать список")
-                    .WithMinValues(0)
-                    .WithMaxValues(originalMenu.Values.Count());
-
-                foreach (var id in originalMenu.Values)
+                if (!DateOnly.TryParse(dateRaw, out DateOnly date))
                 {
-                    Unit? unit = await _unitRepository.ReadAsync(ulong.Parse(id));
-                    if (unit != null)
-                        menuBuilder.AddOption(unit.Nickname, id);
+                    await RespondAsync("Ошибка: неверный формат даты", ephemeral: true);
+                    return;
                 }
 
-                ComponentBuilder builder = new ComponentBuilder()
-                    .WithSelectMenu(menuBuilder)
-                    .WithButton("Подтвердить", $"activity-verify-{dateRaw}");
+                var component = (SocketMessageComponent)Context.Interaction;
 
-                // сохраняет выбранные значения в сообщении
-                await component.UpdateAsync(msg =>
+                var selectedIds = component.Data.Values;
+
+                if (selectedIds == null || !selectedIds.Any())
                 {
-                    msg.Content = "Список обновлён";
-                    msg.Components = builder.Build();
-                });
+                    await RespondAsync("Вы не выбрали ни одного бойца", ephemeral: true);
+                    return;
+                }
+
+                int count = 0;
+
+                foreach (var idStr in selectedIds)
+                {
+                    if (ulong.TryParse(idStr, out ulong id))
+                    {
+                        Unit? unit = await _unitRepository.ReadAsync(id);
+
+                        if (unit != null)
+                        {
+                            await _activityRepository.CreateAsync(new Activity()
+                            {
+                                Unit = unit,
+                                Date = date
+                            });
+
+                            count++;
+                        }
+                    }
+                }
+
+                await RespondAsync($"Активность за {date} подтверждена для {count} бойцов.");
+
             }
             catch (Exception ex)
             {

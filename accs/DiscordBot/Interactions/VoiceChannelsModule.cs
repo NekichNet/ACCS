@@ -9,41 +9,47 @@ using accs.DiscordBot.Interactions.Enums;
 namespace accs.DiscordBot.Interactions
 {
     [Group("voice", "Управление голосовыми каналами")]
-    public class VoiceChannellsModule : InteractionModuleBase<SocketInteractionContext>
+    public class VoiceChannelsModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private IActivityRepository _activityRepository;
         private IUnitRepository _unitRepository;
         private ILogService _logService;
         private DiscordSocketClient _discordSocketClient;
-        private SocketGuild? _guild { get { return _discordSocketClient.GetGuild(0); } } // Подставь айдишник сервера
+        private ulong _voiceChannelId;
+        private SocketGuild? _guild;
 
 
-        public VoiceChannellsModule(IActivityRepository activityRepository, IUnitRepository unitRepository, ILogService logService, DiscordSocketClient discordSocketClient) 
+        public VoiceChannelsModule(IActivityRepository activityRepository, IUnitRepository unitRepository, ILogService logService, DiscordSocketClient discordSocketClient) 
         {
-            _activityRepository = activityRepository;
             _unitRepository = unitRepository;
             _logService = logService;
             _discordSocketClient = discordSocketClient;
-        }
+
+			string voiceChannelIdString = DotNetEnv.Env.GetString("VOICE_CHANNEL_ID", "null");
+            if (!ulong.TryParse(voiceChannelIdString, out _voiceChannelId)) { throw _logService.ExceptionAsync("Cannot parse voice channel id!", LoggingLevel.Error).Result; }
+
+			string guildIdString = DotNetEnv.Env.GetString("SERVER_ID", "Server id not found");
+			ulong guildId;
+			if (ulong.TryParse(guildIdString, out guildId)) { throw _logService.ExceptionAsync("Cannot parse guild id!", LoggingLevel.Error).Result; }
+
+            _guild = _discordSocketClient.GetGuild(guildId);
+		}
         
         public async Task OnUserJoinedAsync(SocketUser user, SocketVoiceState before, SocketVoiceState after)
         {
-                if (after.VoiceChannel.Id == 0) // Поставить айдишник того канала для создания новых голосовых чатов
-                {
-                    
+			if (after.VoiceChannel.Id == _voiceChannelId)
+            {
+                var channels = _guild.Channels;
+                List<string> channelNames = new List<string>();
 
-                    var channels = _guild.Channels;
-                    List<string> channelNames = new List<string>();
-
-                    foreach (var channel in channels) {
-                        if (channel.ChannelType == Discord.ChannelType.Voice) 
+                foreach (var channel in channels) {
+                    if (channel.ChannelType == Discord.ChannelType.Voice) 
+                    {
+                        if (channel.Name.Contains("【🔊】Пех"))
                         {
-                            if (channel.Name.Contains("【🔊】Пех"))
-                            {
-                                channelNames.Add(channel.Name);
-                            }
+                            channelNames.Add(channel.Name);
                         }
                     }
+                }
 
                 int freeNumber = 1;
                 while (channelNames.Contains($"【🔊】Пех {freeNumber}"))
@@ -54,9 +60,6 @@ namespace accs.DiscordBot.Interactions
                 /// Channel creation and block for everyone to connect
                 var newChannel = await _guild.CreateVoiceChannelAsync($"【🔊】Пех {freeNumber}", (props) => { props.Bitrate = 64000; props.UserLimit = 0; props.CategoryId = 0; });
                 await newChannel.AddPermissionOverwriteAsync(_guild.EveryoneRole, new OverwritePermissions(connect: PermValue.Deny));
-
-
-
 
                 /// Permission for needed users being granted
                 var guildUser = _guild.GetUser(user.Id);
@@ -73,7 +76,6 @@ namespace accs.DiscordBot.Interactions
                             if (postAbove.DiscordRoleId != null)
                             {
                                 newChannel.AddPermissionOverwriteAsync(_guild.GetRole((ulong)postAbove.DiscordRoleId), new OverwritePermissions(connect: PermValue.Allow));
-                                
                             }
                         }
                     }
@@ -93,11 +95,11 @@ namespace accs.DiscordBot.Interactions
         {
             if (accessChoices == AccessChoices.FRIEND)
             {
-                _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(_guild.GetRole(0), new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли френда
+                await _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(_guild.GetRole(0), new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли френда
             }
             else if (accessChoices == AccessChoices.CLAN)
             {
-                _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(_guild.GetRole(0), new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли
+                await _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(_guild.GetRole(0), new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли
             }
         }
         [SlashCommand("access-role", "Передайте один из атрибутов: Опция \"clan\" открывает доступ на подключение всем участникам клана, опция \"friends\" открывает доступ всему клану, а также роли “Друг клана”.")]

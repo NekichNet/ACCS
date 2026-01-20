@@ -8,6 +8,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
+using System.Reactive;
 namespace accs.DiscordBot.Interactions
 {
     
@@ -20,7 +21,6 @@ namespace accs.DiscordBot.Interactions
             private readonly IPostRepository _postRepository; 
             private readonly IUnitRepository _unitRepository;
             private readonly ILogService _logService;
-            //private readonly AppDbContext _context;
 
             public PostAssignmentModule(IPostRepository postRepository,
                 IUnitRepository unitRepository,
@@ -50,7 +50,7 @@ namespace accs.DiscordBot.Interactions
 
                     // все доступные подчинённые должности актёра (рекурсивно)
                     var allowedPosts = actorPosts
-                        .SelectMany(p => p.GetAllSubordinatesRecursive())   // рекурсивно собираю всех  этого поста
+                        .SelectMany(p => p.GetAllSubordinatesRecursive())   // рекурсивно собираю всех подчиненных этого поста
                         .DistinctBy(p => p.Id)
                         .ToList();
 
@@ -97,6 +97,7 @@ namespace accs.DiscordBot.Interactions
                         .Select(v => int.Parse(v))
                         .ToList();
 
+                    
                     for (int i = 0; i < selectedIds.Count; i++)
                     {
                         var post = await _postRepository.ReadAsync(selectedIds[i]);
@@ -107,30 +108,26 @@ namespace accs.DiscordBot.Interactions
                         }
                     }
 
-                    var targetUnit = await _unitRepository.ReadAsync(Context.User.Id);
+                    var targetUnit = await _unitRepository.ReadAsync(targetId);
 
                     // удаление всех текущих должностей
-                    var unit = await _context.Units
-                        .Include(u => u.Posts)
-                        .FirstAsync(u => u.DiscordId == targetId);
-
-                    unit.Posts.Clear();
-                    await _context.SaveChangesAsync();
+                    targetUnit.Posts.Clear();
 
                     // добавление выбранных должностей
-                    var unit2 = await _context.Units
-                        .Include(u => u.Posts)
-                        .FirstAsync(u => u.DiscordId == targetId);
-
-                    foreach (var postId in selectedIds)
+                    foreach (var postId in selectedIds) 
                     {
-                        var post = await _context.Posts.FindAsync(postId);
+                        var post = await _postRepository.ReadAsync(postId);
                         if (post != null)
-                            unit.Posts.Add(post);
+                        {
+                            targetUnit.Posts.Add(post);
+                        }
+                        else
+                        {
+                            await _logService.WriteAsync($"Пост {postId} не найден.", LoggingLevel.Error);
+                        } 
                     }
 
-                    await _context.SaveChangesAsync();
-
+                    await _unitRepository.UpdateAsync(targetUnit);
 
                     await RespondAsync("Должности обновлены.", ephemeral: true);
                 }

@@ -38,5 +38,19 @@ namespace accs.Models
 					permissions.Add(permission);
 			return permissions;
 		}
-	}
+
+
+        public List<Post> GetAllSubordinatesRecursive()
+        {
+            var result = new List<Post>();
+
+            foreach (var sub in Subordinates)
+            {
+                result.Add(sub);
+                result.AddRange(sub.GetAllSubordinatesRecursive());
+            }
+
+            return result;
+        }
+    }
 }

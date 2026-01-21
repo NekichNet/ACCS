@@ -50,7 +50,7 @@ namespace accs.DiscordBot.Interactions
 
                     // все доступные подчинённые должности актёра (рекурсивно)
                     var allowedPosts = actorPosts
-                        .SelectMany(p => p.GetAllSubordinatesRecursive())   // рекурсивно собираю всех подчиненных этого поста
+                        .SelectMany(p => p.GetAllSubordinatesRecursive())
                         .DistinctBy(p => p.Id)
                         .ToList();
 

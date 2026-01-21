@@ -42,11 +42,10 @@ namespace accs.Models
 
         public List<Post> GetAllSubordinatesRecursive()
         {
-            var result = new List<Post>();
+            List<Post> result = [.. Subordinates];
 
-            foreach (var sub in Subordinates)
+            foreach (Post sub in Subordinates)
             {
-                result.Add(sub);
                 result.AddRange(sub.GetAllSubordinatesRecursive());
             }
 

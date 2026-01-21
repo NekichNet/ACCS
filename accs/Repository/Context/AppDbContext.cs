@@ -67,24 +67,26 @@ namespace accs.Repository.Context
 			/* Подразделения */
 			List<Subdivision> subdivisions = new List<Subdivision>();
 
-
-			Subdivision communicationService = new Subdivision("COMMUNICATION_SERVICE_ROLE_ID") { Id = subdivisions.Count + 1, Name = "Служба связи" };
-			subdivisions.Add(communicationService);
-
-			Subdivision militaryPolice = new Subdivision("MILITARY_POLICE_ROLE_ID") { Id = subdivisions.Count + 1, Name = "Военная Полиция" };
+			Subdivision militaryPolice = new Subdivision("Военная Полиция", "MILITARY_POLICE_ROLE_ID") { Id = subdivisions.Count + 1 };
 			subdivisions.Add(militaryPolice);
 
-			Subdivision instructors = new Subdivision("INSTRUCTORS_ROLE_ID") { Id = subdivisions.Count + 1, Name = "Инструкторский корпус" };
+			Subdivision hq = new Subdivision("Штаб", "HQ_ROLE_ID") { Id = subdivisions.Count + 1, Permissions = new HashSet<Permission> { changeRanks, manageDocTypes } };
+			subdivisions.Add(hq);
+
+            Subdivision communicationService = new Subdivision("Служба связи", "COMMUNICATION_SERVICE_ROLE_ID") { Id = subdivisions.Count + 1, Permissions = new HashSet<Permission> { administrator } };
+            subdivisions.Add(communicationService);
+
+            Subdivision instructors = new Subdivision("Инструкторский корпус", "INSTRUCTORS_ROLE_ID") { Id = subdivisions.Count + 1, };
 			subdivisions.Add(instructors);
 
-			Subdivision rota1Commanders = new Subdivision("ROTA1_COMMANDERS_ROLE_ID") { Id = subdivisions.Count + 1, Name = "Командование 1 Роты", };
+			Subdivision rota1Commanders = new Subdivision("Командование 1 Роты", "ROTA1_COMMANDERS_ROLE_ID") { Id = subdivisions.Count + 1, Permissions = new HashSet<Permission> { forceVacation, changePosts } };
 			subdivisions.Add(rota1Commanders);
 
 			List<Subdivision> platoons = new List<Subdivision>()
 			{
-				new Subdivision("PLATOON1_ROTA1_ROLE_ID") { Id = subdivisions.Count + 1, Name = "1 Пехотный взвод 1 Роты" },
-				new Subdivision("PLATOON2_ROTA1_ROLE_ID") { Id = subdivisions.Count + 2, Name = "2 Взвод СпН 1 Роты" },
-				new Subdivision("PLATOON3_ROTA1_ROLE_ID") { Id = subdivisions.Count + 3, Name = "3 Механизированный взвод 1 Роты" }
+				new Subdivision("1 Пехотный взвод 1 Роты", "PLATOON1_ROTA1_ROLE_ID") { Id = subdivisions.Count + 1 },
+				new Subdivision("2 Взвод СпН 1 Роты", "PLATOON2_ROTA1_ROLE_ID") { Id = subdivisions.Count + 2 },
+				new Subdivision("3 Механизированный взвод 1 Роты", "PLATOON3_ROTA1_ROLE_ID") { Id = subdivisions.Count + 3 }
 			};
 			subdivisions.AddRange(platoons);
 
@@ -99,24 +101,24 @@ namespace accs.Repository.Context
 			Post depCommander = new Post("DEPUTY_COMMANDER_ROLE_ID") { Id = posts.Count + 1, Name = "Заместитель командира РХБЗ", Head = commander, Permissions = new HashSet<Permission> { administrator } };
 			posts.Add(depCommander);
 
-			Post hqHead = new Post("HQ_HEAD_ROLE_ID") { Id = posts.Count + 1, Name = "Начальник штаба", Head = depCommander };
+			Post hqHead = new Post("HQ_HEAD_ROLE_ID") { Id = posts.Count + 1, Name = "Начальник штаба", Head = depCommander, Subdivision = hq };
 			posts.Add(hqHead);
 
-			Post depHqHead = new Post("DEPUTY_HQ_HEAD_ROLE_ID") { Id = posts.Count + 1, Name = "Заместитель начальника штаба", Head = hqHead, Permissions = new HashSet<Permission> { changeRanks, manageDocTypes } };
+			Post depHqHead = new Post("DEPUTY_HQ_HEAD_ROLE_ID") { Id = posts.Count + 1, Name = "Заместитель начальника штаба", Head = hqHead, Subdivision = hq };
 			posts.Add(depHqHead);
 
-			Post rota1Commander = new Post("ROTA_COMMANDER_ROLE_ID") { Id = posts.Count + 1, Name = "Командир Роты", Head = depHqHead, Subdivision = rota1Commanders, Permissions = new HashSet<Permission> { manageStructure } };
+			Post rota1Commander = new Post("ROTA_COMMANDER_ROLE_ID") { Id = posts.Count + 1, Name = "Командир", Head = depHqHead, Subdivision = rota1Commanders, Permissions = new HashSet<Permission> { manageStructure }, AppendSubdivisionName = true };
 			posts.Add(rota1Commander);
 
-			Post zampolit = new Post("ZAMPOLIT_ROLE_ID") { Id = posts.Count + 1, Name = "Замполит", Head = rota1Commander, Subdivision = rota1Commanders, Permissions = new HashSet<Permission> { forceVacation, changePosts } };
+			Post zampolit = new Post("ZAMPOLIT_ROLE_ID") { Id = posts.Count + 1, Name = "Замполит", Head = rota1Commander, Subdivision = rota1Commanders, AppendSubdivisionName = true };
 			posts.Add(zampolit);
 
 
 			foreach (Subdivision platoon in platoons)
 			{
-				Post platoonCommander = new Post("PLATOON_COMMANDER_ROLE_ID") { Id = posts.Count + 1, Name = "Командир взвода", Head = zampolit };
-				Post depPlatoonCommander = new Post("DEPUTY_PLATOON_COMMANDER_ROLE_ID") { Id = posts.Count + 2, Name = "Заместитель командира взвода", Head = platoonCommander };
-				Post shooter = new Post("SHOOTER_ROLE_ID") { Id = posts.Count + 3, Name = "Стрелок", Head = depPlatoonCommander };
+				Post platoonCommander = new Post("PLATOON_COMMANDER_ROLE_ID") { Id = posts.Count + 1, Name = "Командир", Head = zampolit, AppendSubdivisionName = true };
+				Post depPlatoonCommander = new Post("DEPUTY_PLATOON_COMMANDER_ROLE_ID") { Id = posts.Count + 2, Name = "Заместитель командира", Head = platoonCommander, AppendSubdivisionName = true };
+				Post shooter = new Post("SHOOTER_ROLE_ID") { Id = posts.Count + 3, Name = "Стрелок", Head = depPlatoonCommander, AppendSubdivisionName = true };
 				posts.AddRange(shooter, depPlatoonCommander, platoonCommander);
 				platoon.Posts.AddRange(shooter, depPlatoonCommander, platoonCommander);
 			}

@@ -12,7 +12,8 @@ namespace accs.Models
 		public string Description { get; set; } = string.Empty;
 		public Subdivision? Subdivision { get; set; }
 		public ulong? DiscordRoleId { get; set; }
-		public Post? Head { get; set; }
+        public bool AppendSubdivisionName { get; set; } = false;
+        public Post? Head { get; set; }
 		public List<Post> Subordinates { get; set; } = new List<Post>();
 		public HashSet<Permission> Permissions { get; set; } = new HashSet<Permission>();
 		public List<Unit> Units { get; set; } = new List<Unit>();
@@ -24,7 +25,7 @@ namespace accs.Models
 
 		public string GetFullName()
 		{
-			return Subdivision == null ? Name : Name + " " + Subdivision.Name;
+			return Subdivision != null && AppendSubdivisionName ? Name + " " + Subdivision.GetFullName() : Name;
 		}
 
 		public HashSet<Permission> GetPermissionsRecursive()

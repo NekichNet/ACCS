@@ -1,5 +1,6 @@
 ﻿using accs.DiscordBot.Preconditions;
 using accs.Models;
+using accs.Repository;
 using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord;
@@ -9,23 +10,20 @@ using Discord.WebSocket;
 namespace accs.DiscordBot.Interactions
 {
     [IsUnit()]
-    [HasPermission(PermissionType.ChangePosts)]
+    [HasPermission(PermissionType.ChangeRanks)]
     public class RankAssignmentModule : InteractionModuleBase<SocketInteractionContext>
     {
 
         private readonly IRankRepository _rankRepository;
         private readonly IUnitRepository _unitRepository;
         private readonly ILogService _logService;
-        private DiscordSocketClient _discordSocketClient;
-        private SocketGuild? _guild;
 
-        public RankAssignmentModule(IRankRepository rankRepository, IUnitRepository unitRepository, ILogService logService, DiscordSocketClient discordSocketClient)
+        public RankAssignmentModule(IRankRepository rankRepository, IUnitRepository unitRepository, ILogService logService)
         {
             _rankRepository = rankRepository;
             _unitRepository = unitRepository;
             _logService = logService;
 
-            _discordSocketClient = discordSocketClient;
 
             string voiceChannelIdString = DotNetEnv.Env.GetString("VOICE_CHANNEL_ID", "null");
 
@@ -33,11 +31,10 @@ namespace accs.DiscordBot.Interactions
             ulong guildId;
             if (ulong.TryParse(guildIdString, out guildId)) { throw _logService.ExceptionAsync("Cannot parse guild id!", LoggingLevel.Error).Result; }
 
-            _guild = _discordSocketClient.GetGuild(guildId);
         }
 
-        [SlashCommand("set-ranks", "Назначить звания бойцу")]
-        public async Task AssignRanksAsync(IUser targetedUser)
+        [SlashCommand("set-rank", "Присвоить звание бойцу")]
+        public async Task SetRankAsync(IUser targetedUser)
         {
             try
             {
@@ -50,13 +47,21 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                var actorRanks = actorUnit.Rank;
+
+                /// На чёрный день
+                /*
+                var allowedRanks = new List<Rank>(); 
+                Rank CurrentTestRank = actorUnit.Rank;
+                while (CurrentTestRank.Previous != null)
+                {
+                    CurrentTestRank = CurrentTestRank.Previous;
+                    allowedRanks.Add(CurrentTestRank);
+                }
+                */
+
                 var allowedRanks = await _rankRepository.ReadAllAsync();
                 
-                /*var allowedRanks = actorRanks
-                        .SelectMany(p => p.GetAllSubordinatesRecursive())
-                        .DistinctBy(p => p.Id)
-                        .ToList();*/
+
 
                 if (!allowedRanks.Any())
                 {
@@ -67,11 +72,11 @@ namespace accs.DiscordBot.Interactions
                 var menu = new SelectMenuBuilder()
                     .WithCustomId($"rank-menu-{targetedUser.Id}")
                     .WithPlaceholder("Выберите звания")
-                    .WithMinValues(0)
-                    .WithMaxValues(allowedRanks.Count);
+                    .WithMinValues(1)
+                    .WithMaxValues(1);
 
-                foreach (var post in allowedRanks)
-                    menu.AddOption(post.GetFullName(), post.Id.ToString());
+                foreach (var rank in allowedRanks)
+                    menu.AddOption(rank.Name, rank.Id.ToString());
 
                 var builder = new ComponentBuilder()
                     .WithSelectMenu(menu);
@@ -85,6 +90,38 @@ namespace accs.DiscordBot.Interactions
             catch (Exception ex)
             {
                 _logService.WriteAsync(ex.Message, LoggingLevel.Error);
+            }
+        }
+
+
+        [ComponentInteraction("rank-menu-*")]
+        public async Task RankMenuHandler(ulong targetId)
+        {
+            try
+            {
+                var component = (SocketMessageComponent)Context.Interaction;
+                var targetUnit = await _unitRepository.ReadAsync(targetId);
+                var promptedRank = component.Data.Values.ElementAt(0);
+                var rank = await _rankRepository.ReadAsync(Int32.Parse(promptedRank));
+
+                if (rank == null)
+                {
+                    await RespondAsync($"Звание {promptedRank} не найдено.", ephemeral: true);
+                    await _logService.WriteAsync($"Должность с ID {promptedRank} не найдена.", LoggingLevel.Error);
+                    return;
+                }
+
+                // Присвоение звания
+                targetUnit.Rank = rank;
+
+                await _unitRepository.UpdateAsync(targetUnit);
+
+                await RespondAsync("Должности обновлены.", ephemeral: true);
+            }
+            catch (Exception ex)
+            {
+                await _logService.WriteAsync($"Ошибка в RankMenuHandler: {ex.Message}", LoggingLevel.Error);
+                await RespondAsync("Ошибка при обновлении должностей.", ephemeral: true);
             }
         }
     }

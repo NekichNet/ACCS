@@ -137,11 +137,11 @@ namespace accs.DiscordBot.Interactions
                 Unit? unit;
                 if (user != null)
                 {
-                    unit = await _unitRepository.ReadAsync(Context.User.Id);
+                    unit = await _unitRepository.ReadAsync(user.Id);
                 }
                 else
                 {
-                    unit = await _unitRepository.ReadAsync(user.Id);
+                    unit = await _unitRepository.ReadAsync(Context.User.Id);
                 }
 
                 if (unit == null)

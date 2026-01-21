@@ -16,5 +16,9 @@ namespace accs.Models
 		{
 			DiscordRoleId = ulong.Parse(DotNetEnv.Env.GetString(envRoleString, $"{envRoleString} Not found"));
 		}
+		public Status()
+		{
+			
+		}
 	}
 }

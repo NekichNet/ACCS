@@ -1,9 +1,14 @@
 ﻿using accs.DiscordBot.Preconditions;
 using accs.Models;
+using accs.Models.Tickets;
+using accs.Repository;
 using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
+using Microsoft.Extensions.Hosting;
+using System;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace accs.DiscordBot.Interactions
@@ -14,14 +19,16 @@ namespace accs.DiscordBot.Interactions
 	{
         private ITicketRepository _ticketRepository;
         private IUnitRepository _unitRepository;
+        private IPostRepository _postRepository;
         private ILogService _logService;
         private Ticket? _ticket;
         private Unit? _userUnit; // на тот случай, если выполняющий команду состоит в клане.
 
-        public TicketGroupModule(ITicketRepository ticketRepository, IUnitRepository unitRepository, ILogService logService)
+        public TicketGroupModule(ITicketRepository ticketRepository, IUnitRepository unitRepository, IPostRepository postRepository, ILogService logService)
         {
             _ticketRepository = ticketRepository;
             _unitRepository = unitRepository;
+            _postRepository = postRepository;
             _logService = logService;
             _ticket = _ticketRepository.ReadAsync(int.Parse(Context.Channel.Name.Split('-').Last())).Result;
             if (_ticket == null) { throw _logService.ExceptionAsync("TicketGroupModule: Ticket not found by id!").Result; }
@@ -87,5 +94,20 @@ namespace accs.DiscordBot.Interactions
             TODO
         }
         */
+
+
+
+        [ComponentInteraction("invite-select-*")]
+        public async Task InviteSelectHandler(int ticketId)
+        {
+            var component = (SocketMessageComponent)Context.Interaction;
+            int selectedId = int.Parse(component.Data.Values.First());
+
+            var ticket = await _ticketRepository.ReadAsync(ticketId);
+            if (ticket is InviteTicket invite)
+                await invite.FinalAcceptance(selectedId);
+
+            await RespondAsync("Рекрут успешно принят!");
+        }
     }
 }

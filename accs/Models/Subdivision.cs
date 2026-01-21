@@ -16,9 +16,13 @@ namespace accs.Models
 		public Subdivision? Head { get; set; }
 		public List<Subdivision> Subordinates { get; set; } = new List<Subdivision>();
 
-		public Subdivision(string name, string envRoleString)
+		public Subdivision(string name, string? envRoleString = null)
 		{
-			DiscordRoleId = ulong.Parse(DotNetEnv.Env.GetString(envRoleString, $"{envRoleString} Not found"));
+            if (envRoleString != null)
+            {
+                DiscordRoleId = ulong.Parse(DotNetEnv.Env.GetString(envRoleString, $"{envRoleString} Not found"));
+            }
+            Name = name;
 		}
 
         public string GetFullName()

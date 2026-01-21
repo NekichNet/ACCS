@@ -79,14 +79,14 @@ namespace accs.Repository.Context
             Subdivision instructors = new Subdivision("Инструкторский корпус", "INSTRUCTORS_ROLE_ID") { Id = subdivisions.Count + 1, };
 			subdivisions.Add(instructors);
 
-			Subdivision rota1Commanders = new Subdivision("Командование 1 Роты", "ROTA1_COMMANDERS_ROLE_ID") { Id = subdivisions.Count + 1, Permissions = new HashSet<Permission> { forceVacation, changePosts } };
-			subdivisions.Add(rota1Commanders);
+			Subdivision rota1 = new Subdivision("1 Рота", "ROTA1_ROLE_ID") { Id = subdivisions.Count + 1 };
+			subdivisions.Add(rota1);
 
 			List<Subdivision> platoons = new List<Subdivision>()
 			{
-				new Subdivision("1 Пехотный взвод 1 Роты", "PLATOON1_ROTA1_ROLE_ID") { Id = subdivisions.Count + 1 },
-				new Subdivision("2 Взвод СпН 1 Роты", "PLATOON2_ROTA1_ROLE_ID") { Id = subdivisions.Count + 2 },
-				new Subdivision("3 Механизированный взвод 1 Роты", "PLATOON3_ROTA1_ROLE_ID") { Id = subdivisions.Count + 3 }
+				new Subdivision("1 Пехотный взвод 1 Роты", "PLATOON1_ROTA1_ROLE_ID") { Id = subdivisions.Count + 1, Head = rota1 },
+				new Subdivision("2 Взвод СпН 1 Роты", "PLATOON2_ROTA1_ROLE_ID") { Id = subdivisions.Count + 2, Head = rota1 },
+				new Subdivision("3 Механизированный взвод 1 Роты", "PLATOON3_ROTA1_ROLE_ID") { Id = subdivisions.Count + 3, Head = rota1 }
 			};
 			subdivisions.AddRange(platoons);
 
@@ -107,10 +107,10 @@ namespace accs.Repository.Context
 			Post depHqHead = new Post("DEPUTY_HQ_HEAD_ROLE_ID") { Id = posts.Count + 1, Name = "Заместитель начальника штаба", Head = hqHead, Subdivision = hq };
 			posts.Add(depHqHead);
 
-			Post rota1Commander = new Post("ROTA_COMMANDER_ROLE_ID") { Id = posts.Count + 1, Name = "Командир", Head = depHqHead, Subdivision = rota1Commanders, Permissions = new HashSet<Permission> { manageStructure }, AppendSubdivisionName = true };
+			Post rota1Commander = new Post("ROTA_COMMANDER_ROLE_ID") { Id = posts.Count + 1, Name = "Командир", Head = depHqHead, Subdivision = rota1, Permissions = new HashSet<Permission> { manageStructure }, AppendSubdivisionName = true };
 			posts.Add(rota1Commander);
 
-			Post zampolit = new Post("ZAMPOLIT_ROLE_ID") { Id = posts.Count + 1, Name = "Замполит", Head = rota1Commander, Subdivision = rota1Commanders, AppendSubdivisionName = true };
+			Post zampolit = new Post("ZAMPOLIT_ROLE_ID") { Id = posts.Count + 1, Name = "Замполит", Head = rota1Commander, Subdivision = rota1, Permissions = new HashSet<Permission> { forceVacation, changePosts }, AppendSubdivisionName = true };
 			posts.Add(zampolit);
 
 

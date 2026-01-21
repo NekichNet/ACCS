@@ -42,6 +42,13 @@ namespace accs.Models
 			await Close();
 		}
 
+        public virtual async Task SendWelcomeMessage()
+        {
+            var channel = _guild.GetTextChannel(ChannelDiscordId);
+            if (channel == null) return;
+            await channel.SendMessageAsync();
+        }
+
         /*
          * Метод, для финального удаления канала тикета с сохранением истории чата.
          */

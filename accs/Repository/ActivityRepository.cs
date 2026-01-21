@@ -20,7 +20,7 @@ namespace accs.Repository
 			_context.SaveChanges();
         }
 
-        public async Task<List<Activity>> ReadAllAsync()
+        public async Task<List<Activity>> ReadAsync()
         {
             return _context.Activities.ToList();
         }

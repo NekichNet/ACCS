@@ -18,7 +18,7 @@ namespace accs.Models
 		public List<Activity> Activities { get; set; } = new List<Activity>();
 		public List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
 
-		public HashSet<Permission> GetPermissions()
+        public HashSet<Permission> GetPermissions()
 		{
 			HashSet<Permission> permissions = Rank.GetPermissionsRecursive();
 			foreach (Post post in Posts)

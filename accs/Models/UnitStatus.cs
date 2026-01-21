@@ -6,6 +6,6 @@
         public Unit Unit { get; set; }
         public Status Status { get; set; }
         public DateTime Start { get; set; } = DateTime.UtcNow;
-        public DateTime End { get; set; }
+        public DateTime? End { get; set; }
     }
 }

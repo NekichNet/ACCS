@@ -105,7 +105,7 @@ namespace accs.DiscordBot.Interactions
 
             var ticket = await _ticketRepository.ReadAsync(ticketId);
             if (ticket is InviteTicket invite)
-                await invite.FinalAcceptance(selectedId);
+                await invite.AcceptanceHandler(selectedId);
 
             await RespondAsync("Рекрут успешно принят!");
         }

@@ -76,7 +76,7 @@ namespace accs.Models.Tickets
         }
 
 
-        public async Task FinalAcceptance(int selectedPostId)
+        public async Task AcceptanceHandler(int selectedPostId)
         {
 
             var channel = _guild.GetTextChannel(ChannelDiscordId);          

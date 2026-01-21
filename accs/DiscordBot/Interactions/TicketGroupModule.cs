@@ -2,9 +2,7 @@
 using accs.Models;
 using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
-using Discord;
 using Discord.Interactions;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace accs.DiscordBot.Interactions
 {

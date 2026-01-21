@@ -8,12 +8,18 @@ namespace accs.Models.Tickets
     {
         private readonly IUnitRepository _unitRepository;
         private readonly IPostRepository _postRepository;
+        private readonly IStatusRepository _statusRepository;
+        private readonly IUnitStatusRepository _unitStatusRepository;
+
         public RetirementTicket(SocketGuild guild, ulong authorId, ulong channelId, 
-            IUnitRepository unitRepository, IPostRepository postRepository
+               IUnitRepository unitRepository, IPostRepository postRepository, 
+               IStatusRepository statusRepository, IUnitStatusRepository unitStatusRepository
             ) : base(guild, authorId, channelId)
         {
             _unitRepository = unitRepository;
             _postRepository = postRepository;
+            _statusRepository = statusRepository;
+            _unitStatusRepository = unitStatusRepository;
         }
 
         public override async Task SendWelcomeMessage()
@@ -35,17 +41,39 @@ namespace accs.Models.Tickets
 
             if (unit == null)
             {
-                await channel.SendMessageAsync("Ошибка: боец не найден в базе.");
+                await channel.SendMessageAsync("Ошибка: боец не найден.");
                 return;
             }
 
-            // Если боец не в отставке
-            if (unit.Status != UnitStatus.Retirement)
-            {
-                unit.Posts.Clear(); // снимаем все должности
-                unit.Status = UnitStatus.Retirement;
+            // поиск активного статуса Retirement
+            var activeRetirement = unit.UnitStatuses
+                .FirstOrDefault(us =>
+                    us.Status.Type == StatusType.Retirement &&
+                    us.EndDate == default
+                );
 
+            // еще не в отставке -> в отставку
+            if (activeRetirement == null)
+            {
+                unit.Posts.Clear();
                 await _unitRepository.UpdateAsync(unit);
+
+                var retirementStatus = await _statusRepository.ReadAsync(StatusType.Retirement);
+                if (retirementStatus == null)
+                {
+                    await channel.SendMessageAsync("Ошибка: статус Retirement не найден.");
+                    return;
+                }
+
+                var unitStatus = new UnitStatus
+                {
+                    Unit = unit,
+                    Status = retirementStatus,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = default
+                };
+
+                await _unitStatusRepository.CreateAsync(unitStatus);
 
                 await channel.SendMessageAsync(
                     "Вы успешно отправлены в отставку. Все ваши должности сняты."
@@ -56,7 +84,7 @@ namespace accs.Models.Tickets
                 return;
             }
 
-            // Если боец уже в отставке
+            // уже в отставке -> показываем меню выбора должностей
             var allPosts = await _postRepository.ReadAllAsync();
 
             var menu = new SelectMenuBuilder()
@@ -66,7 +94,9 @@ namespace accs.Models.Tickets
                 .WithMaxValues(allPosts.Count);
 
             foreach (var post in allPosts)
+            {
                 menu.AddOption(post.GetFullName(), post.Id.ToString());
+            }    
 
             var builder = new ComponentBuilder().WithSelectMenu(menu);
 
@@ -88,10 +118,19 @@ namespace accs.Models.Tickets
                 return;
             }
 
-            // Снимаем статус Retirement
-            unit.Status = UnitStatus.Active;
+            // поиск активного статуса Retirement
+            var activeRetirement = unit.UnitStatuses
+                .FirstOrDefault(us =>
+                    us.Status.Type == StatusType.Retirement &&
+                    us.EndDate == default
+                );
 
-            // Очищаем должности
+            if (activeRetirement != null)
+            {
+                activeRetirement.EndDate = DateTime.UtcNow;
+                await _unitStatusRepository.UpdateAsync(activeRetirement);
+            }
+
             unit.Posts.Clear();
 
             // Назначаем выбранные должности
@@ -109,6 +148,5 @@ namespace accs.Models.Tickets
             Status = TicketStatus.Accepted;
             await Close();
         }
-
     }
 }

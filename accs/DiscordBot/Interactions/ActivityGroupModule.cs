@@ -126,45 +126,23 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [SlashCommand("me", "зафиксировать свою активность")]
-        public async Task FixMeCommand()
-        {
-            try
-            {
-                DateOnly today = DateOnly.FromDateTime(DateTime.Today);
-
-                Unit? unit = await _unitRepository.ReadAsync(Context.User.Id);
-
-                if (unit == null)
-                {
-                    await ReplyAsync("Вы не найдены в системе");
-                    return;
-                }
-
-
-                ComponentBuilder builder = new ComponentBuilder()
-                    .WithButton("Подтвердить", $"activity-verify-{today}-{unit.DiscordId}");
-
-                string message = $"Обнаружен боец: {unit.Nickname}";
-
-                await ReplyAsync(message, components: builder.Build());
-            }
-            catch (Exception ex)
-            {
-                await _logService.WriteAsync($"Error in FixMeCommand: {ex.Message}", LoggingLevel.Error);
-                await ReplyAsync("Ошибка при фиксации своей активности");
-            }
-        }
-
 
         [SlashCommand("user", "зафиксировать активность указанного бойца")]
-        public async Task FixUserCommand(IUser user)
+        public async Task FixUserCommand(IUser? user = null)
         {
             try
             {
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
-                Unit? unit = await _unitRepository.ReadAsync(user.Id);
+                Unit? unit;
+                if (user != null)
+                {
+                    unit = await _unitRepository.ReadAsync(user.Id);
+                }
+                else
+                {
+                    unit = await _unitRepository.ReadAsync(Context.User.Id);
+                }
 
                 if (unit == null)
                 {

@@ -36,12 +36,14 @@ namespace accs
             builder.Services.AddScoped<ISubdivisionRepository, SubdivisionRepository>();
             builder.Services.AddScoped<IUnitStatusRepository, UnitStatusRepository>();
             builder.Services.AddScoped<IUnitRepository, UnitRepository>();
+            builder.Services.AddScoped<IStatusRepository, StatusRepository>();
 
 			var discordConfig = new DiscordSocketConfig() { };
 
             builder.Services.AddSingleton(discordConfig);
             builder.Services.AddSingleton<DiscordSocketClient>();
             builder.Services.AddSingleton<IDiscordBotService, DiscordBotService>();
+            builder.Services.AddSingleton<IOCRService, IOCRService>();
 
 			var app = builder.Build();
 

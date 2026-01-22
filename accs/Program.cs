@@ -3,7 +3,6 @@ using accs.Repository.Context;
 using accs.Repository.Interfaces;
 using accs.Services;
 using accs.Services.Interfaces;
-using Discord;
 using Discord.WebSocket;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;

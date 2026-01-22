@@ -5,7 +5,6 @@ using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace accs.DiscordBot.Interactions
 {

@@ -5,6 +5,7 @@ using accs.Repository;
 using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace accs.DiscordBot.Interactions
 {

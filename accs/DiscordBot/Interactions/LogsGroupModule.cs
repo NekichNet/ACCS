@@ -1,4 +1,5 @@
-﻿using accs.Models;
+﻿using accs.DiscordBot.Preconditions;
+using accs.Models;
 using accs.Services;
 using Discord;
 using Discord.Interactions;
@@ -6,14 +7,15 @@ using Discord.WebSocket;
 
 namespace accs.DiscordBot.Interactions
 {
-    public class LogsModule : InteractionModuleBase<SocketInteractionContext>
+    [HasPermission(PermissionType.Administrator)]
+    [Group("logs", "Команды для работы с логами")]
+    public class LogsGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly LogService _logService;
-        public LogsModule(LogService logService)
+        public LogsGroupModule(LogService logService)
         {
             _logService = logService;
         }
-
 
         [SlashCommand("get", "Получить список логов")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
@@ -50,9 +52,7 @@ namespace accs.DiscordBot.Interactions
             await RespondAsync("Выберите файл лога:", components: builder.Build(), ephemeral: true);
         }
 
-
         [SlashCommand("cap", "Установить максимальное количество файлов логов")]
-        [DefaultMemberPermissions(GuildPermission.Administrator)]
         public async Task SetCap(int count)
         {
             if (count < 0)
@@ -65,9 +65,7 @@ namespace accs.DiscordBot.Interactions
             await RespondAsync($"Максимальное количество файлов логов установлено: {count}", ephemeral: true);
         }
 
-
         [SlashCommand("console", "Установить минимальный уровень логов для консоли")]
-        [DefaultMemberPermissions(GuildPermission.Administrator)]
         public async Task SetConsoleLevel(LoggingLevel level)
         {
             _logService.ConsoleLogLevel = level;
@@ -75,16 +73,13 @@ namespace accs.DiscordBot.Interactions
             await RespondAsync($"Минимальный уровень логов для консоли установлен: {level}", ephemeral: true);
         }
 
-
         [SlashCommand("file", "Установить минимальный уровень логов для файлов")]
-        [DefaultMemberPermissions(GuildPermission.Administrator)]
         public async Task SetFileLevel(LoggingLevel level)
         {
             _logService.FileLogLevel = level;
 
             await RespondAsync($"Минимальный уровень логов для файлов установлен: {level}", ephemeral: true);
         }
-
 
         [ComponentInteraction("logs-select")]
         public async Task LogsSelectHandler()

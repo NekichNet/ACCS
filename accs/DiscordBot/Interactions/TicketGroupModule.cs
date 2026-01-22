@@ -5,10 +5,6 @@ using accs.Repository;
 using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord.Interactions;
-using Discord.WebSocket;
-using Microsoft.Extensions.Hosting;
-using System;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace accs.DiscordBot.Interactions
 {

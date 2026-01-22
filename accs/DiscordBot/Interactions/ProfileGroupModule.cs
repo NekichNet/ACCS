@@ -1,4 +1,5 @@
-﻿using accs.Models;
+﻿using accs.DiscordBot.Preconditions;
+using accs.Models;
 using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord;
@@ -7,25 +8,28 @@ using Discord.WebSocket;
 
 namespace accs.DiscordBot.Interactions
 {
+    [IsUnit()]
     public class ProfileGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private readonly IPostRepository _postRepository;
         private readonly IUnitRepository _unitRepository;
         private readonly ILogService _logService;
         private readonly DiscordSocketClient _discordSocketClient;
         private readonly SocketGuild _guild;
         
-        public ProfileGroupModule(DiscordSocketClient discordSocketClient) 
-        { 
+        public ProfileGroupModule(IUnitRepository unitRepository, ILogService logservice, DiscordSocketClient discordSocketClient) 
+        {
+            _unitRepository = unitRepository;
+            _logService = logservice;
             _discordSocketClient = discordSocketClient;
             string guildIdString = DotNetEnv.Env.GetString("SERVER_ID", "Server id not found");
             ulong guildId;
             if (ulong.TryParse(guildIdString, out guildId)) { throw _logService.ExceptionAsync("Cannot parse guild id!", LoggingLevel.Error).Result; }
 
             _guild = _discordSocketClient.GetGuild(guildId);
-
         }
-        [SlashCommand("profile", "Показать профиль указанного пользователя")] public async Task ShowUserProfile(IUser? user = null)
+
+        [SlashCommand("profile", "Показать профиль указанного пользователя")]
+        public async Task ShowUserProfile(IUser? user = null)
         {
             Unit unit;
             if (user == null) { unit = await _unitRepository.ReadAsync(Context.User.Id); }
@@ -82,9 +86,8 @@ namespace accs.DiscordBot.Interactions
 
                 var unitActivities = unit.Activities;
                 string inLineUnitActivities = string.Empty;
-                string[] TwoWeeks = new string[14];
 
-                for (int i = 0; i >= -TwoWeeks.Length; i--)
+                for (int i = 0; i >= -14; i--)
                 {
                     if(unitActivities.Contains(new Activity { Unit = unit, Date = DateOnly.FromDateTime(DateTime.Today).AddDays(i) }))
                     {
@@ -93,13 +96,9 @@ namespace accs.DiscordBot.Interactions
                     else
                     {
                         inLineUnitActivities += "⬜";
-
                     }
                 }
                 
-                    
-                
-
 
                 embed.AddField(new EmbedFieldBuilder() { Name = "Статусы:", IsInline = false, Value = inLineUnitStatuses });
                 embed.AddField(new EmbedFieldBuilder() { Name = "Награды:", IsInline = false, Value = inLineUnitRewards });
@@ -108,6 +107,11 @@ namespace accs.DiscordBot.Interactions
                 embed.AddField(new EmbedFieldBuilder() { Name = "Дней активности:", IsInline = true, Value = unit.Activities.Count() });
                 embed.AddField(new EmbedFieldBuilder() { Name = "Активность в последние 14 дней:", IsInline = true, Value = inLineUnitActivities });
                 embed.ThumbnailUrl = _guild.GetUser(unit.DiscordId).GetAvatarUrl();
+            }
+            else
+            {
+                await DeleteOriginalResponseAsync();
+                await RespondAsync($"Пользователь не найден в системе", ephemeral: true);
             }
         }
     }

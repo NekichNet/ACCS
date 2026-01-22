@@ -9,7 +9,7 @@ namespace accs.Models.Tickets
 
         }
 
-        public override async Task SendWelcomeMessage()
+        public override async Task SendWelcomeMessageAsync()
         {
             var channel = _guild.GetTextChannel(ChannelDiscordId);
             if (channel == null)

@@ -11,7 +11,7 @@ namespace accs.Models.Tickets
         {
         }
 
-        public override async Task SendWelcomeMessage()
+        public override async Task SendWelcomeMessageAsync()
         {
             var channel = _guild.GetTextChannel(ChannelDiscordId);
             if (channel == null)
@@ -25,7 +25,7 @@ namespace accs.Models.Tickets
         }
 
 
-        public override async Task Accept()
+        public override async Task AcceptAsync()
         {
             var user = _guild.GetUser(AuthorDiscordId);
             if (user != null)
@@ -43,7 +43,7 @@ namespace accs.Models.Tickets
             }
 
             Status = TicketStatus.Accepted;
-            await Close();
+            await CloseAsync();
         }
     }
 }

@@ -24,25 +24,25 @@ namespace accs.Models
             Status = TicketStatus.Opened;
         }
 
-        public virtual async Task Accept()
+        public virtual async Task AcceptAsync()
         {
 			Status = TicketStatus.Accepted;
-			await Close();
+			await CloseAsync();
         }
 
-        public virtual async Task Cancel()
+        public virtual async Task CancelAsync()
         {
 			Status = TicketStatus.Canceled;
-			await Close();
+			await CloseAsync();
 		}
 
-        public virtual async Task Refuse()
+        public virtual async Task RefuseAsync()
         {
 			Status = TicketStatus.Refused;
-			await Close();
+			await CloseAsync();
 		}
 
-        public virtual async Task SendWelcomeMessage()
+        public virtual async Task SendWelcomeMessageAsync()
         {
             var channel = _guild.GetTextChannel(ChannelDiscordId);
             if (channel == null) return;
@@ -52,7 +52,7 @@ namespace accs.Models
         /*
          * Метод, для финального удаления канала тикета с сохранением истории чата.
          */
-        protected async Task Close()
+        protected async Task CloseAsync()
         {
             IEnumerable<IMessage> messages = await _guild.GetTextChannel(ChannelDiscordId).GetMessagesAsync(100).FlattenAsync();
             using (FileStream stream = new FileStream(DotNetEnv.Env.GetString("TICKET_MESSAGES_DIRECTORY", Path.Join("messages", $"{Id}.txt")), FileMode.Create))

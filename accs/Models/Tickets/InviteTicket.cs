@@ -1,6 +1,7 @@
 ﻿using accs.DiscordBot.Preconditions;
 using accs.Repository;
 using accs.Repository.Interfaces;
+using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -12,8 +13,8 @@ namespace accs.Models.Tickets
     {
         private readonly IPostRepository _postRepository; 
         private readonly IUnitRepository _unitRepository;
-        private readonly ITicketRepository _ticketRepository;
         private readonly IRankRepository _rankRepository;
+        private readonly ILogService _logService;
 
         public InviteTicket
             (
@@ -22,18 +23,18 @@ namespace accs.Models.Tickets
              ulong channelId,
              IPostRepository postRepository,
              IUnitRepository unitRepository,
-             ITicketRepository ticketRepository,
-             IRankRepository rankRepository
+             IRankRepository rankRepository,
+             ILogService logService
             ) : base(guild, authorId, channelId)
         {
             _postRepository = postRepository;
             _unitRepository = unitRepository;
-            _ticketRepository = ticketRepository;
             _rankRepository = rankRepository;
+            _logService = logService;
         }
 
 
-        public override async Task SendWelcomeMessage()
+        public override async Task SendWelcomeMessageAsync()
         {
             var channel = _guild.GetTextChannel(ChannelDiscordId);
             await channel.SendMessageAsync(
@@ -43,13 +44,12 @@ namespace accs.Models.Tickets
         }
 
 
-        public override async Task Accept()
+        public override async Task AcceptAsync()
         {
-            var channel = _guild.GetTextChannel(ChannelDiscordId);
+            SocketTextChannel channel = _guild.GetTextChannel(ChannelDiscordId);
 
-            var allPosts = await _postRepository.ReadAllAsync();
-            var shooterPosts = allPosts
-                .Where(p => p.Name == "Стрелок")
+            List<Post> shooterPosts = (await _postRepository.ReadAllAsync())
+				.Where(p => p.Name == "Стрелок")
                 .ToList();
 
             if (!shooterPosts.Any())
@@ -60,17 +60,17 @@ namespace accs.Models.Tickets
 
             var menu = new SelectMenuBuilder() 
                 .WithCustomId($"invite-select-{Id}")
-                .WithPlaceholder("Выберите взвод для рекрута")
+                .WithPlaceholder("Взвод")
                 .WithMinValues(1)
                 .WithMaxValues(1);
 
             foreach (Post post in shooterPosts)
-                menu.AddOption(post.GetFullName(), post.Id.ToString());
+                menu.AddOption(post.GetFullName(), post.Id.ToString(), post.Units.Count + " человек");
 
             var builder = new ComponentBuilder().WithSelectMenu(menu);
 
             await channel.SendMessageAsync(
-                "Выберите взвод, за которым будет закреплён новичок:",
+                "Выберите взвод, за которым будет закреплён рекрут:",
                 components: builder.Build()
             );
         }
@@ -86,17 +86,26 @@ namespace accs.Models.Tickets
 
             if (post == null)
             {
-                await channel.SendMessageAsync("Ошибка: выбранная должность не найдена.");
+                await channel.SendMessageAsync($"Ошибка: выбранная должность стрелка с Id {selectedPostId} не найдена!");
+                await _logService.WriteAsync($"Ошибка: выбранная должность стрелка с Id {selectedPostId} не найдена!", LoggingLevel.Error);
                 return;
             }
 
             // выдаём звание рекрута
             var recruitRank = await _rankRepository.ReadAsync(1);
 
-            var unit = new Unit
+			if (recruitRank == null)
+			{
+				await channel.SendMessageAsync("Ошибка: звание рекрута не найдено.");
+				return;
+			}
+
+            await _guild.GetUser(AuthorDiscordId).ModifyAsync(u => u.Nickname = "[Р] " + u.Nickname);
+
+			var unit = new Unit
             {
                 DiscordId = AuthorDiscordId,
-                Nickname = "[Р] " + _guild.GetUser(AuthorDiscordId).DisplayName,
+                Nickname = _guild.GetUser(AuthorDiscordId).DisplayName,
                 Rank = recruitRank,
                 Posts = new List<Post> { post }
             };
@@ -104,7 +113,7 @@ namespace accs.Models.Tickets
             await _unitRepository.CreateAsync(unit);
 
             Status = TicketStatus.Accepted;
-            await Close();
+            await CloseAsync();
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using accs.DiscordBot.Preconditions;
 using accs.Models;
+using accs.Models.Tickets;
+using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
@@ -14,10 +16,24 @@ namespace accs.DiscordBot.Interactions
 		private ILogService _logService;
 		private SocketTextChannel _channel;
 
-		public TicketMessageHandler(DiscordSocketClient client, ILogService logService)
+		private IPostRepository _postRepository;
+		private IUnitRepository _unitRepository;
+		private IRankRepository _rankRepository;
+		private IStatusRepository _statusRepository;
+		private IUnitStatusRepository _unitStatusRepository;
+
+		public TicketMessageHandler(DiscordSocketClient client, ILogService logService,
+			IPostRepository postRepository, IUnitRepository unitRepository,
+			IRankRepository rankRepository, IStatusRepository statusRepository,
+			IUnitStatusRepository unitStatusRepository)
 		{
 			_client = client;
 			_logService = logService;
+			_postRepository = postRepository;
+			_unitRepository = unitRepository;
+			_rankRepository = rankRepository;
+			_statusRepository = statusRepository;
+			_unitStatusRepository = unitStatusRepository;
 
 			string channelIdString = DotNetEnv.Env.GetString("TICKET_CHANNEL_ID", "Ticket channel id not found");
 			ulong channelId;
@@ -58,45 +74,52 @@ namespace accs.DiscordBot.Interactions
 		[ComponentInteraction("invite-button")]
 		public async Task CreateInviteTicket()
 		{
-			throw new NotImplementedException();
+			Ticket ticket = new InviteTicket(_channel.Guild, Context.User.Id, _channel.Id, _postRepository, _unitRepository, _rankRepository, _logService);
+			await ticket.SendWelcomeMessageAsync();
 		}
 
 		[IsUnit(false)]
 		[ComponentInteraction("friend-button")]
 		public async Task CreateFriendTicket()
 		{
-			throw new NotImplementedException();
+			Ticket ticket = new FriendTicket(_channel.Guild, Context.User.Id, _channel.Id);
+			await ticket.SendWelcomeMessageAsync();
 		}
 
 		[ComponentInteraction("lesson-button")]
 		public async Task CreateLessonTicket()
 		{
-			throw new NotImplementedException();
+			Ticket ticket = new LessonTicket(_channel.Guild, Context.User.Id, _channel.Id);
+			await ticket.SendWelcomeMessageAsync();
 		}
 
 		[ComponentInteraction("tech-button")]
 		public async Task CreateTechTicket()
 		{
-			throw new NotImplementedException();
+			Ticket ticket = new TechTicket(_channel.Guild, Context.User.Id, _channel.Id);
+			await ticket.SendWelcomeMessageAsync();
 		}
 
 		[ComponentInteraction("report-button")]
 		public async Task CreateReportTicket()
 		{
-			throw new NotImplementedException();
+			Ticket ticket = new ReportTicket(_channel.Guild, Context.User.Id, _channel.Id);
+			await ticket.SendWelcomeMessageAsync();
 		}
 
 		[IsUnit()]
 		[ComponentInteraction("retirement-button")]
 		public async Task CreateRetirementTicket()
 		{
-			throw new NotImplementedException();
+			Ticket ticket = new RetirementTicket(_channel.Guild, Context.User.Id, _channel.Id, _unitRepository, _postRepository, _statusRepository, _unitStatusRepository);
+			await ticket.SendWelcomeMessageAsync();
 		}
 
 		[ComponentInteraction("donation-button")]
 		public async Task CreateDonationTicket()
 		{
-			throw new NotImplementedException();
+			Ticket ticket = new DonationTicket(_channel.Guild, Context.User.Id, _channel.Id);
+			await ticket.SendWelcomeMessageAsync();
 		}
 	}
 }

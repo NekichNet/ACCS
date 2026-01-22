@@ -43,7 +43,7 @@ namespace accs.DiscordBot.Interactions
             {
 				if (_userUnit.Posts.Intersect(_ticket.Admins).Any())
 				{
-                    await _ticket.Accept();
+                    await _ticket.AcceptAsync();
                     return;
 				} 
                 else
@@ -63,7 +63,7 @@ namespace accs.DiscordBot.Interactions
 			{
 				if (_userUnit.Posts.Intersect(_ticket.Admins).Any())
 				{
-					await _ticket.Refuse();
+					await _ticket.RefuseAsync();
 					return;
 				}
 				else
@@ -80,7 +80,7 @@ namespace accs.DiscordBot.Interactions
         {
             if (Context.User.Id == _ticket.AuthorDiscordId)
             {
-                await _ticket.Cancel();
+                await _ticket.CancelAsync();
 				return;
 			}
 			await RespondAsync("Отменить тикет может только автор тикета.", ephemeral: true);
@@ -94,8 +94,6 @@ namespace accs.DiscordBot.Interactions
             TODO
         }
         */
-
-
 
         [ComponentInteraction("invite-select-*")]
         public async Task InviteSelectHandler(int ticketId)

@@ -22,7 +22,7 @@ namespace accs.Models.Tickets
             _unitStatusRepository = unitStatusRepository;
         }
 
-        public override async Task SendWelcomeMessage()
+        public override async Task SendWelcomeMessageAsync()
         {
             var channel = _guild.GetTextChannel(ChannelDiscordId);
             if (channel == null)
@@ -34,7 +34,7 @@ namespace accs.Models.Tickets
         }
 
 
-        public override async Task Accept()
+        public override async Task AcceptAsync()
         {
             var unit = await _unitRepository.ReadAsync(AuthorDiscordId);
             var channel = _guild.GetTextChannel(ChannelDiscordId);
@@ -49,7 +49,7 @@ namespace accs.Models.Tickets
             var activeRetirement = unit.UnitStatuses
                 .FirstOrDefault(us =>
                     us.Status.Type == StatusType.Retirement &&
-                    us.EndDate == default
+                    us.EndDate > DateTime.UtcNow
                 );
 
             // еще не в отставке -> в отставку
@@ -69,8 +69,7 @@ namespace accs.Models.Tickets
                 {
                     Unit = unit,
                     Status = retirementStatus,
-                    StartDate = DateTime.UtcNow,
-                    EndDate = default
+                    StartDate = DateTime.UtcNow
                 };
 
                 await _unitStatusRepository.CreateAsync(unitStatus);
@@ -80,7 +79,7 @@ namespace accs.Models.Tickets
                 );
 
                 Status = TicketStatus.Accepted;
-                await Close();
+                await CloseAsync();
                 return;
             }
 
@@ -89,14 +88,14 @@ namespace accs.Models.Tickets
 
             var menu = new SelectMenuBuilder()
                 .WithCustomId($"retirement-select-{Id}")
-                .WithPlaceholder("Выберите новые должности")
-                .WithMinValues(0)
+                .WithPlaceholder("Должности")
+                .WithMinValues(1)
                 .WithMaxValues(allPosts.Count);
 
             foreach (var post in allPosts)
             {
-                menu.AddOption(post.GetFullName(), post.Id.ToString());
-            }    
+                menu.AddOption(post.GetFullName(), post.Id.ToString(), post.Units.Count + " человек");
+            }
 
             var builder = new ComponentBuilder().WithSelectMenu(menu);
 
@@ -122,8 +121,8 @@ namespace accs.Models.Tickets
             var activeRetirement = unit.UnitStatuses
                 .FirstOrDefault(us =>
                     us.Status.Type == StatusType.Retirement &&
-                    us.EndDate == default
-                );
+					us.EndDate > DateTime.UtcNow
+				);
 
             if (activeRetirement != null)
             {
@@ -146,7 +145,7 @@ namespace accs.Models.Tickets
             await channel.SendMessageAsync("Вы успешно вернулись из отставки.");
 
             Status = TicketStatus.Accepted;
-            await Close();
+            await CloseAsync();
         }
     }
 }

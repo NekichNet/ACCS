@@ -4,7 +4,6 @@ using accs.Models.Tickets;
 using accs.Repository;
 using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
-using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Hosting;
@@ -19,16 +18,14 @@ namespace accs.DiscordBot.Interactions
 	{
         private ITicketRepository _ticketRepository;
         private IUnitRepository _unitRepository;
-        private IPostRepository _postRepository;
         private ILogService _logService;
         private Ticket? _ticket;
         private Unit? _userUnit; // на тот случай, если выполняющий команду состоит в клане.
 
-        public TicketGroupModule(ITicketRepository ticketRepository, IUnitRepository unitRepository, IPostRepository postRepository, ILogService logService)
+        public TicketGroupModule(ITicketRepository ticketRepository, IUnitRepository unitRepository, ILogService logService)
         {
             _ticketRepository = ticketRepository;
             _unitRepository = unitRepository;
-            _postRepository = postRepository;
             _logService = logService;
             _ticket = _ticketRepository.ReadAsync(int.Parse(Context.Channel.Name.Split('-').Last())).Result;
             if (_ticket == null) { throw _logService.ExceptionAsync("TicketGroupModule: Ticket not found by id!").Result; }

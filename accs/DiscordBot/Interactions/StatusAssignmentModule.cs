@@ -75,5 +75,52 @@ namespace accs.DiscordBot.Interactions
                 return;
             }
         }
+
+
+        [HasPermission(PermissionType.VacationAccess)]
+        [SlashCommand("vacation", "Выход в отпуск")]
+        public async Task VacationCommandAsync(int days = 7)
+        {
+            try
+            {
+                Unit? unit = await _unitRepository.ReadAsync(Context.User.Id);
+                if (unit == null)
+                {
+                    await RespondAsync("Вы не зарегистрированы как боец.", ephemeral: true);
+                    return;
+                }
+
+                Status? vacationStatus = await _statusRepository.ReadAsync(StatusType.Vacation);
+                if (vacationStatus == null)
+                {
+                    await RespondAsync("Статус 'Отпуск' не найден в базе.", ephemeral: true);
+                    return;
+                }
+
+                var unitStatus = new UnitStatus()
+                {
+                    Unit = unit,
+                    Status = vacationStatus,
+                    StartDate = DateTime.Now,
+                    EndDate = DateTime.Now.AddDays(days)
+                };
+
+                await _unitStatusRepository.CreateAsync(unitStatus);
+
+                unit.UnitStatuses.Add(unitStatus);
+                await _unitRepository.UpdateAsync(unit);
+
+                await RespondAsync(
+                    $"Вы успешно вышли в отпуск на {days} дней.",
+                    ephemeral: true
+                );
+            }
+            catch (Exception ex)
+            {
+                await RespondAsync("Не удалось оформить отпуск.", ephemeral: true); 
+                await _logService.WriteAsync(ex.Message); 
+                return;
+            }
+        }
     }
 }

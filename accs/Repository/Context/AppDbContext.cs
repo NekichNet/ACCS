@@ -18,8 +18,9 @@ namespace accs.Repository.Context
 		public DbSet<UnitStatus> UnitStatuses { get; set; }
 		public DbSet<Status> Statuses { get; set; }
 		public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<MemberPresence> MemberPresences { get; set; }
 
-		public AppDbContext(DbContextOptions<AppDbContext> options)
+        public AppDbContext(DbContextOptions<AppDbContext> options)
 			: base(options) { }
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)

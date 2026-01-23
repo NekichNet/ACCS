@@ -1,6 +1,5 @@
 ﻿using accs.Models.Configurations;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Metadata.Ecma335;
 
 namespace accs.Models
 {
@@ -20,12 +19,9 @@ namespace accs.Models
 		public List<Permission> Permissions { get; set; } = new List<Permission>();
 		public List<Unit> Units { get; set; } = new List<Unit>();
 
-		public Post(string envRoleString, List<Permission>? permissions = null)
+		public Post(string envRoleString)
 		{
 			DiscordRoleId = ulong.Parse(DotNetEnv.Env.GetString(envRoleString, $"{envRoleString} Not found"));
-			if (permissions != null)
-				foreach (Permission permission in permissions)
-					Permissions.Add(permission);
 		}
 
 		public Post() { }
@@ -35,7 +31,7 @@ namespace accs.Models
 			return Subdivision != null && AppendSubdivisionName ? Name + " " + Subdivision.GetFullName() : Name;
 		}
 
-		public List<Permission> GetPermissionsRecursive()
+		public HashSet<Permission> GetPermissionsRecursive()
 		{
 			HashSet<Permission> permissions = [.. Permissions];
 			if (Subdivision != null)
@@ -44,7 +40,7 @@ namespace accs.Models
 			foreach (Post sub in Subordinates)
 				foreach (Permission permission in sub.GetPermissionsRecursive())
 					permissions.Add(permission);
-			return permissions.ToList();
+			return permissions;
 		}
 
 

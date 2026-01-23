@@ -36,16 +36,20 @@ namespace accs.Repository.Context
 			Permission manageRewards = new Permission { Type = PermissionType.ManageRewards, Description = "Создание и редактирование существующих наград." };
 			Permission manageDocTypes = new Permission { Type = PermissionType.ManageDocTypes, Description = "Создание и редактирование шаблонов документов." };
 			Permission administrator = new Permission { Type = PermissionType.Administrator, Description = "Все права без ограничений." };
-
+			
+			modelBuilder.Entity<Permission>().HasData(
+				confirmActivity, vacationAccess, giveReprimandGratitude, forceVacation, changeRanks,
+				changePosts, assignRewards, manageStructure, manageRewards, manageDocTypes, administrator
+			);
 
 			/* Звания */
 			List<Rank> ranks = new List<Rank>()
 			{
 				new Rank(1, "Рекрут"),
 				new Rank(2, "Рядовой"),
-				new Rank(3, "Ефрейтор", permissions: new HashSet<Permission> { vacationAccess }),
+				new Rank(3, "Ефрейтор"),
 				new Rank(4, "Мл. Сержант"),
-				new Rank(5, "Сержант", permissions: new HashSet<Permission> { confirmActivity }),
+				new Rank(5, "Сержант"),
 				new Rank(6, "Ст. Сержант"),
 				new Rank(7, "Старшина"),
 				new Rank(8, "Прапорщик"),
@@ -67,13 +71,13 @@ namespace accs.Repository.Context
 			/* Подразделения */
 			List<Subdivision> subdivisions = new List<Subdivision>();
 
-			Subdivision police = new Subdivision("Военная Полиция", "POLICE_ROLE_ID") { Id = subdivisions.Count + 1, Permissions = new HashSet<Permission> { giveReprimandGratitude } };
+			Subdivision police = new Subdivision("Военная Полиция", "POLICE_ROLE_ID") { Id = subdivisions.Count + 1 };
 			subdivisions.Add(police);
 
-			Subdivision hq = new Subdivision("Штаб") { Id = subdivisions.Count + 1, Permissions = new HashSet<Permission> { changeRanks, manageDocTypes } };
+			Subdivision hq = new Subdivision("Штаб") { Id = subdivisions.Count + 1 };
 			subdivisions.Add(hq);
 
-            Subdivision communicationService = new Subdivision("Служба связи", "COMMUNICATION_SERVICE_ROLE_ID") { Id = subdivisions.Count + 1, Permissions = new HashSet<Permission> { administrator } };
+            Subdivision communicationService = new Subdivision("Служба связи", "COMMUNICATION_SERVICE_ROLE_ID") { Id = subdivisions.Count + 1 };
             subdivisions.Add(communicationService);
 
             Subdivision instructors = new Subdivision("Инструкторский корпус", "INSTRUCTORS_ROLE_ID") { Id = subdivisions.Count + 1, };
@@ -101,7 +105,7 @@ namespace accs.Repository.Context
 			Post commander = new Post("COMMANDER_ROLE_ID") { Id = posts.Count + 1, Name = "Командир РХБЗ" };
 			posts.Add(commander);
 
-			Post depCommander = new Post("DEPUTY_COMMANDER_ROLE_ID", new List<Permission> { administrator }) { Id = posts.Count + 1, Name = "Заместитель командира РХБЗ", HeadId = commander.Id };
+			Post depCommander = new Post("DEPUTY_COMMANDER_ROLE_ID") { Id = posts.Count + 1, Name = "Заместитель командира РХБЗ", HeadId = commander.Id };
 			posts.Add(depCommander);
 
 			Post hqHead = new Post("HQ_HEAD_ROLE_ID") { Id = posts.Count + 1, Name = "Начальник штаба", HeadId = depCommander.Id, SubdivisionId = hq.Id };
@@ -110,20 +114,19 @@ namespace accs.Repository.Context
 			Post depHqHead = new Post("DEPUTY_HQ_HEAD_ROLE_ID") { Id = posts.Count + 1, Name = "Заместитель начальника штаба", HeadId = hqHead.Id, SubdivisionId = hq.Id };
 			posts.Add(depHqHead);
 
-			Post rota1Commander = new Post("ROTA_COMMANDER_ROLE_ID", new List<Permission> { manageStructure }) { Id = posts.Count + 1, Name = "Командир", HeadId = depHqHead.Id, SubdivisionId = rota1Commanders.Id, AppendSubdivisionName = true };
+			Post rota1Commander = new Post("ROTA_COMMANDER_ROLE_ID") { Id = posts.Count + 1, Name = "Командир", HeadId = depHqHead.Id, SubdivisionId = rota1Commanders.Id, AppendSubdivisionName = true };
 			posts.Add(rota1Commander);
 
-			Post zampolit = new Post("ZAMPOLIT_ROLE_ID", new List<Permission> { forceVacation, changePosts }) { Id = posts.Count + 1, Name = "Замполит", HeadId = rota1Commander.Id, SubdivisionId = rota1Commanders.Id, AppendSubdivisionName = true };
+			Post zampolit = new Post("ZAMPOLIT_ROLE_ID") { Id = posts.Count + 1, Name = "Замполит", HeadId = rota1Commander.Id, SubdivisionId = rota1Commanders.Id, AppendSubdivisionName = true };
 			posts.Add(zampolit);
 
 
 			foreach (Subdivision platoon in platoons)
 			{
-				Post platoonCommander = new Post("PLATOON_COMMANDER_ROLE_ID", new List<Permission> { giveReprimandGratitude }) { Id = posts.Count + 1, Name = "Командир", HeadId = zampolit.Id, AppendSubdivisionName = true };
-				Post depPlatoonCommander = new Post("DEPUTY_PLATOON_COMMANDER_ROLE_ID") { Id = posts.Count + 2, Name = "Заместитель командира", HeadId = platoonCommander.Id, AppendSubdivisionName = true };
-				Post shooter = new Post("SHOOTER_ROLE_ID") { Id = posts.Count + 3, Name = "Стрелок", HeadId = depPlatoonCommander.Id, AppendSubdivisionName = true };
+				Post platoonCommander = new Post("PLATOON_COMMANDER_ROLE_ID") { Id = posts.Count + 1, Name = "Командир", HeadId = zampolit.Id, AppendSubdivisionName = true, SubdivisionId = platoon.Id };
+				Post depPlatoonCommander = new Post("DEPUTY_PLATOON_COMMANDER_ROLE_ID") { Id = posts.Count + 2, Name = "Заместитель командира", HeadId = platoonCommander.Id, AppendSubdivisionName = true, SubdivisionId = platoon.Id };
+				Post shooter = new Post("SHOOTER_ROLE_ID") { Id = posts.Count + 3, Name = "Стрелок", HeadId = depPlatoonCommander.Id, AppendSubdivisionName = true, SubdivisionId = platoon.Id };
 				posts.AddRange(shooter, depPlatoonCommander, platoonCommander);
-				platoon.Posts.AddRange(shooter, depPlatoonCommander, platoonCommander);
 			}
 
 			Post policeHead = new Post("POLICE_HEAD_ROLE_ID") { Id = posts.Count + 1, Name = "Начальник военной полиции", HeadId = depCommander.Id, SubdivisionId = police.Id };
@@ -151,18 +154,13 @@ namespace accs.Repository.Context
 
 			modelBuilder.Entity<Status>().HasData(
 				new Status() { Type = StatusType.Vacation, Name = "Отпуск" },
-				new Status() { Type = StatusType.TemporaryPost, Name = "ВРИД" },
+				new Status() { Type = StatusType.TemporaryPost, Name = "ВрИО" },
 				new Status() { Type = StatusType.Gratitude, Name = "Благодарность" },
 				new Status() { Type = StatusType.Reprimand, Name = "Выговор" },
 				new Status() { Type = StatusType.SevereReprimand, Name = "Строгий выговор" },
 				new Status() { Type = StatusType.Retirement, Name = "Отставка" }
 			);
-
-
-			modelBuilder.Entity<Permission>().HasData(
-				confirmActivity, vacationAccess, giveReprimandGratitude, forceVacation, changeRanks,
-				changePosts, assignRewards, manageStructure, manageRewards, manageDocTypes, administrator
-			);
+			
 			modelBuilder.Entity<Rank>().HasData(ranks);
 			modelBuilder.Entity<Subdivision>().HasData(subdivisions);
 			modelBuilder.Entity<Post>().HasData(posts);

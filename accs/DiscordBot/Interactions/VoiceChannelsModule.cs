@@ -33,7 +33,7 @@ namespace accs.DiscordBot.Interactions
 
             _guild = _discordSocketClient.GetGuild(guildId);
 		}
-        
+
         public async Task OnUserJoinedAsync(SocketUser user, SocketVoiceState before, SocketVoiceState after)
         {
 			if (after.VoiceChannel.Id == _voiceChannelId)

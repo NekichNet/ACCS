@@ -17,12 +17,11 @@ namespace accs.Models
 		public HashSet<Permission> Permissions { get; set; } = new HashSet<Permission>();
 		public List<Unit> Units { get; set; } = new List<Unit>();
 
-        public Rank(int id, string name, ushort counterToReach = 5, HashSet<Permission>? permissions = null)
+        public Rank(int id, string name, ushort counterToReach = 5)
 		{
 			Id = id;
 			Name = name;
 			CounterToReach = counterToReach;
-			if (permissions != null) Permissions = permissions;
 			DiscordRoleId = ulong.Parse(DotNetEnv.Env.GetString($"RANK{Id}_ROLE_ID", $"RANK{Id}_ROLE_ID Not found"));
 		}
 
@@ -30,18 +29,24 @@ namespace accs.Models
 
 		public void InsertPrevious(Rank rank)
 		{
-			Previous?.Next = rank;
-			rank.Previous = Previous;
-			rank.Next = this;
-			Previous = rank;
+			if (Previous != null)
+			{
+				Previous.NextId = rank.Id;
+				rank.PreviousId = Previous.Id;
+			}
+			rank.NextId = this.Id;
+			PreviousId = rank.Id;
 		}
 
 		public void InsertNext(Rank rank)
 		{
-			Next?.Previous = rank;
-			rank.Next = Next;
-			rank.Previous = this;
-			Next = rank;
+			if (Next != null)
+			{
+				Next.PreviousId = rank.Id;
+				rank.NextId = Next.Id;
+			}
+			rank.PreviousId = this.Id;
+			NextId = rank.Id;
 		}
 
 		public HashSet<Permission> GetPermissionsRecursive()

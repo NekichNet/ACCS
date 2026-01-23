@@ -1,4 +1,5 @@
-﻿using accs.Models;
+﻿using accs.DiscordBot.Interactions;
+using accs.Models;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
@@ -9,49 +10,31 @@ namespace accs.Services
     public class DiscordBotService : IDiscordBotService
     {
         private DiscordSocketClient _client;
-		private InteractionService _interaction;
 		private ILogService _logger;
 
         public SocketGuild Guild { get; set; }
 
-		public DiscordBotService(DiscordSocketClient client, ILogService logger, IServiceProvider serviceProvider)
+		public DiscordBotService(DiscordSocketClient client, ILogService logger)
         {
 			_client = client;
-			_interaction = new InteractionService(_client.Rest);
 			_logger = logger;
-			_client.Log += async (msg) =>
-			{
-				await Task.CompletedTask;
-				Console.WriteLine(msg);
-			};
-			_client.ButtonExecuted += async (interaction) =>
-			{
-				var ctx = new SocketInteractionContext<SocketMessageComponent>(_client, interaction);
-				await _interaction.ExecuteCommandAsync(ctx, serviceProvider);
-			};
-
-			string token = DotNetEnv.Env.GetString("TOKEN", "Token not found");
-            if (token == "Token not found") { throw _logger.ExceptionAsync(token).Result; }
+			//_client.UserVoiceStateUpdated += voiceChannelsModule.OnUserJoinedAsync;
+			//_client.UserVoiceStateUpdated += voiceChannelsModule.OnUserLeftAsync;
 
             string guildIdString = DotNetEnv.Env.GetString("SERVER_ID", "Server id not found");
             ulong guildId;
             if (ulong.TryParse(guildIdString, out guildId)) { throw _logger.ExceptionAsync("Cannot parse guild id!").Result; }
 
-			_client.LoginAsync(TokenType.Bot, token).Wait();
-            if (_client.LoginState != LoginState.LoggedIn) { throw _logger.ExceptionAsync("Cannot log in!").Result; }
-			_client.StartAsync();
-
 			Guild = _client.GetGuild(guildId);
 			if (Guild == null) { throw _logger.ExceptionAsync("Guild is null!").Result; }
 			if (!Guild.IsConnected) { throw _logger.ExceptionAsync("Not connected to guild!").Result; }
-			_interaction.RegisterCommandsToGuildAsync(guildId);
 		}
 
         public async Task<bool> AddUserRoles(ulong userId, IEnumerable<ulong> roleIds)
         {
             SocketGuildUser user = Guild.GetUser(userId);
 			await user.AddRolesAsync(roleIds);
-			_logger.WriteAsync("Added roles " + String.Join(", ", roleIds.Select(o => o.ToString()))
+			await _logger.WriteAsync("Added roles " + String.Join(", ", roleIds.Select(o => o.ToString()))
 				+ " to " + (user?.Username).ToString()
 				+ " with id " + userId,
 				user == null ? LoggingLevel.Error : LoggingLevel.Debug);
@@ -62,7 +45,7 @@ namespace accs.Services
         {
 			SocketGuildUser user = Guild.GetUser(userId);
 			await user.RemoveRolesAsync(roleIds);
-			_logger.WriteAsync("Removed roles " + String.Join(", ", roleIds.Select(o => o.ToString()))
+			await _logger.WriteAsync("Removed roles " + String.Join(", ", roleIds.Select(o => o.ToString()))
 				+ " from " + user.Username
 				+ " with id " + userId,
 				user == null ? LoggingLevel.Error : LoggingLevel.Debug);
@@ -73,7 +56,7 @@ namespace accs.Services
 		{
 			SocketGuildUser user = Guild.GetUser(userId);
 			await user.BanAsync();
-			_logger.WriteAsync("Banned " + user.Username + " with id " + userId,
+			await _logger.WriteAsync("Banned " + user.Username + " with id " + userId,
 				user == null ? LoggingLevel.Error : LoggingLevel.Debug);
 			return user != null;
 		}
@@ -82,7 +65,7 @@ namespace accs.Services
 		{
 			SocketGuildUser user = Guild.GetUser(userId);
 			await user.KickAsync();
-			_logger.WriteAsync("Kicked " + user.Username + " with id " + userId,
+			await _logger.WriteAsync("Kicked " + user.Username + " with id " + userId,
 				user == null ? LoggingLevel.Error : LoggingLevel.Debug);
 			return user != null;
 		}

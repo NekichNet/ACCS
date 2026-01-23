@@ -23,7 +23,7 @@ namespace accs.DiscordBot.Interactions
             _discordSocketClient = discordSocketClient;
             string guildIdString = DotNetEnv.Env.GetString("SERVER_ID", "Server id not found");
             ulong guildId;
-            if (ulong.TryParse(guildIdString, out guildId)) { throw _logService.ExceptionAsync("Cannot parse guild id!", LoggingLevel.Error).Result; }
+            if (!ulong.TryParse(guildIdString, out guildId)) { throw _logService.ExceptionAsync("Cannot parse guild id!", LoggingLevel.Error).Result; }
 
             _guild = _discordSocketClient.GetGuild(guildId);
         }

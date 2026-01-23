@@ -5,6 +5,7 @@ using accs.Repository;
 using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord.Interactions;
+using Discord.Rest;
 using Discord.WebSocket;
 
 namespace accs.DiscordBot.Interactions
@@ -16,33 +17,37 @@ namespace accs.DiscordBot.Interactions
         private ITicketRepository _ticketRepository;
         private IUnitRepository _unitRepository;
         private ILogService _logService;
-        private Ticket? _ticket;
-        private Unit? _userUnit; // на тот случай, если выполняющий команду состоит в клане.
 
         public TicketGroupModule(ITicketRepository ticketRepository, IUnitRepository unitRepository, ILogService logService)
         {
             _ticketRepository = ticketRepository;
             _unitRepository = unitRepository;
             _logService = logService;
-            _ticket = _ticketRepository.ReadAsync(int.Parse(Context.Channel.Name.Split('-').Last())).Result;
-            if (_ticket == null) { throw _logService.ExceptionAsync("TicketGroupModule: Ticket not found by id!").Result; }
-            _userUnit = _unitRepository.ReadAsync(Context.User.Id).Result;
-            _logService.WriteAsync("TicketGroupModule: UserUnit: " + _userUnit?.Nickname, LoggingLevel.Debug);
         }
 
         [SlashCommand("accept", "Принять")]
         public async Task Accept()
         {
-            if (_userUnit != null)
+            int ticketId = int.Parse(Context.Channel.Name.Split('-').Last());
+			Ticket? ticket = await _ticketRepository.ReadAsync(ticketId);
+			if (ticket == null)
             {
-				if (_userUnit.Posts.Intersect(_ticket.Admins).Any())
+                await DeleteOriginalResponseAsync();
+                await RespondAsync($"Тикет с id {ticketId} не найден!");
+                await _logService.WriteAsync($"Тикет с id {ticketId} не найден!", LoggingLevel.Error);
+            }
+			Unit? userUnit = await _unitRepository.ReadAsync(Context.User.Id);
+
+			if (userUnit != null)
+            {
+				if (userUnit.Posts.Intersect(ticket.Admins).Any())
 				{
-                    await _ticket.AcceptAsync();
+                    await ticket.AcceptAsync();
                     return;
 				} 
                 else
                 {
-                    await _logService.WriteAsync("TicketGroupModule: unit " + _userUnit.Nickname + " is not a ticket admin.", LoggingLevel.Debug);
+                    await _logService.WriteAsync("TicketGroupModule: unit " + userUnit.Nickname + " is not a ticket admin.", LoggingLevel.Debug);
                 }
 			}
 
@@ -53,16 +58,26 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("refuse", "Отказать")]
         public async Task Refuse()
         {
-			if (_userUnit != null)
+			int ticketId = int.Parse(Context.Channel.Name.Split('-').Last());
+			Ticket? ticket = await _ticketRepository.ReadAsync(ticketId);
+			if (ticket == null)
 			{
-				if (_userUnit.Posts.Intersect(_ticket.Admins).Any())
+				await DeleteOriginalResponseAsync();
+				await RespondAsync($"Тикет с id {ticketId} не найден!");
+				await _logService.WriteAsync($"Тикет с id {ticketId} не найден!", LoggingLevel.Error);
+			}
+			Unit? userUnit = await _unitRepository.ReadAsync(Context.User.Id);
+
+			if (userUnit != null)
+			{
+				if (userUnit.Posts.Intersect(ticket.Admins).Any())
 				{
-					await _ticket.RefuseAsync();
+					await ticket.RefuseAsync();
 					return;
 				}
 				else
                 {
-                    await _logService.WriteAsync("TicketGroupModule: unit " + _userUnit.Nickname + " is not a ticket admin.", LoggingLevel.Debug);
+                    await _logService.WriteAsync("TicketGroupModule: unit " + userUnit.Nickname + " is not a ticket admin.", LoggingLevel.Debug);
                 }
 			}
 			await RespondAsync("Отказать и закрыть тикет может только ответственная за него подчасть.", ephemeral: true);
@@ -72,9 +87,19 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("cancel", "Отменить")]
         public async Task Cancel()
         {
-            if (Context.User.Id == _ticket.AuthorDiscordId)
+			int ticketId = int.Parse(Context.Channel.Name.Split('-').Last());
+			Ticket? ticket = await _ticketRepository.ReadAsync(ticketId);
+			if (ticket == null)
+			{
+				await DeleteOriginalResponseAsync();
+				await RespondAsync($"Тикет с id {ticketId} не найден!");
+				await _logService.WriteAsync($"Тикет с id {ticketId} не найден!", LoggingLevel.Error);
+			}
+			Unit? userUnit = await _unitRepository.ReadAsync(Context.User.Id);
+
+			if (Context.User.Id == ticket.AuthorDiscordId)
             {
-                await _ticket.CancelAsync();
+                await ticket.CancelAsync();
 				return;
 			}
 			await RespondAsync("Отменить тикет может только автор тикета.", ephemeral: true);

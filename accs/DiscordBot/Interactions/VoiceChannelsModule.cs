@@ -17,7 +17,6 @@ namespace accs.DiscordBot.Interactions
         private ulong _voiceChannelId;
         private SocketGuild? _guild;
 
-
         public VoiceChannelsModule(IActivityRepository activityRepository, IUnitRepository unitRepository, ILogService logService, DiscordSocketClient discordSocketClient) 
         {
             _unitRepository = unitRepository;
@@ -29,7 +28,7 @@ namespace accs.DiscordBot.Interactions
 
 			string guildIdString = DotNetEnv.Env.GetString("SERVER_ID", "Server id not found");
 			ulong guildId;
-			if (ulong.TryParse(guildIdString, out guildId)) { throw _logService.ExceptionAsync("Cannot parse guild id!", LoggingLevel.Error).Result; }
+			if (!ulong.TryParse(guildIdString, out guildId)) { throw _logService.ExceptionAsync("Cannot parse guild id!", LoggingLevel.Error).Result; }
 
             _guild = _discordSocketClient.GetGuild(guildId);
 		}
@@ -90,19 +89,19 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-        [SlashCommand("access", "Передайте один из атрибутов: Опция \"clan\" открывает доступ на подключение всем участникам клана, опция \"friends\" открывает доступ всему клану, а также роли “Друг клана”.")] 
+        [SlashCommand("access", "Откройте доступ к каналу для клана или для всех")] 
         public async Task OnGivingAccess(AccessChoices accessChoices)
         {
-            if (accessChoices == AccessChoices.FRIEND)
+            if (accessChoices == AccessChoices.Friend)
             {
                 await _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(_guild.GetRole(0), new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли френда
             }
-            else if (accessChoices == AccessChoices.CLAN)
+            else if (accessChoices == AccessChoices.Clan)
             {
                 await _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(_guild.GetRole(0), new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли
             }
         }
-        [SlashCommand("access-role", "Передайте один из атрибутов: Опция \"clan\" открывает доступ на подключение всем участникам клана, опция \"friends\" открывает доступ всему клану, а также роли “Друг клана”.")]
+        [SlashCommand("access-role", "Откройте доступ к каналу для определённой роли")]
         public async Task OnGivingAccessByRole(SocketRole role)
         {
             _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(role, new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли

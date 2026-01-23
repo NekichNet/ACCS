@@ -14,14 +14,12 @@ namespace accs.DiscordBot.Interactions
     [Group("fix", "Фиксирование активности")]
     public class ActivityGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private DiscordBotService _bot;
         private IActivityRepository _activityRepository;
         private IUnitRepository _unitRepository;
         private ILogService _logService;
 
-        public ActivityGroupModule(DiscordBotService bot, IActivityRepository activityRepository, IUnitRepository unitRepository, ILogService logService)
+        public ActivityGroupModule(IActivityRepository activityRepository, IUnitRepository unitRepository, ILogService logService)
         {
-            _bot = bot;
             _activityRepository = activityRepository;
             _unitRepository = unitRepository;
             _logService = logService;
@@ -291,7 +289,7 @@ namespace accs.DiscordBot.Interactions
                         return;
                     }
 
-                    _bot.Guild.GetTextChannel(channelId).SendMessageAsync($"Нужно повысить бойца {unit.Nickname}: {unit.RankUpCounter}/{unit.Rank.Next.CounterToReach}.");
+                    //_bot.Guild.GetTextChannel(channelId).SendMessageAsync($"Нужно повысить бойца {unit.Nickname}: {unit.RankUpCounter}/{unit.Rank.Next.CounterToReach}.");
                 }
             }
         }

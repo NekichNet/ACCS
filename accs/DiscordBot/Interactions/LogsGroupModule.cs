@@ -1,6 +1,7 @@
 ﻿using accs.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Services;
+using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -12,9 +13,9 @@ namespace accs.DiscordBot.Interactions
     public class LogsGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly LogService _logService;
-        public LogsGroupModule(LogService logService)
+        public LogsGroupModule(ILogService logService)
         {
-            _logService = logService;
+            _logService = (LogService)logService;
         }
 
         [SlashCommand("get", "Получить список логов")]

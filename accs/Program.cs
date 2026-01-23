@@ -46,12 +46,12 @@ namespace accs
             builder.Services.AddScoped<IUnitStatusRepository, UnitStatusRepository>();
             builder.Services.AddScoped<IUnitRepository, UnitRepository>();
             builder.Services.AddScoped<IStatusRepository, StatusRepository>();
+			builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 
 			var discordConfig = new DiscordSocketConfig() { };
 
             builder.Services.AddSingleton(discordConfig);
             builder.Services.AddSingleton<DiscordSocketClient>();
-            builder.Services.AddSingleton<IDiscordBotService, DiscordBotService>();
             builder.Services.AddSingleton<IOCRService, OCRService>();
 
 			//builder.Services.AddTransient<VoiceChannelsModule>();
@@ -78,27 +78,22 @@ namespace accs
 
 			InteractionService interaction = new InteractionService(client);
 
-            interaction.AddModuleAsync<ActivityGroupModule>(app.Services);
-			interaction.AddModuleAsync<LogsGroupModule>(app.Services);
-			interaction.AddModuleAsync<PostAssignmentModule>(app.Services);
-			interaction.AddModuleAsync<ProfileGroupModule>(app.Services);
-			interaction.AddModuleAsync<RankAssignmentModule>(app.Services);
-			interaction.AddModuleAsync<RewardGroupModule>(app.Services);
-			interaction.AddModuleAsync<StatusAssignmentModule>(app.Services);
-			interaction.AddModuleAsync<TicketGroupModule>(app.Services);
-			interaction.AddModuleAsync<TicketMessageHandler>(app.Services);
-			interaction.AddModuleAsync<VoiceChannelsModule>(app.Services);
+            interaction.AddModuleAsync<ActivityGroupModule>(app.Services).Wait();
+			interaction.AddModuleAsync<LogsGroupModule>(app.Services).Wait();
+			interaction.AddModuleAsync<PostAssignmentModule>(app.Services).Wait();
+			interaction.AddModuleAsync<ProfileGroupModule>(app.Services).Wait();
+			interaction.AddModuleAsync<RankAssignmentModule>(app.Services).Wait();
+			interaction.AddModuleAsync<RewardGroupModule>(app.Services).Wait();
+			interaction.AddModuleAsync<StatusAssignmentModule>(app.Services).Wait();
+			interaction.AddModuleAsync<TicketGroupModule>(app.Services).Wait();
+			interaction.AddModuleAsync<TicketMessageHandler>(app.Services).Wait();
+			interaction.AddModuleAsync<VoiceChannelsModule>(app.Services).Wait();
 
 			client.Ready += async Task () =>
             {
                 Console.WriteLine("Client is ready");
-                interaction.RegisterCommandsGloballyAsync().Wait();
+                interaction.RegisterCommandsToGuildAsync(guildId).Wait();
                 Console.WriteLine("Commands registered");
-			};
-			client.InteractionCreated += async (x) =>
-			{
-				var ctx = new SocketInteractionContext(client, x);
-				await interaction.ExecuteCommandAsync(ctx, app.Services);
 			};
 
 			app.Run();

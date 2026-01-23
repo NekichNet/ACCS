@@ -5,8 +5,8 @@ namespace accs.DiscordBot.Interactions.Enums
     public enum AccessChoices
     {
         [ChoiceDisplay ("clan")]
-        CLAN,
+        Clan,
         [ChoiceDisplay ("friend")]
-        FRIEND
+        Friend
     }
 }

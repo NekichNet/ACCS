@@ -15,7 +15,7 @@ namespace accs.Repository
 
         public async Task<Permission?> ReadAsync(PermissionType permissionType)
         {
-            return _context.Permissions.Find(permissionType);
+            return await _context.Permissions.FindAsync(permissionType);
         }
 
         public async Task<List<Permission>> ReadAllAsync()

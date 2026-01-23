@@ -16,12 +16,12 @@ namespace accs.Repository
         public async Task CreateAsync(Unit unit)
         {
             _context.Units.Add(unit);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public async Task<Unit?> ReadAsync(ulong discordId)
         {
-            return _context.Units.Find(discordId);
+            return await _context.Units.FindAsync(discordId);
         }
 
         public async Task<List<Unit>> ReadAllAsync()
@@ -32,7 +32,7 @@ namespace accs.Repository
         public async Task UpdateAsync(Unit unit)
         {
             _context.Units.Update(unit);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
     }
 }

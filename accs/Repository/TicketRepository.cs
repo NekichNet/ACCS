@@ -16,7 +16,7 @@ namespace accs.Repository
         public async Task CreateAsync(Ticket ticket)
         {
 			_context.Tickets.Add(ticket);
-			_context.SaveChanges();
+			await _context.SaveChangesAsync();
 		}
 
 		public async Task<List<Ticket>> ReadAllAsync()
@@ -26,13 +26,13 @@ namespace accs.Repository
 
 		public async Task<Ticket?> ReadAsync(int id)
         {
-            return _context.Tickets.Find(id);
+            return await _context.Tickets.FindAsync(id);
         }
 
 		public async Task UpdateAsync(Ticket ticket)
         {
             _context.Tickets.Update(ticket);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
     }
 }

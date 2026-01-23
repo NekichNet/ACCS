@@ -16,18 +16,18 @@ namespace accs.Repository
         public async Task CreateAsync(UnitStatus unitStatus)
         {
             _context.UnitStatuses.Add(unitStatus);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(UnitStatus unitStatus)
         {
             _context.UnitStatuses.Remove(unitStatus);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public async Task<UnitStatus?> ReadAsync(int id)
         {
-            return _context.UnitStatuses.Find(id);
+            return await _context.UnitStatuses.FindAsync(id);
         }
 
         public async Task<List<UnitStatus>> ReadAllAsync()
@@ -38,7 +38,7 @@ namespace accs.Repository
         public async Task UpdateAsync(UnitStatus unitStatus)
         {
             _context.UnitStatuses.Update(unitStatus);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
     }
 }

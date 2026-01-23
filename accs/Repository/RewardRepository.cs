@@ -16,18 +16,18 @@ namespace accs.Repository
         public async Task CreateAsync(Reward reward)
         {
             _context.Rewards.Add(reward);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(Reward reward)
         {
             _context.Rewards.Remove(reward);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public async Task<Reward?> ReadAsync(int id)
         {
-            return _context.Rewards.Find(id);
+            return await _context.Rewards.FindAsync(id);
         }
 
         public async Task<List<Reward>> ReadAllAsync()
@@ -38,7 +38,7 @@ namespace accs.Repository
         public async Task UpdateAsync(Reward reward)
         {
             _context.Rewards.Update(reward);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
     }
 }

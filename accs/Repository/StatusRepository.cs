@@ -15,7 +15,7 @@ namespace accs.Repository
 
         public async Task<Status?> ReadAsync(StatusType statusType)
         {
-            return _appDbContext.Statuses.Find(statusType);
+            return await _appDbContext.Statuses.FindAsync(statusType);
         }
     }
 }

@@ -16,18 +16,18 @@ namespace accs.Repository
         public async Task CreateAsync(DocType docType)
         {
             _context.DocTypes.Add(docType);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(DocType docType)
         {
             _context.DocTypes.Remove(docType);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public async Task<DocType?> ReadAsync(int id)
         {
-            return _context.DocTypes.Find(id);
+            return await _context.DocTypes.FindAsync(id);
         }
 
         public async Task<List<DocType>> ReadAllAsync()
@@ -38,7 +38,7 @@ namespace accs.Repository
         public async Task UpdateAsync(DocType docType)
         {
             _context.DocTypes.Update(docType);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
     }
 }

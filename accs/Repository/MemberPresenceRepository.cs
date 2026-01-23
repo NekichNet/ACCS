@@ -27,13 +27,12 @@ namespace accs.Repository
 
         public async Task<List<MemberPresence>> ReadAllAsync()
         {
-            var res = _context.MemberPresences.ToList();
-            return res;
+            return _context.MemberPresences.ToList();
         }
 
         public async Task<MemberPresence?> ReadAsync(ulong discordId)
         {
-            return _context.MemberPresences.Find(discordId);
+            return await _context.MemberPresences.FindAsync(discordId);
         }
 
         public async Task UpdateAsync(MemberPresence presence)

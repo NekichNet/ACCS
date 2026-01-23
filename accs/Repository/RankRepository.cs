@@ -16,18 +16,18 @@ namespace accs.Repository
         public async Task CreateAsync(Rank rank)
         {
             _context.Ranks.Add(rank);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(Rank rank)
         {
             _context.Ranks.Remove(rank);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public async Task<Rank?> ReadAsync(int id)
         {
-            return _context.Ranks.Find(id);
+            return await _context.Ranks.FindAsync(id);
         }
 
         public async Task<List<Rank>> ReadAllAsync()
@@ -38,7 +38,7 @@ namespace accs.Repository
         public async Task UpdateAsync(Rank rank)
         {
             _context.Ranks.Update(rank);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
     }
 }

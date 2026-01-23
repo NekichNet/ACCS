@@ -75,7 +75,7 @@ namespace accs.DiscordBot.Interactions
                         {
                             if (postAbove.DiscordRoleId != null)
                             {
-                                newChannel.AddPermissionOverwriteAsync(_guild.GetRole((ulong)postAbove.DiscordRoleId), new OverwritePermissions(connect: PermValue.Allow));
+                                await newChannel.AddPermissionOverwriteAsync(_guild.GetRole((ulong)postAbove.DiscordRoleId), new OverwritePermissions(connect: PermValue.Allow));
                             }
                         }
                     }
@@ -105,7 +105,7 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("access-role", "Передайте один из атрибутов: Опция \"clan\" открывает доступ на подключение всем участникам клана, опция \"friends\" открывает доступ всему клану, а также роли “Друг клана”.")]
         public async Task OnGivingAccessByRole(SocketRole role)
         {
-            _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(role, new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли
+            await _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(role, new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли
         }
     }
 }

@@ -291,7 +291,7 @@ namespace accs.DiscordBot.Interactions
                         return;
                     }
 
-                    _bot.Guild.GetTextChannel(channelId).SendMessageAsync($"Нужно повысить бойца {unit.Nickname}: {unit.RankUpCounter}/{unit.Rank.Next.CounterToReach}.");
+                    await _bot.Guild.GetTextChannel(channelId).SendMessageAsync($"Нужно повысить бойца {unit.Nickname}: {unit.RankUpCounter}/{unit.Rank.Next.CounterToReach}.");
                 }
             }
         }

@@ -51,7 +51,7 @@ namespace accs.Services
         {
             SocketGuildUser user = Guild.GetUser(userId);
 			await user.AddRolesAsync(roleIds);
-			_logger.WriteAsync("Added roles " + String.Join(", ", roleIds.Select(o => o.ToString()))
+			await _logger.WriteAsync("Added roles " + String.Join(", ", roleIds.Select(o => o.ToString()))
 				+ " to " + (user?.Username).ToString()
 				+ " with id " + userId,
 				user == null ? LoggingLevel.Error : LoggingLevel.Debug);
@@ -62,7 +62,7 @@ namespace accs.Services
         {
 			SocketGuildUser user = Guild.GetUser(userId);
 			await user.RemoveRolesAsync(roleIds);
-			_logger.WriteAsync("Removed roles " + String.Join(", ", roleIds.Select(o => o.ToString()))
+            await _logger.WriteAsync("Removed roles " + String.Join(", ", roleIds.Select(o => o.ToString()))
 				+ " from " + user.Username
 				+ " with id " + userId,
 				user == null ? LoggingLevel.Error : LoggingLevel.Debug);
@@ -73,7 +73,7 @@ namespace accs.Services
 		{
 			SocketGuildUser user = Guild.GetUser(userId);
 			await user.BanAsync();
-			_logger.WriteAsync("Banned " + user.Username + " with id " + userId,
+            await _logger.WriteAsync("Banned " + user.Username + " with id " + userId,
 				user == null ? LoggingLevel.Error : LoggingLevel.Debug);
 			return user != null;
 		}
@@ -82,7 +82,7 @@ namespace accs.Services
 		{
 			SocketGuildUser user = Guild.GetUser(userId);
 			await user.KickAsync();
-			_logger.WriteAsync("Kicked " + user.Username + " with id " + userId,
+            await _logger.WriteAsync("Kicked " + user.Username + " with id " + userId,
 				user == null ? LoggingLevel.Error : LoggingLevel.Debug);
 			return user != null;
 		}

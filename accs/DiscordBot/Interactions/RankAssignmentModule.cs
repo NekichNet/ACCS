@@ -56,7 +56,7 @@ namespace accs.DiscordBot.Interactions
 			}
 			catch (Exception ex)
 			{
-				_logService.WriteAsync(ex.Message, LoggingLevel.Error);
+				await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
 			}
 		}
 
@@ -134,7 +134,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                _logService.WriteAsync(ex.Message, LoggingLevel.Error);
+                await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
             }
         }
 

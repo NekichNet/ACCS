@@ -7,7 +7,7 @@ namespace accs.Models.Configurations
     {
         public void Configure(EntityTypeBuilder<Activity> builder)
         {
-            builder.HasKey(a => new { a.Unit, a.Date });
+            builder.HasKey(a => new { a.UnitId, a.Date });
         }
     }
 }

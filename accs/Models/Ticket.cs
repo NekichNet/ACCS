@@ -24,6 +24,8 @@ namespace accs.Models
             Status = TicketStatus.Opened;
         }
 
+        public Ticket() { }
+
         public virtual async Task AcceptAsync()
         {
 			Status = TicketStatus.Accepted;
@@ -55,7 +57,7 @@ namespace accs.Models
         protected async Task CloseAsync()
         {
             IEnumerable<IMessage> messages = await _guild.GetTextChannel(ChannelDiscordId).GetMessagesAsync(100).FlattenAsync();
-            using (FileStream stream = new FileStream(DotNetEnv.Env.GetString("TICKET_MESSAGES_DIRECTORY", Path.Join("messages", $"{Id}.txt")), FileMode.Create))
+            using (FileStream stream = new FileStream(Path.Join(DotNetEnv.Env.GetString("TICKET_MESSAGES_DIRECTORY", "tickets"), $"{Id}.txt"), FileMode.Create))
             {
                 foreach (IMessage message in messages)
                 {

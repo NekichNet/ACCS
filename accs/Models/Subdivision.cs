@@ -13,6 +13,7 @@ namespace accs.Models
         public bool AppendHeadName { get; set; } = false;
         public List<Post> Posts { get; set; } = new List<Post>();
 		public HashSet<Permission> Permissions { get; set; } = new HashSet<Permission>();
+        public int? HeadId { get; set; }
 		public Subdivision? Head { get; set; }
 		public List<Subdivision> Subordinates { get; set; } = new List<Subdivision>();
 
@@ -24,6 +25,8 @@ namespace accs.Models
             }
             Name = name;
 		}
+
+        public Subdivision() { }
 
         public string GetFullName()
         {

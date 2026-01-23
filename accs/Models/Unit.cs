@@ -10,6 +10,7 @@ namespace accs.Models
 		public ulong DiscordId { get; set; }
 		public string Nickname { get; set; }
 		public ulong? SteamId { get; set; }
+		public ushort RankUpCounter { get; set; }
 		public Rank Rank { get; set; }
 		public List<Doc> OwnDocs { get; set; }
 		public List<Doc> AssignedDocs { get; set; }

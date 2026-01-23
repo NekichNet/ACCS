@@ -1,6 +1,7 @@
 ﻿using accs.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Repository.Interfaces;
+using accs.Services;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
@@ -13,12 +14,14 @@ namespace accs.DiscordBot.Interactions
     [Group("fix", "Фиксирование активности")]
     public class ActivityGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
+        private DiscordBotService _bot;
         private IActivityRepository _activityRepository;
         private IUnitRepository _unitRepository;
         private ILogService _logService;
 
-        public ActivityGroupModule(IActivityRepository activityRepository, IUnitRepository unitRepository, ILogService logService)
+        public ActivityGroupModule(DiscordBotService bot, IActivityRepository activityRepository, IUnitRepository unitRepository, ILogService logService)
         {
+            _bot = bot;
             _activityRepository = activityRepository;
             _unitRepository = unitRepository;
             _logService = logService;
@@ -191,7 +194,8 @@ namespace accs.DiscordBot.Interactions
 
                     if (unit != null)
                     {
-                        await _activityRepository.CreateAsync(new Activity()
+						await RankUpCountAsync(unit);
+						await _activityRepository.CreateAsync(new Activity()
                         {
                             Unit = unit,
                             Date = date
@@ -250,7 +254,8 @@ namespace accs.DiscordBot.Interactions
 
                         if (unit != null)
                         {
-                            await _activityRepository.CreateAsync(new Activity()
+                            await RankUpCountAsync(unit);
+							await _activityRepository.CreateAsync(new Activity()
                             {
                                 Unit = unit,
                                 Date = date
@@ -268,6 +273,26 @@ namespace accs.DiscordBot.Interactions
             {
                 await _logService.WriteAsync($"Error in ActivityMenuHandler: {ex.Message}", LoggingLevel.Error);
                 await RespondAsync("Ошибка при обновлении списка", ephemeral: true);
+            }
+        }
+
+        private async Task RankUpCountAsync(Unit unit)
+        {
+            unit.RankUpCounter++;
+            if (unit.Rank.Next != null)
+            {
+                if (unit.Rank.Next.CounterToReach <= unit.RankUpCounter)
+                {
+                    string channelIdString = DotNetEnv.Env.GetString("NOTIFICATION_CHANNEL_ID", "NOTIFICATION_CHANNEL_ID is not found!");
+                    ulong channelId;
+                    if (!ulong.TryParse(channelIdString, out channelId))
+                    {
+                        await _logService.WriteAsync("Не удалось спарсить NOTIFICATION_CHANNEL_ID!", LoggingLevel.Error);
+                        return;
+                    }
+
+                    _bot.Guild.GetTextChannel(channelId).SendMessageAsync($"Нужно повысить бойца {unit.Nickname}: {unit.RankUpCounter}/{unit.Rank.Next.CounterToReach}.");
+                }
             }
         }
     }

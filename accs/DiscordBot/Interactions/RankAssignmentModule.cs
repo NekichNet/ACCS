@@ -11,9 +11,9 @@ namespace accs.DiscordBot.Interactions
 {
     [IsUnit()]
     [HasPermission(PermissionType.ChangeRanks)]
+	[Group("rank", "Команды для управления званиями")]
     public class RankAssignmentModule : InteractionModuleBase<SocketInteractionContext>
     {
-
         private readonly IRankRepository _rankRepository;
         private readonly IUnitRepository _unitRepository;
         private readonly ILogService _logService;
@@ -24,68 +24,119 @@ namespace accs.DiscordBot.Interactions
             _unitRepository = unitRepository;
             _logService = logService;
 
-
             string voiceChannelIdString = DotNetEnv.Env.GetString("VOICE_CHANNEL_ID", "null");
 
             string guildIdString = DotNetEnv.Env.GetString("SERVER_ID", "Server id not found");
             ulong guildId;
             if (ulong.TryParse(guildIdString, out guildId)) { throw _logService.ExceptionAsync("Cannot parse guild id!", LoggingLevel.Error).Result; }
-
         }
 
-        [SlashCommand("set-rank", "Присвоить звание бойцу")]
-        public async Task SetRankAsync(IUser targetedUser)
+        [SlashCommand("up", "Повысить бойца на одно звание")]
+        public async Task RankUpCommandAsync(IUser targetedUser)
+        {
+			try
+			{
+				var targetUnit = await _unitRepository.ReadAsync(targetedUser.Id);
+
+				if (targetUnit == null)
+				{
+					await RespondAsync("Боец не найден.", ephemeral: true);
+					return;
+				}
+
+				Rank? rank = targetUnit.Rank.Next;
+				if (rank == null)
+				{
+					await DeleteOriginalResponseAsync();
+					await RespondAsync($"У бойца {targetUnit.Nickname} уже самое высокое на данный момент звание: {targetUnit.Rank.Name}.", ephemeral: true);
+					await _logService.WriteAsync($"У бойца {targetUnit.Nickname} уже самое высокое на данный момент звание: {targetUnit.Rank.Name}.", LoggingLevel.Debug);
+					return;
+				}
+
+				targetUnit.Rank = rank;
+				targetUnit.RankUpCounter = 0;
+
+				await _unitRepository.UpdateAsync(targetUnit);
+
+				await RespondAsync($"Боец {targetUnit.Nickname} повышен до звания {targetUnit.Rank}. Счётчик на повышение сброшен.");
+			}
+			catch (Exception ex)
+			{
+				_logService.WriteAsync(ex.Message, LoggingLevel.Error);
+			}
+		}
+
+        [SlashCommand("set", "Установить бойцу выбранное звание")]
+        public async Task SetRankCommandAsync(IUser targetedUser, int? rankId = null)
         {
             try
             {
-                var actorUnit = await _unitRepository.ReadAsync(Context.User.Id);
-                var targetUnit = await _unitRepository.ReadAsync(targetedUser.Id);
+				var targetUnit = await _unitRepository.ReadAsync(targetedUser.Id);
 
-                if (targetUnit == null)
+				if (targetUnit == null)
+				{
+					await RespondAsync("Боец не найден.", ephemeral: true);
+					return;
+				}
+
+				if (rankId == null)
                 {
-                    await RespondAsync("Боец не найден.", ephemeral: true);
-                    return;
-                }
+					/// На чёрный день
+					/*
+					var allowedRanks = new List<Rank>(); 
+					Rank CurrentTestRank = actorUnit.Rank;
+					while (CurrentTestRank.Previous != null)
+					{
+						CurrentTestRank = CurrentTestRank.Previous;
+						allowedRanks.Add(CurrentTestRank);
+					}
+					*/
+
+					var allowedRanks = await _rankRepository.ReadAllAsync();
 
 
-                /// На чёрный день
-                /*
-                var allowedRanks = new List<Rank>(); 
-                Rank CurrentTestRank = actorUnit.Rank;
-                while (CurrentTestRank.Previous != null)
+
+					if (!allowedRanks.Any())
+					{
+						await RespondAsync("Нет доступных должностей для назначения.", ephemeral: true);
+						return;
+					}
+
+					var menu = new SelectMenuBuilder()
+						.WithCustomId($"rank-menu-{targetedUser.Id}")
+						.WithPlaceholder("Звание")
+						.WithMinValues(1)
+						.WithMaxValues(1);
+
+					foreach (var rank in allowedRanks)
+						menu.AddOption(rank.Name, rank.Id.ToString());
+
+					var builder = new ComponentBuilder()
+						.WithSelectMenu(menu);
+
+					await RespondAsync(
+						$"Выберите новое звание для {targetUnit.Nickname}",
+						components: builder.Build(),
+						ephemeral: true);
+				}
+                else
                 {
-                    CurrentTestRank = CurrentTestRank.Previous;
-                    allowedRanks.Add(CurrentTestRank);
-                }
-                */
+					Rank? rank = await _rankRepository.ReadAsync((int)rankId);
+					if (rank == null)
+					{
+						await DeleteOriginalResponseAsync();
+						await RespondAsync($"Звание c Id {rankId} не найдено.", ephemeral: true);
+						await _logService.WriteAsync($"Звание c Id {rankId} не найдено.", LoggingLevel.Error);
+						return;
+					}
 
-                var allowedRanks = await _rankRepository.ReadAllAsync();
-                
+					targetUnit.Rank = rank;
+					targetUnit.RankUpCounter = 0;
 
+					await _unitRepository.UpdateAsync(targetUnit);
 
-                if (!allowedRanks.Any())
-                {
-                    await RespondAsync("Нет доступных должностей для назначения.", ephemeral: true);
-                    return;
-                }
-
-                var menu = new SelectMenuBuilder()
-                    .WithCustomId($"rank-menu-{targetedUser.Id}")
-                    .WithPlaceholder("Выберите звания")
-                    .WithMinValues(1)
-                    .WithMaxValues(1);
-
-                foreach (var rank in allowedRanks)
-                    menu.AddOption(rank.Name, rank.Id.ToString());
-
-                var builder = new ComponentBuilder()
-                    .WithSelectMenu(menu);
-
-                await RespondAsync(
-                    $"Назначение званий для {targetUnit.Nickname}",
-                    components: builder.Build(),
-                    ephemeral: true);
-
+					await RespondAsync($"Установлено звание {rank.Name} для бойца {targetUnit.Nickname}. Счётчик на повышение сброшен.");
+				}
             }
             catch (Exception ex)
             {
@@ -100,23 +151,33 @@ namespace accs.DiscordBot.Interactions
             try
             {
                 var component = (SocketMessageComponent)Context.Interaction;
-                var targetUnit = await _unitRepository.ReadAsync(targetId);
-                var promptedRank = component.Data.Values.ElementAt(0);
-                var rank = await _rankRepository.ReadAsync(Int32.Parse(promptedRank));
+                Unit? targetUnit = await _unitRepository.ReadAsync(targetId);
+                string promptedRank = component.Data.Values.ElementAt(0);
+                Rank? rank = await _rankRepository.ReadAsync(Int32.Parse(promptedRank));
 
-                if (rank == null)
+				if (targetUnit == null)
+				{
+					await DeleteOriginalResponseAsync();
+					await RespondAsync($"Боец с Id {targetId} не найден в системе.", ephemeral: true);
+					await _logService.WriteAsync($"Боец с Id {targetId} не найден в системе.", LoggingLevel.Error);
+					return;
+				}
+
+				if (rank == null)
                 {
-                    await RespondAsync($"Звание {promptedRank} не найдено.", ephemeral: true);
-                    await _logService.WriteAsync($"Должность с ID {promptedRank} не найдена.", LoggingLevel.Error);
+                    await DeleteOriginalResponseAsync();
+                    await RespondAsync($"Звание c Id {promptedRank} не найдено.", ephemeral: true);
+                    await _logService.WriteAsync($"Звание c Id {promptedRank} не найдено.", LoggingLevel.Error);
                     return;
                 }
 
                 // Присвоение звания
                 targetUnit.Rank = rank;
+                targetUnit.RankUpCounter = 0;
 
                 await _unitRepository.UpdateAsync(targetUnit);
 
-                await RespondAsync("Должности обновлены.", ephemeral: true);
+                await RespondAsync($"Установлено звание {rank.Name} для бойца {targetUnit.Nickname}. Счётчик на повышение сброшен.");
             }
             catch (Exception ex)
             {

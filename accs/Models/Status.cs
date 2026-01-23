@@ -12,9 +12,9 @@ namespace accs.Models
         public ulong? DiscordRoleId { get; set; }
         public List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
 
-		public Status(string envRoleString)
+		public Status(string? envRoleString = null)
 		{
-			DiscordRoleId = ulong.Parse(DotNetEnv.Env.GetString(envRoleString, $"{envRoleString} Not found"));
+			DiscordRoleId = envRoleString != null ? ulong.Parse(DotNetEnv.Env.GetString(envRoleString, $"{envRoleString} Not found")) : null;
 		}
 		public Status()
 		{

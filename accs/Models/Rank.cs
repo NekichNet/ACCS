@@ -10,7 +10,9 @@ namespace accs.Models
 		public string Name { get; set; } = string.Empty;
 		public ulong? DiscordRoleId { get; set; }
 		public ushort CounterToReach { get; set; }
+		public int? PreviousId { get; set; }
 		public Rank? Previous { get; set; }
+		public int? NextId { get; set; }
 		public Rank? Next { get; set; }
 		public HashSet<Permission> Permissions { get; set; } = new HashSet<Permission>();
 		public List<Unit> Units { get; set; } = new List<Unit>();
@@ -23,6 +25,8 @@ namespace accs.Models
 			if (permissions != null) Permissions = permissions;
 			DiscordRoleId = ulong.Parse(DotNetEnv.Env.GetString($"RANK{Id}_ROLE_ID", $"RANK{Id}_ROLE_ID Not found"));
 		}
+
+		public Rank() { }
 
 		public void InsertPrevious(Rank rank)
 		{

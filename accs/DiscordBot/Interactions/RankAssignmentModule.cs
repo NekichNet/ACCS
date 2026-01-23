@@ -23,12 +23,6 @@ namespace accs.DiscordBot.Interactions
             _rankRepository = rankRepository;
             _unitRepository = unitRepository;
             _logService = logService;
-
-            string voiceChannelIdString = DotNetEnv.Env.GetString("VOICE_CHANNEL_ID", "null");
-
-            string guildIdString = DotNetEnv.Env.GetString("SERVER_ID", "Server id not found");
-            ulong guildId;
-            if (ulong.TryParse(guildIdString, out guildId)) { throw _logService.ExceptionAsync("Cannot parse guild id!", LoggingLevel.Error).Result; }
         }
 
         [SlashCommand("up", "Повысить бойца на одно звание")]

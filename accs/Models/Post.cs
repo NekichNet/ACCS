@@ -10,25 +10,32 @@ namespace accs.Models
 		public int Id { get; set; }
 		public string Name { get; set; } = string.Empty;
 		public string Description { get; set; } = string.Empty;
+		public int? SubdivisionId { get; set; }
 		public Subdivision? Subdivision { get; set; }
 		public ulong? DiscordRoleId { get; set; }
         public bool AppendSubdivisionName { get; set; } = false;
+		public int? HeadId{ get; set; }
         public Post? Head { get; set; }
 		public List<Post> Subordinates { get; set; } = new List<Post>();
-		public HashSet<Permission> Permissions { get; set; } = new HashSet<Permission>();
+		public List<Permission> Permissions { get; set; } = new List<Permission>();
 		public List<Unit> Units { get; set; } = new List<Unit>();
 
-		public Post(string envRoleString)
+		public Post(string envRoleString, List<Permission>? permissions = null)
 		{
 			DiscordRoleId = ulong.Parse(DotNetEnv.Env.GetString(envRoleString, $"{envRoleString} Not found"));
+			if (permissions != null)
+				foreach (Permission permission in permissions)
+					Permissions.Add(permission);
 		}
+
+		public Post() { }
 
 		public string GetFullName()
 		{
 			return Subdivision != null && AppendSubdivisionName ? Name + " " + Subdivision.GetFullName() : Name;
 		}
 
-		public HashSet<Permission> GetPermissionsRecursive()
+		public List<Permission> GetPermissionsRecursive()
 		{
 			HashSet<Permission> permissions = [.. Permissions];
 			if (Subdivision != null)
@@ -37,7 +44,7 @@ namespace accs.Models
 			foreach (Post sub in Subordinates)
 				foreach (Permission permission in sub.GetPermissionsRecursive())
 					permissions.Add(permission);
-			return permissions;
+			return permissions.ToList();
 		}
 
 

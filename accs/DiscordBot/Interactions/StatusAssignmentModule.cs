@@ -22,11 +22,10 @@ namespace accs.DiscordBot.Interactions
             _logService = logService;
             _statusRepository = statusRepository;
             _unitStatusRepository = unitStatusRepository;
-
-
         }
+
         [HasPermission(PermissionType.GiveReprimandGratitude)]
-        [SlashCommand("give", "Управление санкциями")] public async Task GiveCommandAsync(IUser user, 
+        [SlashCommand("give", "Выдать благодарность или выговор")] public async Task GiveCommandAsync(IUser user, 
             [Choice("gratitude", "gratitude"), Choice("reprimand", "reprimand"), Choice("severe-reprimand", "severeReprimand")] string statusType, int amountOfDays = 7)
         {
             try

@@ -17,7 +17,7 @@ namespace accs.Repository
         public async Task CreateAsync(Activity activity)
         {
 			_context.Activities.Add(activity);
-			_context.SaveChanges();
+			await _context.SaveChangesAsync();
         }
 
         public async Task<List<Activity>> ReadAsync()

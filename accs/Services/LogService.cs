@@ -22,7 +22,7 @@ namespace accs.Services
         public async Task WriteAsync(string text, LoggingLevel level = LoggingLevel.Info)
         {
             DateTime now = DateTime.Now;
-			File.AppendAllText(Path.Join(LogDirectoryPath, now.ToShortDateString() + ".txt"), $"[{level.ToString()}][{now.Hour}:{now.Minute}:{now.Second}]{text}\n");
+			await File.AppendAllTextAsync(Path.Join(LogDirectoryPath, now.ToShortDateString() + ".txt"), $"[{level.ToString()}][{now.Hour}:{now.Minute}:{now.Second}]{text}\n");
 		}
 
         public async Task<Exception> ExceptionAsync(string text, LoggingLevel level = LoggingLevel.Fatal)

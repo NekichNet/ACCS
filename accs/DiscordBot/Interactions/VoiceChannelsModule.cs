@@ -74,7 +74,7 @@ namespace accs.DiscordBot.Interactions
                         {
                             if (postAbove.DiscordRoleId != null)
                             {
-                                newChannel.AddPermissionOverwriteAsync(_guild.GetRole((ulong)postAbove.DiscordRoleId), new OverwritePermissions(connect: PermValue.Allow));
+                                await newChannel.AddPermissionOverwriteAsync(_guild.GetRole((ulong)postAbove.DiscordRoleId), new OverwritePermissions(connect: PermValue.Allow));
                             }
                         }
                     }
@@ -104,7 +104,7 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("access-role", "Откройте доступ к каналу для определённой роли")]
         public async Task OnGivingAccessByRole(SocketRole role)
         {
-            _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(role, new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли
+            await _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(role, new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли
         }
     }
 }

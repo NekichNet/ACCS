@@ -16,18 +16,18 @@ namespace accs.Repository
         public async Task CreateAsync(Subdivision subdivision)
         {
             _context.Subdivisions.Add(subdivision);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(Subdivision subdivision)
         {
             _context.Subdivisions.Remove(subdivision);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public async Task<Subdivision?> ReadAsync(int id)
         {
-            return _context.Subdivisions.Find(id);
+            return await _context.Subdivisions.FindAsync(id);
         }
 
         public async Task<List<Subdivision>> ReadAllAsync()
@@ -38,7 +38,7 @@ namespace accs.Repository
         public async Task UpdateAsync(Subdivision subdivision)
         {
             _context.Subdivisions.Update(subdivision);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
     }
 }

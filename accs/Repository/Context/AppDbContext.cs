@@ -6,18 +6,18 @@ namespace accs.Repository.Context
 {
 	public class AppDbContext : DbContext
 	{
-		public DbSet<Unit> Units { get; set; }
-		public DbSet<Post> Posts { get; set; }
-		public DbSet<Rank> Ranks { get; set; }
-		public DbSet<Subdivision> Subdivisions { get; set; }
-		public DbSet<Permission> Permissions { get; set; }
-		public DbSet<Reward> Rewards { get; set; }
-		public DbSet<DocType> DocTypes { get; set; }
-		public DbSet<Doc> Docs { get; set; }
-		public DbSet<Activity> Activities { get; set; }
-		public DbSet<UnitStatus> UnitStatuses { get; set; }
-		public DbSet<Status> Statuses { get; set; }
-		public DbSet<Ticket> Tickets { get; set; }
+		public DbSet<Unit> Units { get; set; } = null!;
+		public DbSet<Post> Posts { get; set; } = null!;
+		public DbSet<Rank> Ranks { get; set; } = null!;
+		public DbSet<Subdivision> Subdivisions { get; set; } = null!;
+		public DbSet<Permission> Permissions { get; set; } = null!;
+		public DbSet<Reward> Rewards { get; set; } = null!;
+		public DbSet<DocType> DocTypes { get; set; } = null!;
+		public DbSet<Doc> Docs { get; set; } = null!;
+		public DbSet<Activity> Activities { get; set; } = null!;
+		public DbSet<UnitStatus> UnitStatuses { get; set; } = null!;
+		public DbSet<Status> Statuses { get; set; } = null!;
+		public DbSet<Ticket> Tickets { get; set; } = null!;
 
 		public AppDbContext(DbContextOptions<AppDbContext> options)
 			: base(options) { }

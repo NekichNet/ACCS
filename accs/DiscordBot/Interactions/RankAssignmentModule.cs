@@ -1,6 +1,5 @@
 ﻿using accs.DiscordBot.Preconditions;
 using accs.Models;
-using accs.Repository;
 using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord;
@@ -20,7 +19,7 @@ namespace accs.DiscordBot.Interactions
 
         public RankAssignmentModule(IRankRepository rankRepository, IUnitRepository unitRepository, ILogService logService)
         {
-            _rankRepository = rankRepository;
+			_rankRepository = rankRepository;
             _unitRepository = unitRepository;
             _logService = logService;
         }
@@ -56,15 +55,16 @@ namespace accs.DiscordBot.Interactions
 			}
 			catch (Exception ex)
 			{
-				_logService.WriteAsync(ex.Message, LoggingLevel.Error);
+				await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
 			}
 		}
 
-        [SlashCommand("set", "Установить бойцу выбранное звание")]
-        public async Task SetRankCommandAsync(IUser targetedUser, int? rankId = null)
-        {
-            try
-            {
+		[SlashCommand("set", "Установить бойцу выбранное звание")]
+		public async Task SetRankCommandAsync(IUser targetedUser, int? rankId = null)
+		{
+			try
+			{
+
 				var targetUnit = await _unitRepository.ReadAsync(targetedUser.Id);
 
 				if (targetUnit == null)
@@ -74,7 +74,7 @@ namespace accs.DiscordBot.Interactions
 				}
 
 				if (rankId == null)
-                {
+				{
 					/// На чёрный день
 					/*
 					var allowedRanks = new List<Rank>(); 
@@ -113,8 +113,8 @@ namespace accs.DiscordBot.Interactions
 						components: builder.Build(),
 						ephemeral: true);
 				}
-                else
-                {
+				else
+				{
 					Rank? rank = await _rankRepository.ReadAsync((int)rankId);
 					if (rank == null)
 					{
@@ -131,15 +131,15 @@ namespace accs.DiscordBot.Interactions
 
 					await RespondAsync($"Установлено звание {rank.Name} для бойца {targetUnit.Nickname}. Счётчик на повышение сброшен.");
 				}
-            }
-            catch (Exception ex)
-            {
-                _logService.WriteAsync(ex.Message, LoggingLevel.Error);
-            }
-        }
+			}
+			catch (Exception ex)
+			{
+				await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
+			}
+		}
 
 
-        [ComponentInteraction("rank-menu-*")]
+		[ComponentInteraction("rank-menu-*")]
         public async Task RankMenuHandler(ulong targetId)
         {
             try

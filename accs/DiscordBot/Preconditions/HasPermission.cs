@@ -16,6 +16,7 @@ namespace accs.DiscordBot.Preconditions
 
         public async override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo commandInfo, IServiceProvider services)
         {
+			Console.WriteLine("Huh4");
 			Unit? unit = await services.GetRequiredService<IUnitRepository>().ReadAsync(context.User.Id);
 			if (unit != null)
 			{

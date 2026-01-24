@@ -31,13 +31,20 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("profile", "Показать профиль указанного пользователя")]
         public async Task ShowUserProfile(IUser? user = null)
         {
-            Unit unit;
+            Unit? unit;
             if (user == null) { unit = await _unitRepository.ReadAsync(Context.User.Id); }
             else { unit = await _unitRepository.ReadAsync(user.Id); }
 
             if (unit != null)
             {
-                string embedDescription = string.Empty;
+				Console.WriteLine(Context.User.Username);
+				Console.WriteLine(unit.Nickname);
+                Console.WriteLine(unit.Rank);
+				Console.WriteLine(unit.DiscordId);
+				Console.WriteLine(unit.SteamId);
+				Console.WriteLine(unit.Posts.Count);
+
+				string embedDescription = string.Empty;
 
                 if (unit.Posts.Count > 1)
                 {

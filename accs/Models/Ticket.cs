@@ -12,7 +12,7 @@ namespace accs.Models
 		public int Id { get; set; } = 0;
         public ulong AuthorDiscordId { get; set; }
         public ulong ChannelDiscordId { get; set; }
-        public List<Post> Admins { get; set; } = new List<Post>();
+		public List<Post> Admins { get; set; } = new List<Post>();
         public TicketStatus Status { get; set; }
 		public string? Discriminator { get; set; }
 

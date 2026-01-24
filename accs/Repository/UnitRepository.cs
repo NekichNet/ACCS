@@ -1,6 +1,7 @@
 ﻿using accs.Models;
 using accs.Repository.Context;
 using accs.Repository.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace accs.Repository
 {
@@ -21,6 +22,7 @@ namespace accs.Repository
 
         public async Task<Unit?> ReadAsync(ulong discordId)
         {
+
             return _context.Units.Find(discordId);
         }
 

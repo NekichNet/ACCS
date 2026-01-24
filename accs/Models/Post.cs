@@ -14,7 +14,7 @@ namespace accs.Models
 		public ulong? DiscordRoleId { get; set; }
         public bool AppendSubdivisionName { get; set; } = false;
 		public int? HeadId{ get; set; }
-        public Post? Head { get; set; }
+		public Post? Head { get; set; }
 		public List<Post> Subordinates { get; set; } = new List<Post>();
 		public List<Permission> Permissions { get; set; } = new List<Permission>();
 		public List<Unit> Units { get; set; } = new List<Unit>();

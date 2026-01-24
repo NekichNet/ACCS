@@ -1,5 +1,4 @@
-using accs.DiscordBot.Interactions;
-using accs.DiscordBot.Interactions.accs.DiscordBot.Interactions;
+
 using accs.Repository;
 using accs.Repository.Context;
 using accs.Repository.Interfaces;
@@ -9,12 +8,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using DotNetEnv;
-using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualBasic;
-using Newtonsoft.Json.Linq;
-using System;
 using System.Reflection;
 
 namespace accs
@@ -72,29 +66,58 @@ namespace accs
 				await Task.CompletedTask;
 				Console.WriteLine(msg);
 			};
-
+			
 			client.LoginAsync(TokenType.Bot, token).Wait();
-			client.StartAsync().Wait();
+			
+			InteractionService interaction = new InteractionService(client.Rest);
 
-			InteractionService interaction = new InteractionService(client);
+			interaction.Log += async (msg) =>
+			{
+				await Task.CompletedTask;
+				Console.WriteLine(msg);
+			};
 
-            interaction.AddModuleAsync<ActivityGroupModule>(app.Services).Wait();
-			interaction.AddModuleAsync<LogsGroupModule>(app.Services).Wait();
-			interaction.AddModuleAsync<PostAssignmentModule>(app.Services).Wait();
-			interaction.AddModuleAsync<ProfileGroupModule>(app.Services).Wait();
-			interaction.AddModuleAsync<RankAssignmentModule>(app.Services).Wait();
-			interaction.AddModuleAsync<RewardGroupModule>(app.Services).Wait();
-			interaction.AddModuleAsync<StatusAssignmentModule>(app.Services).Wait();
-			interaction.AddModuleAsync<TicketGroupModule>(app.Services).Wait();
-			interaction.AddModuleAsync<TicketMessageHandler>(app.Services).Wait();
-			interaction.AddModuleAsync<VoiceChannelsModule>(app.Services).Wait();
+			//interaction.RemoveModulesFromGuildAsync(guildId);
+
+			//interaction.RemoveModuleAsync<ActivityGroupModule>().Wait();
+			//interaction.RemoveModuleAsync<LogsGroupModule>().Wait();
+			//interaction.RemoveModuleAsync<PostAssignmentModule>().Wait();
+			//interaction.RemoveModuleAsync<ProfileGroupModule>().Wait();
+			//interaction.RemoveModuleAsync<RankAssignmentModule>().Wait();
+			//interaction.RemoveModuleAsync<RewardGroupModule>().Wait();
+			//interaction.RemoveModuleAsync<StatusAssignmentModule>().Wait();
+			//interaction.RemoveModuleAsync<TicketGroupModule>().Wait();
+			//interaction.RemoveModuleAsync<TicketMessageHandler>().Wait();
+			//interaction.RemoveModuleAsync<VoiceChannelsModule>().Wait();
+
+			//interaction.AddModuleAsync<ActivityGroupModule>(app.Services).Wait();
+			//interaction.AddModuleAsync<LogsGroupModule>(app.Services).Wait();
+			//interaction.AddModuleAsync<PostAssignmentModule>(app.Services).Wait();
+			//interaction.AddModuleAsync<ProfileGroupModule>(app.Services).Wait();
+			//interaction.AddModuleAsync<RankAssignmentModule>(app.Services).Wait();
+			//interaction.AddModuleAsync<RewardGroupModule>(app.Services).Wait();
+			//interaction.AddModuleAsync<StatusAssignmentModule>(app.Services).Wait();
+			//interaction.AddModuleAsync<TicketGroupModule>(app.Services).Wait();
+			//interaction.AddModuleAsync<TicketMessageHandler>(app.Services).Wait();
+			//interaction.AddModuleAsync<VoiceChannelsModule>(app.Services).Wait();
+
+			//interaction.AddModulesToGuildAsync();
+
+			client.InteractionCreated += async (msg) =>
+			{
+				var ctx = new SocketInteractionContext(client, msg);
+				await interaction.ExecuteCommandAsync(ctx, app.Services);
+			};
 
 			client.Ready += async Task () =>
             {
                 Console.WriteLine("Client is ready");
-                interaction.RegisterCommandsToGuildAsync(guildId).Wait();
+				interaction.AddModulesAsync(Assembly.GetEntryAssembly(), app.Services).Wait();
+				interaction.RegisterCommandsToGuildAsync(guildId).Wait();
                 Console.WriteLine("Commands registered");
 			};
+
+			client.StartAsync().Wait();
 
 			app.Run();
 		}

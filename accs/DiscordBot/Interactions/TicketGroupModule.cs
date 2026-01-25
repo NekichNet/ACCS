@@ -1,7 +1,7 @@
 ﻿using accs.Database;
 using accs.DiscordBot.Preconditions;
 using accs.Models;
-using accs.Models.Enums;
+using accs.Models.Enum;
 using accs.Models.Tickets;
 using accs.Services.Interfaces;
 using Discord.Interactions;

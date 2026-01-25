@@ -1,4 +1,4 @@
-﻿using accs.Models.Enums;
+﻿using accs.Models.Enum;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

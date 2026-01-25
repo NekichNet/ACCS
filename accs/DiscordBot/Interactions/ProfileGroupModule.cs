@@ -1,25 +1,26 @@
-﻿using accs.DiscordBot.Preconditions;
+﻿using accs.Database;
+using accs.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Models.Enum;
-using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
     [IsUnit()]
     public class ProfileGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private readonly IUnitRepository _unitRepository;
+        private readonly AppDbContext _db;
         private readonly ILogService _logService;
         private readonly DiscordSocketClient _discordSocketClient;
         private readonly SocketGuild _guild;
         
-        public ProfileGroupModule(IUnitRepository unitRepository, ILogService logservice, DiscordSocketClient discordSocketClient) 
+        public ProfileGroupModule(AppDbContext db, ILogService logservice, DiscordSocketClient discordSocketClient) 
         {
-            _unitRepository = unitRepository;
+            _db = db;
             _logService = logservice;
             _discordSocketClient = discordSocketClient;
             string guildIdString = DotNetEnv.Env.GetString("SERVER_ID", "Server id not found");
@@ -32,9 +33,11 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("profile", "Показать профиль указанного пользователя")]
         public async Task ShowUserProfile(IUser? user = null)
         {
+            await _db.Units.LoadAsync();
+
             Unit? unit;
-            if (user == null) { unit = await _unitRepository.ReadAsync(Context.User.Id); }
-            else { unit = await _unitRepository.ReadAsync(user.Id); }
+            if (user == null) { unit = await _db.Units.FindAsync(Context.User.Id); }
+            else { unit = await _db.Units.FindAsync(user.Id); }
 
             if (unit != null)
             {

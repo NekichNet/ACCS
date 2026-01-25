@@ -1,12 +1,13 @@
-﻿using accs.DiscordBot.Preconditions;
+﻿using accs.Database;
+using accs.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Models.Enum;
-using accs.Repository.Interfaces;
 using accs.Services;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -15,14 +16,12 @@ namespace accs.DiscordBot.Interactions
     [Group("fix", "Фиксирование активности")]
     public class ActivityGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private IActivityRepository _activityRepository;
-        private IUnitRepository _unitRepository;
+        private readonly AppDbContext _db;
         private ILogService _logService;
 
-        public ActivityGroupModule(IActivityRepository activityRepository, IUnitRepository unitRepository, ILogService logService)
+        public ActivityGroupModule(AppDbContext db, ILogService logService)
         {
-            _activityRepository = activityRepository;
-            _unitRepository = unitRepository;
+            _db = db;
             _logService = logService;
         }
 
@@ -32,11 +31,13 @@ namespace accs.DiscordBot.Interactions
         {
             try
             {
+                await _db.Units.LoadAsync();
+
                 List<Unit> units = new List<Unit>();
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
                 await foreach (IUser user in channel.GetUsersAsync())
                 {
-                    Unit? unit = await _unitRepository.ReadAsync(user.Id);
+                    Unit? unit = await _db.Units.FindAsync(user.Id);
                     if (unit != null)
                     {
                         units.Add(unit);
@@ -90,8 +91,7 @@ namespace accs.DiscordBot.Interactions
 
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
-                /* тут питоновский скрипт скидывает сюда список юнитов, 
-                 * которых он смог распознать и мы слизываем их в detectedUnits */
+                /* тут будет OCR */
 
                 List<Unit> detectedUnits = new List<Unit>();
 
@@ -133,16 +133,18 @@ namespace accs.DiscordBot.Interactions
         {
             try
             {
+                await _db.Units.LoadAsync();
+
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
                 Unit? unit;
                 if (user != null)
                 {
-                    unit = await _unitRepository.ReadAsync(user.Id);
+                    unit = await _db.Units.FindAsync(user.Id);
                 }
                 else
                 {
-                    unit = await _unitRepository.ReadAsync(Context.User.Id);
+                    unit = await _db.Units.FindAsync(Context.User.Id);
                 }
 
                 if (unit == null)
@@ -189,12 +191,12 @@ namespace accs.DiscordBot.Interactions
 
                 if (ulong.TryParse(unitIdRaw, out ulong unitId))
                 {
-                    Unit? unit = await _unitRepository.ReadAsync(unitId);
+                    Unit? unit = await _db.Units.FindAsync(unitId);
 
                     if (unit != null)
                     {
 						await RankUpCountAsync(unit);
-						await _activityRepository.CreateAsync(new Activity()
+						await _db.Activities.AddAsync(new Activity()
                         {
                             Unit = unit,
                             Date = date
@@ -249,12 +251,12 @@ namespace accs.DiscordBot.Interactions
                 {
                     if (ulong.TryParse(idStr, out ulong id))
                     {
-                        Unit? unit = await _unitRepository.ReadAsync(id);
+                        Unit? unit = await _db.Units.FindAsync(id);
 
                         if (unit != null)
                         {
                             await RankUpCountAsync(unit);
-							await _activityRepository.CreateAsync(new Activity()
+							await _db.Activities.AddAsync(new Activity()
                             {
                                 Unit = unit,
                                 Date = date

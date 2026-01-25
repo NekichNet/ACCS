@@ -1,5 +1,5 @@
 ﻿using accs.Database;
-using accs.Models.Enums;
+using accs.Models.Enum;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.WebSocket;

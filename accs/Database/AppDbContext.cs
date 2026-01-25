@@ -1,5 +1,5 @@
 ﻿using accs.Models;
-using accs.Models.Enums;
+using accs.Models.Enum;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Database

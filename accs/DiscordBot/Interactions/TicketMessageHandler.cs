@@ -1,7 +1,7 @@
 ﻿using accs.Database;
 using accs.DiscordBot.Preconditions;
 using accs.Models;
-using accs.Models.Enums;
+using accs.Models.Enum;
 using accs.Models.Tickets;
 using accs.Services.Interfaces;
 using Discord;
@@ -65,7 +65,7 @@ namespace accs.DiscordBot.Interactions
 			SocketTextChannel _channel = (SocketTextChannel)_client.GetChannel(channelId);
 			if (_channel == null) { await _logService.WriteAsync("Ticket channel is null!", LoggingLevel.Error); return; }
 
-			Ticket ticket = new InviteTicket(_channel.Guild, Context.User.Id, _channel.Id _logService);
+			Ticket ticket = new InviteTicket(_channel.Guild, Context.User.Id, _channel.Id, _logService);
 			await ticket.SendWelcomeMessageAsync();
 		}
 

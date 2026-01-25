@@ -1,8 +1,7 @@
-﻿using accs.DiscordBot.Preconditions;
+﻿using accs.Database;
+using accs.DiscordBot.Preconditions;
 using accs.Models.Configurations;
 using accs.Models.Enum;
-using accs.Repository;
-using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
@@ -18,16 +17,13 @@ namespace accs.DiscordBot.Interactions
         [HasPermission(PermissionType.ChangePosts)]
         public class PostAssignmentModule : InteractionModuleBase<SocketInteractionContext>
         {
-            private readonly IPostRepository _postRepository; 
-            private readonly IUnitRepository _unitRepository;
+            private readonly AppDbContext _db;
             private readonly ILogService _logService;
 
-            public PostAssignmentModule(IPostRepository postRepository,
-                IUnitRepository unitRepository,
+            public PostAssignmentModule(AppDbContext db,
                 ILogService logService)
             {
-                _postRepository = postRepository; 
-                _unitRepository = unitRepository;
+                _db = db;
                 _logService = logService; 
             }
 
@@ -37,8 +33,11 @@ namespace accs.DiscordBot.Interactions
             {
                 try
                 {
-                    var actorUnit = await _unitRepository.ReadAsync(Context.User.Id);
-                    var targetUnit = await _unitRepository.ReadAsync(target.Id);
+                    await _db.Units.LoadAsync(); 
+                    await _db.Posts.LoadAsync();
+
+                    var actorUnit = await _db.Units.FindAsync(Context.User.Id);
+                    var targetUnit = await _db.Units.FindAsync(target.Id);
 
                     if (targetUnit == null)
                     {
@@ -100,7 +99,7 @@ namespace accs.DiscordBot.Interactions
                     
                     for (int i = 0; i < selectedIds.Count; i++)
                     {
-                        var post = await _postRepository.ReadAsync(selectedIds[i]);
+                        var post = await _db.Posts.FindAsync(selectedIds[i]);
                         if (post == null)
                         {
                             await RespondAsync($"должность {selectedIds[i]} не найдены.", ephemeral: true);
@@ -108,18 +107,18 @@ namespace accs.DiscordBot.Interactions
                         }
                     }
 
-                    var targetUnit = await _unitRepository.ReadAsync(targetId);
+                    var targetUnit = await _db.Units.FindAsync(targetId);
 
                     // удаление всех текущих должностей
-                    targetUnit.Posts.Clear();
+                    targetUnit?.Posts.Clear();
 
                     // добавление выбранных должностей
                     foreach (var postId in selectedIds) 
                     {
-                        var post = await _postRepository.ReadAsync(postId);
+                        var post = await _db.Posts.FindAsync(postId);
                         if (post != null)
                         {
-                            targetUnit.Posts.Add(post);
+                            targetUnit?.Posts.Add(post);
                         }
                         else
                         {
@@ -127,7 +126,7 @@ namespace accs.DiscordBot.Interactions
                         } 
                     }
 
-                    await _unitRepository.UpdateAsync(targetUnit);
+                    await _db.SaveChangesAsync();
 
                     await RespondAsync("Должности обновлены.", ephemeral: true);
                 }

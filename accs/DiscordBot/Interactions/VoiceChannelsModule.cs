@@ -4,7 +4,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using accs.Models;
 using accs.DiscordBot.Interactions.Enums;
-using accs.Models.Enums;
+using accs.Models.Enum;
 using accs.Database;
 using Microsoft.EntityFrameworkCore;
 

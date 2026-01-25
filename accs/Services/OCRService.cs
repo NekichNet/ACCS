@@ -1,7 +1,6 @@
-﻿using accs.Models;
+﻿using accs.Database;
+using accs.Models;
 using accs.Models.Enum;
-using accs.Repository;
-using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord.WebSocket;
 using IronOcr;
@@ -11,21 +10,21 @@ namespace accs.Services
 {
     public class OCRService : IOCRService
     {
-		private IUnitRepository _unitRepository;
+        private readonly AppDbContext _db;
         private ILogService _logService;
 
 		public static int ChunkSize { get; private set; } = 3;
 
-        public OCRService(IUnitRepository unitRepository, DiscordSocketClient discordSocketClient, ILogService logService) 
+        public OCRService(AppDbContext db, DiscordSocketClient discordSocketClient, ILogService logService) 
         {
-            _unitRepository = unitRepository;
+            _db = db;
             _logService = logService;
 		}
 
         public async Task<HashSet<Unit>> ReceiveNamesFromPhoto(string imagePath)
         {
             OcrResult.Line[] lines = new IronTesseract().Read(imagePath).Lines;
-            List<Unit> units = await _unitRepository.ReadAllAsync();
+            List<Unit> units = _db.Units.ToList();
             HashSet<Unit> result = new HashSet<Unit>();
 
             foreach (OcrResult.Line line in lines)
@@ -46,5 +45,4 @@ namespace accs.Services
             return result;
         }
     }
-    
 }

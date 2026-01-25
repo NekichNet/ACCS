@@ -1,10 +1,11 @@
-﻿using accs.DiscordBot.Preconditions;
+﻿using accs.Database;
+using accs.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Models.Enum;
-using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
+using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -12,14 +13,12 @@ namespace accs.DiscordBot.Interactions
     [Group("reward", "Команды для работы с наградами")]
     public class RewardGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private IRewardRepository _rewardRepository;
-        private IUnitRepository _unitRepository;
+        private readonly AppDbContext _db;
         private ILogService _logService;
 
-        public RewardGroupModule(IRewardRepository rewardRepository, IUnitRepository unitRepository, ILogService logService)
+        public RewardGroupModule(AppDbContext db, ILogService logService)
         {
-            _rewardRepository = rewardRepository;
-            _unitRepository = unitRepository;
+            _db = db;
             _logService = logService;
         }
 
@@ -27,7 +26,10 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("assign", "Присвоить награду бойцу")]
         public async Task AssignCommand(IUser user, int? rewardId = null)
         {
-            Unit? unit = await _unitRepository.ReadAsync(user.Id);
+            await _db.Units.LoadAsync(); 
+            await _db.Rewards.LoadAsync();
+
+            Unit? unit = await _db.Units.FindAsync(user.Id);
             if (unit == null)
             {
                 await DeleteOriginalResponseAsync();
@@ -43,7 +45,9 @@ namespace accs.DiscordBot.Interactions
 		            .WithCustomId($"reward-menu-{unit.DiscordId}")
 		            .WithMinValues(1);
 
-                foreach (Reward reward in await _rewardRepository.ReadAllAsync())
+                var rewards = await _db.Rewards.ToListAsync();
+
+                foreach (Reward reward in rewards)
                 {
                     menuBuilder.AddOption(reward.Name, reward.Id.ToString(), reward.Description);
                 }
@@ -55,7 +59,7 @@ namespace accs.DiscordBot.Interactions
 			}
             else
             {
-                Reward reward = await _rewardRepository.ReadAsync((int)rewardId);
+                Reward? reward = await _db.Rewards.FindAsync(rewardId.Value);
                 if (reward == null)
                 {
                     await DeleteOriginalResponseAsync();
@@ -63,9 +67,10 @@ namespace accs.DiscordBot.Interactions
 					await _logService.WriteAsync($"Награда с Id {rewardId} не найдена в системе", LoggingLevel.Debug);
 					return;
 				}
+
                 unit.Rewards.Add(reward);
-                await _unitRepository.UpdateAsync(unit);
-				await DeleteOriginalResponseAsync();
+                await _db.SaveChangesAsync();
+                await DeleteOriginalResponseAsync();
 				await RespondAsync($"Бойцу {unit.Nickname} выдана награда: {reward.Name}", ephemeral: true);
 			}
         }
@@ -80,7 +85,10 @@ namespace accs.DiscordBot.Interactions
 		[ComponentInteraction("reward-menu-*")]
         public async Task MenuHandler(string unitId, string[] selectedIds)
         {
-			Unit? unit = await _unitRepository.ReadAsync(ulong.Parse(unitId));
+            await _db.Units.LoadAsync();
+            await _db.Rewards.LoadAsync();
+
+            Unit? unit = await _db.Units.FindAsync(ulong.Parse(unitId));
 			if (unit == null)
 			{
 				await DeleteOriginalResponseAsync();
@@ -88,10 +96,18 @@ namespace accs.DiscordBot.Interactions
 				await _logService.WriteAsync($"Пользователь с Id {unitId} не найден в системе", LoggingLevel.Debug);
 				return;
 			}
+
             List<Reward> rewards = new List<Reward>();
+
             foreach (string selectedId in selectedIds)
             {
-				Reward reward = await _rewardRepository.ReadAsync(int.Parse(selectedId));
+                if (!int.TryParse(selectedId, out int rewardId)) 
+                {
+                    await RespondAsync($"Некорректный ID награды: {selectedId}", ephemeral: true); 
+                    return; 
+                }
+
+                Reward? reward = await _db.Rewards.FindAsync(rewardId);
 				if (reward == null)
 				{
 					await DeleteOriginalResponseAsync();
@@ -102,7 +118,7 @@ namespace accs.DiscordBot.Interactions
 				rewards.Add(reward);
 			}
 			unit.Rewards.AddRange(rewards);
-			await _unitRepository.UpdateAsync(unit);
+			await _db.SaveChangesAsync();
 			await DeleteOriginalResponseAsync();
 			await RespondAsync($"Бойцу {unit.Nickname} выданы награды: {String.Join(", ", rewards)}", ephemeral: true);
 		}

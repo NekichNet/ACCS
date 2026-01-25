@@ -1,4 +1,4 @@
-﻿namespace accs.Models.Enums
+﻿namespace accs.Models.Enum
 {
     public enum TicketStatus
     {

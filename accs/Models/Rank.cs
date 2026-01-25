@@ -11,11 +11,11 @@ namespace accs.Models
 		public ulong? DiscordRoleId { get; set; }
 		public ushort CounterToReach { get; set; }
 		public int? PreviousId { get; set; }
-		public Rank? Previous { get; set; }
+		public virtual Rank? Previous { get; set; }
 		public int? NextId { get; set; }
-		public Rank? Next { get; set; }
-		public HashSet<Permission> Permissions { get; set; } = new HashSet<Permission>();
-		public List<Unit> Units { get; set; } = new List<Unit>();
+		public virtual Rank? Next { get; set; }
+		public virtual HashSet<Permission> Permissions { get; set; } = new HashSet<Permission>();
+		public virtual List<Unit> Units { get; set; } = new List<Unit>();
 
         public Rank(int id, string name, ushort counterToReach = 5)
 		{

@@ -1,5 +1,5 @@
 ﻿using accs.Database;
-using accs.Models.Enum;
+using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.WebSocket;
@@ -9,14 +9,9 @@ namespace accs.Models.Tickets
 {
     public class RetirementTicket : Ticket
     {
-        private readonly AppDbContext _db;
+        public RetirementTicket(ulong authorId) : base(authorId) { }
 
-        public RetirementTicket(AppDbContext db, ulong authorId, ulong channelId) : base(authorId, channelId)
-        {
-            _db = db;
-        }
-
-        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService)
+        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
         {
 			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 			if (channel == null)
@@ -28,13 +23,12 @@ namespace accs.Models.Tickets
             );
         }
 
-
-        public override async Task AcceptAsync(IGuildProviderService guildProvider)
+        public override async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db)
         {
-            await _db.UnitStatuses.LoadAsync();
-            await _db.Posts.LoadAsync();
+            await db.UnitStatuses.LoadAsync();
+            await db.Posts.LoadAsync();
 
-            Unit? unit = await _db.Units.FindAsync(AuthorDiscordId);
+            Unit? unit = await db.Units.FindAsync(AuthorDiscordId);
             var channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 
             if (unit == null)
@@ -55,7 +49,7 @@ namespace accs.Models.Tickets
             {
                 unit.Posts.Clear();
 
-                Status? retirementStatus = await _db.Statuses.FindAsync(StatusType.Retirement);
+                Status? retirementStatus = await db.Statuses.FindAsync(StatusType.Retirement);
                 if (retirementStatus == null)
                 {
                     await channel.SendMessageAsync("Ошибка: статус Retirement не найден.");
@@ -69,19 +63,19 @@ namespace accs.Models.Tickets
                     StartDate = DateTime.UtcNow
                 };
 
-                await _db.UnitStatuses.AddAsync(unitStatus);
+                await db.UnitStatuses.AddAsync(unitStatus);
 
                 await channel.SendMessageAsync(
                     "Вы успешно отправлены в отставку. Все ваши должности сняты."
                 );
 
                 Status = TicketStatus.Accepted;
-                await CloseAsync(guildProvider);
+                await DeleteChannelAsync(guildProvider);
                 return;
             }
 
             // уже в отставке -> показываем меню выбора должностей
-            List<Post> allPosts = await _db.Posts.Include(p => p.Units).ToListAsync();
+            List<Post> allPosts = await db.Posts.Include(p => p.Units).ToListAsync();
 
             var menu = new SelectMenuBuilder()
                 .WithCustomId($"retirement-select-{Id}")

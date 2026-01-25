@@ -1,4 +1,5 @@
-﻿using accs.Models.Enum;
+﻿using accs.Database;
+using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord.WebSocket;
 
@@ -6,34 +7,30 @@ namespace accs.Models.Tickets
 {
     public class FriendTicket : Ticket
     {
-        public FriendTicket(SocketGuild guild, ulong authorId, ulong channelId
-            ) : base(guild, authorId, channelId)
-        {
-        }
+        public FriendTicket(ulong authorId) : base(authorId) { }
 
-        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService)
+        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
         {
-            var channel = _guild.GetTextChannel(ChannelDiscordId);
-            if (channel == null)
-            {
-                return;
-            }
-            await channel.SendMessageAsync(
+			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
+			if (channel == null)
+				await logService.WriteAsync("FriendTicket: channel is null");
+			else
+				await channel.SendMessageAsync(
                "Вы подали заявку на сотрудничество с кланом.\n" +
                 "Командир РХБЗ или его заместитель скоро рассмотрят ваш запрос."
             );
         }
 
 
-        public override async Task AcceptAsync()
+        public override async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db)
         {
-            var user = _guild.GetUser(AuthorDiscordId);
+            var user = guildProvider.GetGuild().GetUser(AuthorDiscordId);
             if (user != null)
             {
                 string friendRoleIdStr = DotNetEnv.Env.GetString("FRIEND_ROLE_ID");
                 if (ulong.TryParse(friendRoleIdStr, out ulong friendRoleId))
                 {
-                    var friendRole = _guild.GetRole(friendRoleId);
+                    var friendRole = guildProvider.GetGuild().GetRole(friendRoleId);
 
                     if (friendRole != null)
                     {
@@ -43,7 +40,7 @@ namespace accs.Models.Tickets
             }
 
             Status = TicketStatus.Accepted;
-            await CloseAsync();
+            await DeleteChannelAsync(guildProvider);
         }
     }
 }

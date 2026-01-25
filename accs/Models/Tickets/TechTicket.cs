@@ -1,13 +1,14 @@
-﻿using accs.Services.Interfaces;
+﻿using accs.Database;
+using accs.Services.Interfaces;
 using Discord.WebSocket;
 
 namespace accs.Models.Tickets
 {
     public class TechTicket : Ticket
     {
-        public TechTicket(ulong authorId, ulong channelId) : base(authorId, channelId) { }
+        public TechTicket(ulong authorId) : base(authorId) { }
 
-        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService)
+        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
         {
             SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
             if (channel == null)
@@ -18,6 +19,5 @@ namespace accs.Models.Tickets
                     "Служба Связи скоро ответит на ваш запрос."
                 );
         }
-
     }
 }

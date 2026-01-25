@@ -1,11 +1,10 @@
 ﻿using accs.Database;
 using accs.DiscordBot.Preconditions;
 using accs.Models;
-using accs.Models.Enum;
+using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
@@ -15,39 +14,24 @@ namespace accs.DiscordBot.Interactions
     {
         private readonly AppDbContext _db;
         private readonly ILogService _logService;
-        private readonly DiscordSocketClient _discordSocketClient;
-        private readonly SocketGuild _guild;
+        private readonly IGuildProviderService _guildProvider;
         
-        public ProfileGroupModule(AppDbContext db, ILogService logservice, DiscordSocketClient discordSocketClient) 
+        public ProfileGroupModule(AppDbContext db, ILogService logservice, IGuildProviderService guildProvider) 
         {
             _db = db;
             _logService = logservice;
-            _discordSocketClient = discordSocketClient;
-            string guildIdString = DotNetEnv.Env.GetString("SERVER_ID", "Server id not found");
-            ulong guildId;
-            if (!ulong.TryParse(guildIdString, out guildId)) { throw _logService.ExceptionAsync("Cannot parse guild id!", LoggingLevel.Error).Result; }
-
-            _guild = _discordSocketClient.GetGuild(guildId);
+            _guildProvider = guildProvider;
         }
 
         [SlashCommand("profile", "Показать профиль указанного пользователя")]
         public async Task ShowUserProfile(IUser? user = null)
         {
-            await _db.Units.LoadAsync();
-
             Unit? unit;
             if (user == null) { unit = await _db.Units.FindAsync(Context.User.Id); }
             else { unit = await _db.Units.FindAsync(user.Id); }
 
             if (unit != null)
             {
-				Console.WriteLine(Context.User.Username);
-				Console.WriteLine(unit.Nickname);
-                Console.WriteLine(unit.Rank);
-				Console.WriteLine(unit.DiscordId);
-				Console.WriteLine(unit.SteamId);
-				Console.WriteLine(unit.Posts.Count);
-
 				string embedDescription = string.Empty;
 
                 if (unit.Posts.Count > 1)
@@ -68,7 +52,7 @@ namespace accs.DiscordBot.Interactions
 
                 EmbedBuilder embed = new EmbedBuilder()
                 {
-                    Title = $"{unit.Rank} {unit.Nickname}",
+                    Title = $"{unit.Rank.Name} {unit.Nickname}",
                     Description = embedDescription
                 };
 
@@ -110,14 +94,19 @@ namespace accs.DiscordBot.Interactions
                     }
                 }
                 
+                if (inLineUnitStatuses.Length > 0)
+                    embed.AddField(new EmbedFieldBuilder() { Name = "Статусы:", Value = inLineUnitStatuses });
+                if (inLineUnitRewards.Length > 0)
+                    embed.AddField(new EmbedFieldBuilder() { Name = "Награды:", Value = inLineUnitRewards });
+                embed.AddField(new EmbedFieldBuilder() { Name = "Благодарности:", Value = unit.UnitStatuses.Where(x => x.Status.Type == StatusType.Gratitude).Count() });
+                embed.AddField(new EmbedFieldBuilder() { Name = "Выговоров:", Value = unit.UnitStatuses.Where(x => x.Status.Type == StatusType.Reprimand || x.Status.Type == StatusType.SevereReprimand).Count() });
+                embed.AddField(new EmbedFieldBuilder() { Name = "Дней активности:", Value = unit.Activities.Count() });
+                embed.AddField(new EmbedFieldBuilder() { Name = "Активность в последние 14 дней:", Value = inLineUnitActivities });
+				embed.ThumbnailUrl = _guildProvider.GetGuild().GetUser(unit.DiscordId).GetAvatarUrl()
+                    ?? _guildProvider.GetGuild().GetUser(unit.DiscordId).GetDefaultAvatarUrl();
+                embed.WithColor(Color.DarkGreen);
 
-                embed.AddField(new EmbedFieldBuilder() { Name = "Статусы:", IsInline = false, Value = inLineUnitStatuses });
-                embed.AddField(new EmbedFieldBuilder() { Name = "Награды:", IsInline = false, Value = inLineUnitRewards });
-                embed.AddField(new EmbedFieldBuilder() { Name = "Благодарности:", IsInline = true, Value = unit.UnitStatuses.Where(x => x.Status.Type == StatusType.Gratitude).Count() });
-                embed.AddField(new EmbedFieldBuilder() { Name = "Выговоров:", IsInline = true, Value = unit.UnitStatuses.Where(x => x.Status.Type == StatusType.Reprimand || x.Status.Type == StatusType.SevereReprimand).Count() });
-                embed.AddField(new EmbedFieldBuilder() { Name = "Дней активности:", IsInline = true, Value = unit.Activities.Count() });
-                embed.AddField(new EmbedFieldBuilder() { Name = "Активность в последние 14 дней:", IsInline = true, Value = inLineUnitActivities });
-                embed.ThumbnailUrl = _guild.GetUser(unit.DiscordId).GetAvatarUrl();
+                await RespondAsync(embed: embed.Build());
             }
             else
             {

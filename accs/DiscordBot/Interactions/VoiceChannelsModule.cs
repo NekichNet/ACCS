@@ -4,7 +4,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using accs.Models;
 using accs.DiscordBot.Interactions.Enums;
-using accs.Models.Enum;
+using accs.Models.Enums;
 using accs.Database;
 using Microsoft.EntityFrameworkCore;
 
@@ -59,8 +59,15 @@ namespace accs.DiscordBot.Interactions
                     freeNumber++;
                 }
 
+                ulong voiceCategoryId;
+                if (!ulong.TryParse(DotNetEnv.Env.GetString("VOICE_CATEGORY_ID", "VOICE_CATEGORY_ID not found"), out voiceCategoryId))
+                {
+                    await _logService.WriteAsync("Cannot parse voice category id!", LoggingLevel.Error);
+                    return;
+                }
+
                 /// Channel creation and block for everyone to connect
-                var newChannel = await guild.CreateVoiceChannelAsync($"【🔊】Пех {freeNumber}", (props) => { props.Bitrate = 64000; props.UserLimit = 0; props.CategoryId = 0; });
+                var newChannel = await guild.CreateVoiceChannelAsync($"【🔊】Пех {freeNumber}", (props) => { props.Bitrate = 64000; props.UserLimit = null; props.CategoryId = voiceCategoryId; });
 
                 /// Permission for needed users being granted
                 var guildUser = guild.GetUser(user.Id);

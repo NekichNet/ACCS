@@ -1,4 +1,4 @@
-﻿namespace accs.Models.Enum
+﻿namespace accs.Models.Enums
 {
     public enum StatusType
     {

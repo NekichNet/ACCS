@@ -1,21 +1,20 @@
-﻿using accs.Services.Interfaces;
+﻿using accs.Database;
+using accs.Services.Interfaces;
 using Discord.WebSocket;
 
 namespace accs.Models.Tickets
 {
     public class ReportTicket : Ticket
     {
-        public ReportTicket(SocketGuild guild, ulong authorId, ulong channelId) : base(guild, authorId, channelId)
-        {
-        }
+        public ReportTicket(ulong authorId) : base(authorId) { }
 
-        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService)
+        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
         {
-            var channel = _guild.GetTextChannel(ChannelDiscordId);
-            if (channel == null)
-                return;
-
-            await channel.SendMessageAsync(
+			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
+			if (channel == null)
+				await logService.WriteAsync("ReportTicket: channel is null");
+			else
+				await channel.SendMessageAsync(
                 "Вы обратились в отдел жалоб клана.\n" +
                 "Военная Полиция скоро рассмотрит ваш запрос и свяжется с вами."
             );

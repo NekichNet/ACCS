@@ -11,11 +11,11 @@ namespace accs.Models
 		public string Description { get; set; } = string.Empty;
 		public ulong? DiscordRoleId { get; set; }
         public bool AppendHeadName { get; set; } = false;
-		public List<Post> Posts { get; set; } = new List<Post>();
-		public HashSet<Permission> Permissions { get; set; } = new HashSet<Permission>();
+		public virtual List<Post> Posts { get; set; } = new List<Post>();
+		public virtual HashSet<Permission> Permissions { get; set; } = new HashSet<Permission>();
         public int? HeadId { get; set; }
-		public Subdivision? Head { get; set; }
-		public List<Subdivision> Subordinates { get; set; } = new List<Subdivision>();
+		public virtual Subdivision? Head { get; set; }
+		public virtual List<Subdivision> Subordinates { get; set; } = new List<Subdivision>();
 
 		public Subdivision(string name, string? envRoleString = null)
 		{

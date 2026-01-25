@@ -1,42 +1,34 @@
-﻿using accs.Services.Interfaces;
+﻿using accs.Database;
+using accs.Models.Enums;
+using accs.Services.Interfaces;
 using Discord;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 
 namespace accs.Models.Tickets
 {
     public class InviteTicket : Ticket
     {
-        private readonly ILogService _logService;
+        public InviteTicket (ulong authorId) : base(authorId) { }
 
-        public InviteTicket
-            (
-             SocketGuild guild,
-             ulong authorId,
-             ulong channelId,
-             ILogService logService
-            ) : base(guild, authorId, channelId)
+        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
         {
-            _logService = logService;
-        }
-
-
-        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService)
-        {
-            var channel = _guild.GetTextChannel(ChannelDiscordId);
-            await channel.SendMessageAsync(
+			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
+			if (channel == null)
+				await logService.WriteAsync("InviteTicket: channel is null");
+			else
+                await channel.SendMessageAsync(
                 "Добро пожаловать! Оставьте заявку на вступление в клан. " +
                 "Военная полиция скоро свяжется с вами."
             );
         }
 
 
-        public override async Task AcceptAsync()
+        public override async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db)
         {
-            SocketTextChannel channel = _guild.GetTextChannel(ChannelDiscordId);
+            SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 
-            List<Post> shooterPosts = (await _postRepository.ReadAllAsync())
-				.Where(p => p.Name == "Стрелок")
-                .ToList();
+            List<Post> shooterPosts = db.Posts.Where(p => p.Name == "Стрелок").ToList();
 
             if (!shooterPosts.Any())
             {
@@ -62,44 +54,48 @@ namespace accs.Models.Tickets
         }
 
 
-        public async Task AcceptanceHandler(int selectedPostId)
+        public async Task AcceptanceHandler(int selectedPostId, IGuildProviderService guildProvider, AppDbContext db, ILogService logService)
         {
+            await db.Units.LoadAsync();
+            await db.Tickets.LoadAsync();
 
-            var channel = _guild.GetTextChannel(ChannelDiscordId);          
+            var channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);          
 
             // назначаем должность стрелка
-            var post = await _postRepository.ReadAsync(selectedPostId);
+            var post = await db.Posts.FindAsync(selectedPostId);
 
             if (post == null)
             {
                 await channel.SendMessageAsync($"Ошибка: выбранная должность стрелка с Id {selectedPostId} не найдена!");
-                await _logService.WriteAsync($"Ошибка: выбранная должность стрелка с Id {selectedPostId} не найдена!", LoggingLevel.Error);
+                await logService.WriteAsync($"Выбранная должность стрелка с Id {selectedPostId} не найдена!", LoggingLevel.Error);
                 return;
             }
 
             // выдаём звание рекрута
-            var recruitRank = await _rankRepository.ReadAsync(1);
+            var recruitRank = await db.Ranks.FindAsync(1);
 
 			if (recruitRank == null)
 			{
-				await channel.SendMessageAsync("Ошибка: звание рекрута не найдено.");
+				await channel.SendMessageAsync("Ошибка: звание рекрута не найдено!");
+				await logService.WriteAsync($"Звание рекрута не найдено!", LoggingLevel.Error);
 				return;
 			}
 
-            await _guild.GetUser(AuthorDiscordId).ModifyAsync(u => u.Nickname = "[Р] " + u.Nickname);
+            await guildProvider.GetGuild().GetUser(AuthorDiscordId).ModifyAsync(u => u.Nickname = "[Р] " + u.Nickname);
 
 			var unit = new Unit
             {
                 DiscordId = AuthorDiscordId,
-                Nickname = _guild.GetUser(AuthorDiscordId).DisplayName,
+                Nickname = guildProvider.GetGuild().GetUser(AuthorDiscordId).DisplayName,
                 Rank = recruitRank,
                 Posts = new List<Post> { post }
             };
 
-            await _unitRepository.CreateAsync(unit);
-
+            await db.Units.AddAsync(unit);
             Status = TicketStatus.Accepted;
-            await CloseAsync();
+
+            await db.SaveChangesAsync();
+            await DeleteChannelAsync(guildProvider);
         }
     }
 }

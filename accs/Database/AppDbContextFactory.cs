@@ -13,7 +13,9 @@ namespace accs.Database
 				?? throw new InvalidOperationException("Connection string not configured for design time.");
 
 			var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-			optionsBuilder.UseNpgsql(connectionString);
+			optionsBuilder
+				.UseLazyLoadingProxies()
+				.UseNpgsql(connectionString);
 
 			return new AppDbContext(optionsBuilder.Options);
 		}

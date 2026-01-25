@@ -10,14 +10,14 @@ namespace accs.Models
 		public string Name { get; set; } = string.Empty;
 		public string Description { get; set; } = string.Empty;
 		public int? SubdivisionId { get; set; }
-		public Subdivision? Subdivision { get; set; }
+		public virtual Subdivision? Subdivision { get; set; }
 		public ulong? DiscordRoleId { get; set; }
         public bool AppendSubdivisionName { get; set; } = false;
 		public int? HeadId{ get; set; }
-		public Post? Head { get; set; }
-		public List<Post> Subordinates { get; set; } = new List<Post>();
-		public List<Permission> Permissions { get; set; } = new List<Permission>();
-		public List<Unit> Units { get; set; } = new List<Unit>();
+		public virtual Post? Head { get; set; }
+		public virtual List<Post> Subordinates { get; set; } = new List<Post>();
+		public virtual List<Permission> Permissions { get; set; } = new List<Permission>();
+		public virtual List<Unit> Units { get; set; } = new List<Unit>();
 
 		public Post(string envRoleString)
 		{

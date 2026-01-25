@@ -7,7 +7,7 @@ namespace accs.Models
     public class Activity
 	{
 		public ulong UnitId { get; set; }
-		public Unit Unit { get; set; }
+		public virtual Unit Unit { get; set; }
 		public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.Today);
 	}
 }

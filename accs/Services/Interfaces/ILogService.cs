@@ -1,4 +1,4 @@
-﻿using accs.Models.Enum;
+﻿using accs.Models.Enums;
 
 namespace accs.Services.Interfaces
 {

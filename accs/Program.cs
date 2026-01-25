@@ -1,4 +1,3 @@
-
 using accs.Database;
 using accs.Services;
 using accs.Services.Interfaces;
@@ -79,14 +78,16 @@ namespace accs
 				await interaction.ExecuteCommandAsync(ctx, app.Services);
 			};
 
+			IGuildProviderService guildProvider = app.Services.GetRequiredService<IGuildProviderService>();
+
 			client.Ready += async Task () =>
             {
                 Console.WriteLine("Client is ready");
 				await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), app.Services);
-				SocketGuild guild = app.Services.GetRequiredService<IGuildProviderService>().GetGuild();
+				SocketGuild guild = client.GetGuild(guildProvider.GetGuildId());
 				if (!guild.IsConnected)
 					throw new Exception("Client is not connected to guild!");
-				await interaction.RegisterCommandsToGuildAsync(guild.Id);
+				await interaction.RegisterCommandsToGuildAsync(guildProvider.GetGuildId());
                 Console.WriteLine("Commands registered");
 			};
 

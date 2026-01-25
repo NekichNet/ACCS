@@ -1,6 +1,6 @@
 ﻿using accs.Database;
 using accs.Models;
-using accs.Models.Enum;
+using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;

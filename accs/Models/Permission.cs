@@ -1,5 +1,5 @@
 ﻿using accs.Models.Configurations;
-using accs.Models.Enum;
+using accs.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -12,8 +12,8 @@ namespace accs.Models
 		[DatabaseGenerated(DatabaseGeneratedOption.None)]
 		public PermissionType Type { get; set; }
 		public string Description { get; set; } = string.Empty;
-		public List<Rank> Ranks { get; set; } = new List<Rank>();
-		public List<Post> Posts { get; set; } = new List<Post>();
-		public List<Subdivision> Subdivisions { get; set; } = new List<Subdivision>();
+		public virtual List<Rank> Ranks { get; set; } = new List<Rank>();
+		public virtual List<Post> Posts { get; set; } = new List<Post>();
+		public virtual List<Subdivision> Subdivisions { get; set; } = new List<Subdivision>();
 	}
 }

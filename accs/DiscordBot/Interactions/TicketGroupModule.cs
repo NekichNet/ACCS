@@ -1,7 +1,7 @@
 ﻿using accs.Database;
 using accs.DiscordBot.Preconditions;
 using accs.Models;
-using accs.Models.Enum;
+using accs.Models.Enums;
 using accs.Models.Tickets;
 using accs.Services.Interfaces;
 using Discord.Interactions;
@@ -44,7 +44,7 @@ namespace accs.DiscordBot.Interactions
             {
 				if (unit.Posts.Intersect(ticket.Admins).Any())
 				{
-					await ticket.AcceptAsync(_guildProvider);
+					await ticket.AcceptAsync(_guildProvider, _db);
 					return;
 				}
 			}
@@ -71,7 +71,7 @@ namespace accs.DiscordBot.Interactions
 			{
 				if (unit.Posts.Intersect(ticket.Admins).Any())
 				{
-					await ticket.RefuseAsync(_guildProvider);
+					await ticket.RefuseAsync(_guildProvider, _db);
 					return;
 				}
 			}
@@ -96,7 +96,7 @@ namespace accs.DiscordBot.Interactions
 			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
 			if (Context.User.Id == ticket.AuthorDiscordId)
             {
-                await ticket.CancelAsync(_guildProvider);
+                await ticket.CancelAsync(_guildProvider, _db);
 				return;
 			}
 
@@ -119,7 +119,7 @@ namespace accs.DiscordBot.Interactions
             Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
             if (ticket is InviteTicket invite)
 			{
-				await invite.AcceptanceHandler(selectedId);
+				await invite.AcceptanceHandler(selectedId, _guildProvider, _db, _logService);
 			}
 			else
 			{
@@ -177,7 +177,7 @@ namespace accs.DiscordBot.Interactions
 			ticket.Status = TicketStatus.Accepted;
 
 			await _db.SaveChangesAsync();
-			await ticket.CloseAsync(_guildProvider);
+			await ticket.DeleteChannelAsync(_guildProvider);
 		}
 	}
 }

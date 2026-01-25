@@ -1,5 +1,5 @@
 ﻿using accs.Models;
-using accs.Models.Enum;
+using accs.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Database
@@ -21,6 +21,12 @@ namespace accs.Database
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
 			: base(options) { }
+
+		protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+		{
+			optionsBuilder
+				.UseLazyLoadingProxies();
+		}
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{

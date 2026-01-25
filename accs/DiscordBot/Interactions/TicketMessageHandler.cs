@@ -1,7 +1,7 @@
 ﻿using accs.Database;
 using accs.DiscordBot.Preconditions;
 using accs.Models;
-using accs.Models.Enum;
+using accs.Models.Enums;
 using accs.Models.Tickets;
 using accs.Services.Interfaces;
 using Discord;
@@ -14,14 +14,16 @@ namespace accs.DiscordBot.Interactions
 	public class TicketMessageHandler : InteractionModuleBase<SocketInteractionContext>
 	{
 		private readonly DiscordSocketClient _client;
-		private readonly ILogService _logService;
 		private readonly AppDbContext _db;
+		private readonly ILogService _logService;
+		private readonly IGuildProviderService _guildProvider;
 
-		public TicketMessageHandler(DiscordSocketClient client, ILogService logService, AppDbContext db)
+		public TicketMessageHandler(DiscordSocketClient client, AppDbContext db, ILogService logService, IGuildProviderService guildProvider)
 		{
 			_client = client;
-			_logService = logService;
 			_db = db;
+			_logService = logService;
+			_guildProvider = guildProvider;
 		}
 
 		[HasPermission(PermissionType.Administrator)]
@@ -57,96 +59,61 @@ namespace accs.DiscordBot.Interactions
 
 		[IsUnit(false)]
 		[ComponentInteraction("invite-button")]
-		public async Task CreateInviteTicket()
+		public async Task InviteButtonHandler()
 		{
-			string channelIdString = DotNetEnv.Env.GetString("TICKET_CHANNEL_ID", "Ticket channel id not found");
-			ulong channelId;
-			if (!ulong.TryParse(channelIdString, out channelId)) { await _logService.WriteAsync("Cannot parse ticket channel id!", LoggingLevel.Error); return; }
-			SocketTextChannel _channel = (SocketTextChannel)_client.GetChannel(channelId);
-			if (_channel == null) { await _logService.WriteAsync("Ticket channel is null!", LoggingLevel.Error); return; }
-
-			Ticket ticket = new InviteTicket(_channel.Guild, Context.User.Id, _channel.Id, _logService);
-			await ticket.SendWelcomeMessageAsync();
+			InviteTicket ticket = new InviteTicket(Context.User.Id);
+			await ticket.CreateChannelAsync(_guildProvider, _logService);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 		}
 
 		[IsUnit(false)]
 		[ComponentInteraction("friend-button")]
-		public async Task CreateFriendTicket()
+		public async Task FriendButtonHandler()
 		{
-			string channelIdString = DotNetEnv.Env.GetString("TICKET_CHANNEL_ID", "Ticket channel id not found");
-			ulong channelId;
-			if (!ulong.TryParse(channelIdString, out channelId)) { await _logService.WriteAsync("Cannot parse ticket channel id!", LoggingLevel.Error); return; }
-			SocketTextChannel _channel = (SocketTextChannel)_client.GetChannel(channelId);
-			if (_channel == null) { await _logService.WriteAsync("Ticket channel is null!", LoggingLevel.Error); return; }
-
-			Ticket ticket = new FriendTicket(_channel.Guild, Context.User.Id, _channel.Id);
-			await ticket.SendWelcomeMessageAsync();
+			FriendTicket ticket = new FriendTicket(Context.User.Id);
+			await ticket.CreateChannelAsync(_guildProvider, _logService);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 		}
 
 		[ComponentInteraction("lesson-button")]
-		public async Task CreateLessonTicket()
+		public async Task LessonButtonHandler()
 		{
-			string channelIdString = DotNetEnv.Env.GetString("TICKET_CHANNEL_ID", "Ticket channel id not found");
-			ulong channelId;
-			if (!ulong.TryParse(channelIdString, out channelId)) { await _logService.WriteAsync("Cannot parse ticket channel id!", LoggingLevel.Error); return; }
-			SocketTextChannel _channel = (SocketTextChannel)_client.GetChannel(channelId);
-			if (_channel == null) { await _logService.WriteAsync("Ticket channel is null!", LoggingLevel.Error); return; }
-
-			Ticket ticket = new LessonTicket(_channel.Guild, Context.User.Id, _channel.Id);
-			await ticket.SendWelcomeMessageAsync();
+			LessonTicket ticket = new LessonTicket(Context.User.Id);
+			await ticket.CreateChannelAsync(_guildProvider, _logService);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 		}
 
 		[ComponentInteraction("tech-button")]
-		public async Task CreateTechTicket()
+		public async Task TechButtonHandler()
 		{
-			string channelIdString = DotNetEnv.Env.GetString("TICKET_CHANNEL_ID", "Ticket channel id not found");
-			ulong channelId;
-			if (!ulong.TryParse(channelIdString, out channelId)) { await _logService.WriteAsync("Cannot parse ticket channel id!", LoggingLevel.Error); return; }
-			SocketTextChannel _channel = (SocketTextChannel)_client.GetChannel(channelId);
-			if (_channel == null) { await _logService.WriteAsync("Ticket channel is null!", LoggingLevel.Error); return; }
-
-			Ticket ticket = new TechTicket(_channel.Guild, Context.User.Id, _channel.Id);
-			await ticket.SendWelcomeMessageAsync();
+			TechTicket ticket = new TechTicket(Context.User.Id);
+			await ticket.CreateChannelAsync(_guildProvider, _logService);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 		}
 
 		[ComponentInteraction("report-button")]
-		public async Task CreateReportTicket()
+		public async Task ReportButtonHandler()
 		{
-			string channelIdString = DotNetEnv.Env.GetString("TICKET_CHANNEL_ID", "Ticket channel id not found");
-			ulong channelId;
-			if (!ulong.TryParse(channelIdString, out channelId)) { await _logService.WriteAsync("Cannot parse ticket channel id!", LoggingLevel.Error); return; }
-			SocketTextChannel _channel = (SocketTextChannel)_client.GetChannel(channelId);
-			if (_channel == null) { await _logService.WriteAsync("Ticket channel is null!", LoggingLevel.Error); return; }
-
-			Ticket ticket = new ReportTicket(_channel.Guild, Context.User.Id, _channel.Id);
-			await ticket.SendWelcomeMessageAsync();
+			ReportTicket ticket = new ReportTicket(Context.User.Id);
+			await ticket.CreateChannelAsync(_guildProvider, _logService);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 		}
 
 		[IsUnit()]
 		[ComponentInteraction("retirement-button")]
-		public async Task CreateRetirementTicket()
+		public async Task RetirementButtonHandler()
 		{
-			string channelIdString = DotNetEnv.Env.GetString("TICKET_CHANNEL_ID", "Ticket channel id not found");
-			ulong channelId;
-			if (!ulong.TryParse(channelIdString, out channelId)) { await _logService.WriteAsync("Cannot parse ticket channel id!", LoggingLevel.Error); return; }
-			SocketTextChannel _channel = (SocketTextChannel)_client.GetChannel(channelId);
-			if (_channel == null) { await _logService.WriteAsync("Ticket channel is null!", LoggingLevel.Error); return; }
-
-			Ticket ticket = new RetirementTicket(_channel.Guild, Context.User.Id, _channel.Id, _unitRepository, _postRepository, _statusRepository, _unitStatusRepository);
-			await ticket.SendWelcomeMessageAsync();
+			RetirementTicket ticket = new RetirementTicket(Context.User.Id);
+			await ticket.CreateChannelAsync(_guildProvider, _logService);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 		}
 
 		[ComponentInteraction("donation-button")]
-		public async Task CreateDonationTicket()
+		public async Task DonationButtonHandler()
 		{
-			string channelIdString = DotNetEnv.Env.GetString("TICKET_CHANNEL_ID", "Ticket channel id not found");
-			ulong channelId;
-			if (!ulong.TryParse(channelIdString, out channelId)) { await _logService.WriteAsync("Cannot parse ticket channel id!", LoggingLevel.Error); return; }
-			SocketTextChannel _channel = (SocketTextChannel)_client.GetChannel(channelId);
-			if (_channel == null) { await _logService.WriteAsync("Ticket channel is null!", LoggingLevel.Error); return; }
-
-			Ticket ticket = new DonationTicket(_channel.Guild, Context.User.Id, _channel.Id);
-			await ticket.SendWelcomeMessageAsync();
+			DonationTicket ticket = new DonationTicket(Context.User.Id);
+			await ticket.CreateChannelAsync(_guildProvider, _logService);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 		}
 	}
 }

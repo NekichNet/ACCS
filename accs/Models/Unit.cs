@@ -1,4 +1,4 @@
-﻿using accs.Models.Enum;
+﻿using accs.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -12,13 +12,13 @@ namespace accs.Models
 		public string Nickname { get; set; }
 		public ulong? SteamId { get; set; }
 		public ushort RankUpCounter { get; set; }
-		public Rank Rank { get; set; }
-		public List<Doc> OwnDocs { get; set; }
-		public List<Doc> AssignedDocs { get; set; }
-		public List<Post> Posts { get; set; } = new List<Post>();
-		public List<Reward> Rewards { get; set; } = new List<Reward>();
-		public List<Activity> Activities { get; set; } = new List<Activity>();
-		public List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
+		public virtual Rank Rank { get; set; }
+		public virtual List<Doc> OwnDocs { get; set; }
+		public virtual List<Doc> AssignedDocs { get; set; }
+		public virtual List<Post> Posts { get; set; } = new List<Post>();
+		public virtual List<Reward> Rewards { get; set; } = new List<Reward>();
+		public virtual List<Activity> Activities { get; set; } = new List<Activity>();
+		public virtual List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
 
         public HashSet<Permission> GetPermissions()
 		{

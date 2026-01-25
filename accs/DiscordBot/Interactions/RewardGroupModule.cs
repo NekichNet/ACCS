@@ -14,7 +14,7 @@ namespace accs.DiscordBot.Interactions
     public class RewardGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
-        private ILogService _logService;
+        private readonly ILogService _logService;
 
         public RewardGroupModule(AppDbContext db, ILogService logService)
         {

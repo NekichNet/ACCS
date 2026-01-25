@@ -17,11 +17,14 @@ namespace accs.DiscordBot.Interactions
     public class ActivityGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
-        private ILogService _logService;
+        private readonly IOCRService _ocr;
+        private readonly ILogService _logService;
+        private string? tempDir;
 
-        public ActivityGroupModule(AppDbContext db, ILogService logService)
+        public ActivityGroupModule(AppDbContext db, IOCRService ocr, ILogService logService)
         {
             _db = db;
+            _ocr = ocr;
             _logService = logService;
         }
 
@@ -79,7 +82,7 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("screenshot", "зафиксировать активность по скриншоту")]
         public async Task FixScreenshotCommand(IAttachment screenshot)
         {
-            await DeferAsync();  // это шоб команда не таймаутилась при долгой обработке
+            await DeferAsync();
 
             try
             {
@@ -91,9 +94,19 @@ namespace accs.DiscordBot.Interactions
 
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
-                /* тут будет OCR */
+                /* OCR */
+                string tempDir = Path.Combine(Path.GetTempPath(), "temp");
+                Directory.CreateDirectory(tempDir);
 
-                List<Unit> detectedUnits = new List<Unit>();
+                string filePath = Path.Combine(tempDir, screenshot.Filename);
+                using (var http = new HttpClient())
+                {
+                    var bytes = await http.GetByteArrayAsync(screenshot.Url);
+                    await File.WriteAllBytesAsync(filePath, bytes);
+                }
+
+
+                HashSet<Unit> detectedUnits = await _ocr.ReceiveNamesFromPhoto(filePath);
 
                 if (detectedUnits.Any())
                 {
@@ -123,6 +136,13 @@ namespace accs.DiscordBot.Interactions
             {
                 await _logService.WriteAsync($"Error in FixScreenshotCommand: {ex.Message}", LoggingLevel.Error);
                 await FollowupAsync("Ошибка при обработке скриншота");
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, recursive: true); 
+                }
             }
         }
 

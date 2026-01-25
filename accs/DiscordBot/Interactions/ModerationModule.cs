@@ -56,7 +56,7 @@ namespace accs.DiscordBot.Interactions
 
 
         [SlashCommand("ban", "Забанить участника на сервере")]
-        public async Task BanUserAsync(IUser target, string? reason = null)
+        public async Task BanUserCommand(IUser target, string? reason = null)
         {
             try
             {

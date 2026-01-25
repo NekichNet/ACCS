@@ -34,8 +34,12 @@ namespace accs.Services
                 {
                     matches.Add(unit, 0);
                     for (int i = 0; i < line.Text.Length - ChunkSize; i++)
+                    {
                         if (unit.Nickname.Contains(line.Text.Substring(i, ChunkSize)))
+                        {
                             matches[unit]++;
+                        }
+                    }
 				}
                 Unit mostMatched = matches.MaxBy(m => m.Value).Key;
 				result.Add(mostMatched);

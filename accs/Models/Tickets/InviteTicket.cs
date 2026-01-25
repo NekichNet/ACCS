@@ -1,19 +1,11 @@
-﻿using accs.DiscordBot.Preconditions;
-using accs.Repository;
-using accs.Repository.Interfaces;
-using accs.Services.Interfaces;
+﻿using accs.Services.Interfaces;
 using Discord;
-using Discord.Interactions;
 using Discord.WebSocket;
-using System.Threading.Channels;
 
 namespace accs.Models.Tickets
 {
     public class InviteTicket : Ticket
     {
-        private readonly IPostRepository _postRepository; 
-        private readonly IUnitRepository _unitRepository;
-        private readonly IRankRepository _rankRepository;
         private readonly ILogService _logService;
 
         public InviteTicket
@@ -21,20 +13,14 @@ namespace accs.Models.Tickets
              SocketGuild guild,
              ulong authorId,
              ulong channelId,
-             IPostRepository postRepository,
-             IUnitRepository unitRepository,
-             IRankRepository rankRepository,
              ILogService logService
             ) : base(guild, authorId, channelId)
         {
-            _postRepository = postRepository;
-            _unitRepository = unitRepository;
-            _rankRepository = rankRepository;
             _logService = logService;
         }
 
 
-        public override async Task SendWelcomeMessageAsync()
+        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService)
         {
             var channel = _guild.GetTextChannel(ChannelDiscordId);
             await channel.SendMessageAsync(

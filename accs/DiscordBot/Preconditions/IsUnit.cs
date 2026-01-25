@@ -1,4 +1,4 @@
-﻿using accs.Repository.Interfaces;
+﻿using accs.Database;
 using Discord;
 using Discord.Interactions;
 
@@ -15,7 +15,7 @@ namespace accs.DiscordBot.Preconditions
 
 		public async override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo commandInfo, IServiceProvider services)
         {
-			return ((await services.GetRequiredService<IUnitRepository>().ReadAsync(context.User.Id)) == null) == _isUnit
+			return (await services.GetRequiredService<AppDbContext>().Units.FindAsync(context.User.Id) == null) == _isUnit
 				? PreconditionResult.FromError((_isUnit ? "Вы не" : "Вы") + " состоите в клане.")
 				: PreconditionResult.FromSuccess();
 		}

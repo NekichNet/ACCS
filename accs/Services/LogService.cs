@@ -1,4 +1,4 @@
-﻿using accs.Models;
+﻿using accs.Models.Enums;
 using accs.Services.Interfaces;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 

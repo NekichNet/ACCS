@@ -1,14 +1,13 @@
-﻿using Discord.WebSocket;
+﻿using accs.Services.Interfaces;
+using Discord.WebSocket;
 
 namespace accs.Models.Tickets
 {
     public class LessonTicket : Ticket
     {
-        public LessonTicket(SocketGuild guild, ulong authorId, ulong channelId) : base(guild, authorId, channelId)
-        {
-        }
+        public LessonTicket(ulong authorId, ulong channelId) : base(authorId, channelId) { }
 
-        public override async Task SendWelcomeMessageAsync()
+        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService)
         {
             var channel = _guild.GetTextChannel(ChannelDiscordId);
             if (channel == null)

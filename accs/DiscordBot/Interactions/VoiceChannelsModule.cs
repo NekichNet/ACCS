@@ -1,47 +1,50 @@
-﻿using accs.Repository.Interfaces;
-using accs.Services.Interfaces;
+﻿using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using accs.Models;
 using accs.DiscordBot.Interactions.Enums;
+using accs.Models.Enums;
+using accs.Database;
+using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
     [Group("voice", "Управление голосовыми каналами")]
     public class VoiceChannelsModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private IUnitRepository _unitRepository;
-        private ILogService _logService;
-        private DiscordSocketClient _discordSocketClient;
-        private ulong _voiceChannelId;
-        private SocketGuild? _guild;
+        private readonly ILogService _logService;
+		private readonly DiscordSocketClient _client;
+        private readonly IGuildProviderService _guildProvider;
+        private readonly AppDbContext _db;
 
-        public VoiceChannelsModule(IActivityRepository activityRepository, IUnitRepository unitRepository, ILogService logService, DiscordSocketClient discordSocketClient) 
+		private ulong _voiceChannelId;
+
+        public VoiceChannelsModule(ILogService logService, DiscordSocketClient discordSocketClient, IGuildProviderService guildProvider, AppDbContext db) 
         {
-            _unitRepository = unitRepository;
             _logService = logService;
-            _discordSocketClient = discordSocketClient;
+            _client = discordSocketClient;
+            _guildProvider = guildProvider;
+            _db = db;
+		}
 
+        public override void BeforeExecute(ICommandInfo commandInfo)
+        {
 			string voiceChannelIdString = DotNetEnv.Env.GetString("VOICE_CHANNEL_ID", "null");
-            if (!ulong.TryParse(voiceChannelIdString, out _voiceChannelId)) { throw _logService.ExceptionAsync("Cannot parse voice channel id!", LoggingLevel.Error).Result; }
-
-			string guildIdString = DotNetEnv.Env.GetString("SERVER_ID", "Server id not found");
-			ulong guildId;
-			if (!ulong.TryParse(guildIdString, out guildId)) { throw _logService.ExceptionAsync("Cannot parse guild id!", LoggingLevel.Error).Result; }
-
-            _guild = _discordSocketClient.GetGuild(guildId);
+			if (!ulong.TryParse(voiceChannelIdString, out _voiceChannelId)) { _logService.WriteAsync("Cannot parse voice channel id!", LoggingLevel.Error); }
 		}
 
         public async Task OnUserJoinedAsync(SocketUser user, SocketVoiceState before, SocketVoiceState after)
         {
+            SocketGuild guild = _guildProvider.GetGuild();
+
 			if (after.VoiceChannel.Id == _voiceChannelId)
             {
-                var channels = _guild.Channels;
+                var channels = guild.Channels;
                 List<string> channelNames = new List<string>();
 
                 foreach (var channel in channels) {
-                    if (channel.ChannelType == Discord.ChannelType.Voice) 
+                    if (channel.ChannelType == ChannelType.Voice) 
                     {
                         if (channel.Name.Contains("【🔊】Пех"))
                         {
@@ -57,30 +60,34 @@ namespace accs.DiscordBot.Interactions
                 }
 
                 /// Channel creation and block for everyone to connect
-                var newChannel = await _guild.CreateVoiceChannelAsync($"【🔊】Пех {freeNumber}", (props) => { props.Bitrate = 64000; props.UserLimit = 0; props.CategoryId = 0; });
-                await newChannel.AddPermissionOverwriteAsync(_guild.EveryoneRole, new OverwritePermissions(connect: PermValue.Deny));
+                var newChannel = await guild.CreateVoiceChannelAsync($"【🔊】Пех {freeNumber}", (props) => { props.Bitrate = 64000; props.UserLimit = 0; props.CategoryId = 0; });
 
                 /// Permission for needed users being granted
-                var guildUser = _guild.GetUser(user.Id);
+                var guildUser = guild.GetUser(user.Id);
                 await newChannel.AddPermissionOverwriteAsync(user, new OverwritePermissions(manageChannel:PermValue.Allow));
-                await _guild.MoveAsync(guildUser, newChannel);
-                Unit? unit = await _unitRepository.ReadAsync(user.Id);
+                await guild.MoveAsync(guildUser, newChannel);
+
+                Unit? unit = await _db.Units.FindAsync(user.Id);
                 if (unit != null)
                 {
-                    foreach(var post in unit.Posts)
+					await newChannel.AddPermissionOverwriteAsync(guild.EveryoneRole, new OverwritePermissions(connect: PermValue.Deny));
+                    await _db.Posts.LoadAsync();
+
+					foreach (var post in unit.Posts)
                     {
                         Post? postAbove = post.Head;
                         while (postAbove != null) 
                         {
                             if (postAbove.DiscordRoleId != null)
                             {
-                                await newChannel.AddPermissionOverwriteAsync(_guild.GetRole((ulong)postAbove.DiscordRoleId), new OverwritePermissions(connect: PermValue.Allow));
+                                await newChannel.AddPermissionOverwriteAsync(guild.GetRole((ulong)postAbove.DiscordRoleId), new OverwritePermissions(connect: PermValue.Allow));
                             }
                         }
                     }
                 }
             }
         }
+
         public async Task OnUserLeftAsync(SocketUser user, SocketVoiceState before, SocketVoiceState after)
         {
             if (before.VoiceChannel.Users.Count == 0)
@@ -92,19 +99,22 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("access", "Откройте доступ к каналу для клана или для всех")] 
         public async Task OnGivingAccess(AccessChoices accessChoices)
         {
-            if (accessChoices == AccessChoices.Friend)
+			SocketGuild guild = _guildProvider.GetGuild();
+
+			if (accessChoices == AccessChoices.Friend)
             {
-                await _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(_guild.GetRole(0), new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли френда
+                await guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(guild.GetRole(0), new OverwritePermissions(connect: PermValue.Allow));
             }
             else if (accessChoices == AccessChoices.Clan)
             {
-                await _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(_guild.GetRole(0), new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли
+                await guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(guild.GetRole(0), new OverwritePermissions(connect: PermValue.Allow));
             }
         }
         [SlashCommand("access-role", "Откройте доступ к каналу для определённой роли")]
         public async Task OnGivingAccessByRole(SocketRole role)
         {
-            await _guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(role, new OverwritePermissions(connect: PermValue.Allow)); //подставь Id роли
+			SocketGuild guild = _guildProvider.GetGuild();
+			await guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(role, new OverwritePermissions(connect: PermValue.Allow));
         }
     }
 }

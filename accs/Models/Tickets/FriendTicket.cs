@@ -1,5 +1,5 @@
-﻿using accs.Repository;
-using accs.Repository.Interfaces;
+﻿using accs.Models.Enums;
+using accs.Services.Interfaces;
 using Discord.WebSocket;
 
 namespace accs.Models.Tickets
@@ -11,7 +11,7 @@ namespace accs.Models.Tickets
         {
         }
 
-        public override async Task SendWelcomeMessageAsync()
+        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService)
         {
             var channel = _guild.GetTextChannel(ChannelDiscordId);
             if (channel == null)

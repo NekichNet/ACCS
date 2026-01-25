@@ -1,12 +1,11 @@
-﻿using accs.DiscordBot.Preconditions;
+﻿using accs.Database;
+using accs.DiscordBot.Preconditions;
 using accs.Models;
+using accs.Models.Enums;
 using accs.Models.Tickets;
-using accs.Repository;
-using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord.Interactions;
-using Discord.Rest;
-using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -14,96 +13,95 @@ namespace accs.DiscordBot.Interactions
     [Group("ticket", "Управление тикетами")]
     public class TicketGroupModule : InteractionModuleBase<SocketInteractionContext>
 	{
-        private ITicketRepository _ticketRepository;
-        private IUnitRepository _unitRepository;
-        private ILogService _logService;
+		private readonly ILogService _logService;
+		private readonly AppDbContext _db;
+		private readonly IGuildProviderService _guildProvider;
 
-        public TicketGroupModule(ITicketRepository ticketRepository, IUnitRepository unitRepository, ILogService logService)
-        {
-            _ticketRepository = ticketRepository;
-            _unitRepository = unitRepository;
+        public TicketGroupModule(ILogService logService, AppDbContext db, IGuildProviderService guildProvider)
+        { 
             _logService = logService;
+			_db = db;
+			_guildProvider = guildProvider;
         }
 
         [SlashCommand("accept", "Принять")]
-        public async Task Accept()
+        public async Task AcceptCommand()
         {
+			await _db.Units.LoadAsync();
+
             int ticketId = int.Parse(Context.Channel.Name.Split('-').Last());
-			Ticket? ticket = await _ticketRepository.ReadAsync(ticketId);
+			Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
 			if (ticket == null)
             {
                 await DeleteOriginalResponseAsync();
                 await RespondAsync($"Тикет с id {ticketId} не найден!");
                 await _logService.WriteAsync($"Тикет с id {ticketId} не найден!", LoggingLevel.Error);
+				return;
             }
-			Unit? userUnit = await _unitRepository.ReadAsync(Context.User.Id);
 
-			if (userUnit != null)
+			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
+			if (unit != null)
             {
-				if (userUnit.Posts.Intersect(ticket.Admins).Any())
+				if (unit.Posts.Intersect(ticket.Admins).Any())
 				{
-                    await ticket.AcceptAsync();
-                    return;
-				} 
-                else
-                {
-                    await _logService.WriteAsync("TicketGroupModule: unit " + userUnit.Nickname + " is not a ticket admin.", LoggingLevel.Debug);
-                }
+					await ticket.AcceptAsync(_guildProvider);
+					return;
+				}
 			}
 
-            await RespondAsync("Принять тикет может только ответственная за него подчасть.", ephemeral: true);
 			await DeleteOriginalResponseAsync();
+			await RespondAsync("Принять тикет может только ответственная за него подчасть.", ephemeral: true);
 		}
 
         [SlashCommand("refuse", "Отказать")]
-        public async Task Refuse()
+        public async Task RefuseCommand()
         {
 			int ticketId = int.Parse(Context.Channel.Name.Split('-').Last());
-			Ticket? ticket = await _ticketRepository.ReadAsync(ticketId);
+			Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
 			if (ticket == null)
 			{
 				await DeleteOriginalResponseAsync();
 				await RespondAsync($"Тикет с id {ticketId} не найден!");
 				await _logService.WriteAsync($"Тикет с id {ticketId} не найден!", LoggingLevel.Error);
+				return;
 			}
-			Unit? userUnit = await _unitRepository.ReadAsync(Context.User.Id);
 
-			if (userUnit != null)
+			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
+			if (unit != null)
 			{
-				if (userUnit.Posts.Intersect(ticket.Admins).Any())
+				if (unit.Posts.Intersect(ticket.Admins).Any())
 				{
-					await ticket.RefuseAsync();
+					await ticket.RefuseAsync(_guildProvider);
 					return;
 				}
-				else
-                {
-                    await _logService.WriteAsync("TicketGroupModule: unit " + userUnit.Nickname + " is not a ticket admin.", LoggingLevel.Debug);
-                }
 			}
-			await RespondAsync("Отказать и закрыть тикет может только ответственная за него подчасть.", ephemeral: true);
+
 			await DeleteOriginalResponseAsync();
+			await RespondAsync("Отказать и закрыть тикет может только ответственная за него подчасть.", ephemeral: true);
 		}
 
         [SlashCommand("cancel", "Отменить")]
-        public async Task Cancel()
+        public async Task CancelCommand()
         {
 			int ticketId = int.Parse(Context.Channel.Name.Split('-').Last());
-			Ticket? ticket = await _ticketRepository.ReadAsync(ticketId);
+			Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
 			if (ticket == null)
 			{
 				await DeleteOriginalResponseAsync();
 				await RespondAsync($"Тикет с id {ticketId} не найден!");
 				await _logService.WriteAsync($"Тикет с id {ticketId} не найден!", LoggingLevel.Error);
-			}
-			Unit? userUnit = await _unitRepository.ReadAsync(Context.User.Id);
-
-			if (Context.User.Id == ticket.AuthorDiscordId)
-            {
-                await ticket.CancelAsync();
 				return;
 			}
-			await RespondAsync("Отменить тикет может только автор тикета.", ephemeral: true);
+
+			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
+			if (Context.User.Id == ticket.AuthorDiscordId)
+            {
+                await ticket.CancelAsync(_guildProvider);
+				return;
+			}
+
 			await DeleteOriginalResponseAsync();
+			await RespondAsync("Отменить тикет может только автор тикета.", ephemeral: true);
 		}
 
         /*
@@ -115,16 +113,71 @@ namespace accs.DiscordBot.Interactions
         */
 
         [ComponentInteraction("invite-select-*")]
-        public async Task InviteSelectHandler(int ticketId)
+        public async Task InviteSelectHandler(int ticketId, int[] postIds)
         {
-            var component = (SocketMessageComponent)Context.Interaction;
-            int selectedId = int.Parse(component.Data.Values.First());
-
-            var ticket = await _ticketRepository.ReadAsync(ticketId);
+            int selectedId = postIds.First();
+            Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
             if (ticket is InviteTicket invite)
-                await invite.AcceptanceHandler(selectedId);
-
-            await RespondAsync("Рекрут успешно принят!");
+			{
+				await invite.AcceptanceHandler(selectedId);
+			}
+			else
+			{
+				await _logService.WriteAsync($"Error: ticket {ticketId} is {ticket.GetType()}");
+				await RespondAsync($"Ошибка: тикет с id {ticketId} не найден", ephemeral: true);
+			}
         }
-    }
+
+		[ComponentInteraction("retirement-select-*")]
+		public async Task ReturnFromRetirementHandler(int ticketId, int[] postIds)
+		{
+			await _db.UnitStatuses.LoadAsync();
+			await _db.Posts.LoadAsync();
+
+			Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
+			if (ticket == null)
+			{
+				await RespondAsync($"Ошибка: тикет с Id {ticketId} не найден!", ephemeral: true);
+				await _logService.WriteAsync($"Тикет с Id {ticketId} не найден!", LoggingLevel.Error);
+				return;
+			}
+
+			var unit = await _db.Units.FindAsync(ticket.AuthorDiscordId);
+			if (unit == null)
+			{
+				await RespondAsync($"Ошибка: боец c Id {ticket.AuthorDiscordId} не найден!", ephemeral: true);
+				await _logService.WriteAsync($"ReturnFromRetirenmentHandler: Боец c Id {ticket.AuthorDiscordId} не найден", LoggingLevel.Error);
+				return;
+			}
+
+			// поиск активного статуса Retirement
+			UnitStatus? activeRetirement = unit.UnitStatuses
+				.FirstOrDefault(us =>
+					us.Status.Type == StatusType.Retirement &&
+					us.EndDate > DateTime.UtcNow
+				);
+
+			if (activeRetirement != null)
+			{
+				activeRetirement.EndDate = DateTime.UtcNow;
+			}
+
+			unit.Posts.Clear();
+
+			// Назначаем выбранные должности
+			foreach (int id in postIds)
+			{
+				Post? post = await _db.Posts.FindAsync(id);
+				if (post != null)
+					unit.Posts.Add(post);
+				else
+					await _logService.WriteAsync($"ReturnFromRetirenmentHandler: Post с id {id} не найден", LoggingLevel.Error);
+			}
+
+			ticket.Status = TicketStatus.Accepted;
+
+			await _db.SaveChangesAsync();
+			await ticket.CloseAsync(_guildProvider);
+		}
+	}
 }

@@ -1,27 +1,23 @@
-﻿using accs.DiscordBot.Preconditions;
+﻿using accs.Database;
+using accs.DiscordBot.Preconditions;
 using accs.Models;
-using accs.Repository.Interfaces;
+using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
-using Google.Protobuf;
+using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
     public class StatusAssignmentModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private readonly IUnitRepository _unitRepository;
+        private readonly AppDbContext _db;
         private readonly ILogService _logService;
-        private readonly IStatusRepository _statusRepository;
-        private readonly IUnitStatusRepository _unitStatusRepository;
 
-        public StatusAssignmentModule(IPostRepository postRepository, IUnitRepository unitRepository, ILogService logService, IUnitStatusRepository unitStatusRepository, IStatusRepository statusRepository, DiscordSocketClient discordSocketClient)
+        public StatusAssignmentModule(AppDbContext db, ILogService logService)
         {
-            _unitRepository = unitRepository;
+            _db = db;
             _logService = logService;
-            _statusRepository = statusRepository;
-            _unitStatusRepository = unitStatusRepository;
         }
 
         [HasPermission(PermissionType.GiveReprimandGratitude)]
@@ -51,15 +47,14 @@ namespace accs.DiscordBot.Interactions
                     throw new Exception("Не удалось спарсить статус!");
                 }
 
-                Unit? unit = await _unitRepository.ReadAsync(user.Id);
-                Status? fetchedStatus = await _statusRepository.ReadAsync(givenType);
+                await _db.UnitStatuses.LoadAsync();
+                Unit? unit = await _db.Units.FindAsync(user.Id);
+                Status? status = await _db.Statuses.FindAsync(givenType);
 
-                if (unit != null && fetchedStatus != null)
+                if (unit != null && status != null)
                 {
-                    var status = new UnitStatus() { StartDate = DateTime.Now, EndDate = DateTime.Now.AddDays(amountOfDays), Status = fetchedStatus };
-                    await _unitStatusRepository.CreateAsync(status);
-                    unit.UnitStatuses.Add(status);
-                    await _unitRepository.UpdateAsync(unit);
+                    var unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.Now, EndDate = DateTime.Now.AddDays(amountOfDays), Status = status };
+                    await _db.UnitStatuses.AddAsync(unitStatus);
                 }
                 else
                 {
@@ -69,56 +64,60 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception e) 
             {
-                await RespondAsync("Не удалось присвоить статус.", ephemeral: true);
-                await _logService.WriteAsync(e.Message);
-                return;
+                await RespondAsync("При присвоении статуса произошла необработанная ошибка!", ephemeral: true);
+                await _logService.WriteAsync(e.Message, LoggingLevel.Error);
+            }
+            finally
+            {
+                await _db.SaveChangesAsync();
             }
         }
 
-
         [HasPermission(PermissionType.VacationAccess)]
         [SlashCommand("vacation", "Выход в отпуск")]
-        public async Task VacationCommandAsync(int days = 7)
+        public async Task VacationCommandAsync([MinValue(1), MaxValue(7)] int days = 7)
         {
             try
             {
-                Unit? unit = await _unitRepository.ReadAsync(Context.User.Id);
+                await _db.UnitStatuses.LoadAsync();
+
+                Unit? unit = await _db.Units.FindAsync(Context.User.Id);
                 if (unit == null)
                 {
-                    await RespondAsync("Вы не зарегистрированы как боец.", ephemeral: true);
+                    await RespondAsync("Вы не найдены в системе.", ephemeral: true);
+                    await _logService.WriteAsync($"VacationCommandAsync: Боец {Context.User.Username} с Id {Context.User.Id} не найден в базе", LoggingLevel.Error);
                     return;
                 }
 
-                Status? vacationStatus = await _statusRepository.ReadAsync(StatusType.Vacation);
+                Status? vacationStatus = await _db.Statuses.FindAsync(StatusType.Vacation);
                 if (vacationStatus == null)
                 {
                     await RespondAsync("Статус 'Отпуск' не найден в базе.", ephemeral: true);
-                    return;
+					await _logService.WriteAsync($"VacationCommandAsync: Статус 'Отпуск' не найден в базе.", LoggingLevel.Error);
+					return;
                 }
 
-                var unitStatus = new UnitStatus()
+                DateTime endDate = DateTime.Now.AddDays(days);
+				var unitStatus = new UnitStatus()
                 {
                     Unit = unit,
                     Status = vacationStatus,
                     StartDate = DateTime.Now,
-                    EndDate = DateTime.Now.AddDays(days)
+                    EndDate = endDate
                 };
 
-                await _unitStatusRepository.CreateAsync(unitStatus);
+                await _db.UnitStatuses.AddAsync(unitStatus);
 
-                unit.UnitStatuses.Add(unitStatus);
-                await _unitRepository.UpdateAsync(unit);
-
-                await RespondAsync(
-                    $"Вы успешно вышли в отпуск на {days} дней.",
-                    ephemeral: true
-                );
+                await RespondAsync($"Вы успешно вышли в отпуск на {days} дней до {endDate:d}.", ephemeral: true);
             }
             catch (Exception ex)
             {
                 await RespondAsync("Не удалось оформить отпуск.", ephemeral: true); 
-                await _logService.WriteAsync(ex.Message); 
-                return;
+                await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
+            }
+            finally
+            {
+                await _db.SaveChangesAsync();
             }
         }
     }

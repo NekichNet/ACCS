@@ -1,8 +1,8 @@
 ﻿using accs.Models;
+using accs.Models.Enums;
 using Microsoft.EntityFrameworkCore;
-using System.Net;
 
-namespace accs.Repository.Context
+namespace accs.Database
 {
 	public class AppDbContext : DbContext
 	{
@@ -18,7 +18,6 @@ namespace accs.Repository.Context
 		public DbSet<UnitStatus> UnitStatuses { get; set; }
 		public DbSet<Status> Statuses { get; set; }
 		public DbSet<Ticket> Tickets { get; set; }
-        public DbSet<MemberPresence> MemberPresences { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
 			: base(options) { }

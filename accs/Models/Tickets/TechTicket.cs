@@ -1,24 +1,22 @@
-﻿using Discord.WebSocket;
+﻿using accs.Services.Interfaces;
+using Discord.WebSocket;
 
 namespace accs.Models.Tickets
 {
     public class TechTicket : Ticket
     {
-        public TechTicket(SocketGuild guild, ulong authorId, ulong channelId) : base(guild, authorId, channelId)
-        {
+        public TechTicket(ulong authorId, ulong channelId) : base(authorId, channelId) { }
 
-        }
-
-        public override async Task SendWelcomeMessageAsync()
+        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService)
         {
-            var channel = _guild.GetTextChannel(ChannelDiscordId);
+            SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
             if (channel == null)
-                return;
-
-            await channel.SendMessageAsync(
-                "Вы обратились в техническую поддержку клана. " +
-                "Служба Связи скоро ответит на ваш запрос."
-            );
+                await logService.WriteAsync("TechTicket: channel is null");
+            else
+                await channel.SendMessageAsync(
+                    "Вы обратились в техническую поддержку клана.\n" +
+                    "Служба Связи скоро ответит на ваш запрос."
+                );
         }
 
     }

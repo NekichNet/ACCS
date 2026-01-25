@@ -1,4 +1,5 @@
 ﻿using accs.Models.Configurations;
+using accs.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

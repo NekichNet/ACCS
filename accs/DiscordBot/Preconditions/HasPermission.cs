@@ -1,7 +1,10 @@
-﻿using accs.Models;
-using accs.Repository.Interfaces;
+﻿using accs.Database;
+using accs.Models;
+using accs.Models.Enums;
+using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
+using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Preconditions
 {
@@ -16,8 +19,9 @@ namespace accs.DiscordBot.Preconditions
 
         public async override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo commandInfo, IServiceProvider services)
         {
-			Console.WriteLine("Huh4");
-			Unit? unit = await services.GetRequiredService<IUnitRepository>().ReadAsync(context.User.Id);
+			AppDbContext db = services.GetRequiredService<AppDbContext>();
+			await db.Permissions.LoadAsync();
+			Unit? unit = await db.Units.FindAsync(context.User.Id);
 			if (unit != null)
 			{
 				if (unit.HasPermission(_permissionType))

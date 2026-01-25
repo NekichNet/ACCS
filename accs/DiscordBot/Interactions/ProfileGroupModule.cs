@@ -1,5 +1,6 @@
 ﻿using accs.DiscordBot.Preconditions;
 using accs.Models;
+using accs.Models.Enum;
 using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord;

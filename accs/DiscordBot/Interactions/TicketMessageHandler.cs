@@ -1,38 +1,27 @@
-﻿using accs.DiscordBot.Preconditions;
+﻿using accs.Database;
+using accs.DiscordBot.Preconditions;
 using accs.Models;
+using accs.Models.Enums;
 using accs.Models.Tickets;
-using accs.Repository.Interfaces;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using System.Threading.Channels;
 
 namespace accs.DiscordBot.Interactions
 {
 	[InChannels("TICKET_CHANNEL_ID")]
 	public class TicketMessageHandler : InteractionModuleBase<SocketInteractionContext>
 	{
-		private DiscordSocketClient _client;
-		private ILogService _logService;
-		private IPostRepository _postRepository;
-		private IUnitRepository _unitRepository;
-		private IRankRepository _rankRepository;
-		private IStatusRepository _statusRepository;
-		private IUnitStatusRepository _unitStatusRepository;
+		private readonly DiscordSocketClient _client;
+		private readonly ILogService _logService;
+		private readonly AppDbContext _db;
 
-		public TicketMessageHandler(DiscordSocketClient client, ILogService logService,
-			IPostRepository postRepository, IUnitRepository unitRepository,
-			IRankRepository rankRepository, IStatusRepository statusRepository,
-			IUnitStatusRepository unitStatusRepository)
+		public TicketMessageHandler(DiscordSocketClient client, ILogService logService, AppDbContext db)
 		{
 			_client = client;
 			_logService = logService;
-			_postRepository = postRepository;
-			_unitRepository = unitRepository;
-			_rankRepository = rankRepository;
-			_statusRepository = statusRepository;
-			_unitStatusRepository = unitStatusRepository;
+			_db = db;
 		}
 
 		[HasPermission(PermissionType.Administrator)]
@@ -76,7 +65,7 @@ namespace accs.DiscordBot.Interactions
 			SocketTextChannel _channel = (SocketTextChannel)_client.GetChannel(channelId);
 			if (_channel == null) { await _logService.WriteAsync("Ticket channel is null!", LoggingLevel.Error); return; }
 
-			Ticket ticket = new InviteTicket(_channel.Guild, Context.User.Id, _channel.Id, _postRepository, _unitRepository, _rankRepository, _logService);
+			Ticket ticket = new InviteTicket(_channel.Guild, Context.User.Id, _channel.Id _logService);
 			await ticket.SendWelcomeMessageAsync();
 		}
 

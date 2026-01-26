@@ -29,16 +29,16 @@ namespace accs.DiscordBot.Interactions
             _logService = logService;
         }
 
-        [SlashCommand("voice", "Всех бойцов в голосовом канале")]
+        //[SlashCommand("voice", "Всех бойцов в голосовом канале")]
         public async Task FixVoiceCommand([ChannelTypes(ChannelType.Voice, ChannelType.Forum)] IChannel channel)
         {
             try
             {
-                await _db.Units.LoadAsync();
-
                 List<Unit> units = new List<Unit>();
-                DateOnly today = DateOnly.FromDateTime(DateTime.Today);
-                await foreach (IUser user in channel.GetUsersAsync())
+                IEnumerable<IUser> users = await channel.GetUsersAsync().FlattenAsync();
+
+				DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+                foreach (IUser user in users)
                 {
                     Unit? unit = await _db.Units.FindAsync(user.Id);
                     if (unit != null)
@@ -51,7 +51,7 @@ namespace accs.DiscordBot.Interactions
                 {
                     SelectMenuBuilder menuBuilder = new SelectMenuBuilder()
                         .WithPlaceholder("Редактировать список")
-                        .WithCustomId($"activity-menu-{today}")
+                        .WithCustomId($"activity-select-menu")
                         .WithMinValues(0)
                         .WithMaxValues(units.Count);
 
@@ -61,19 +61,20 @@ namespace accs.DiscordBot.Interactions
                     }
 
                     ComponentBuilder builder = new ComponentBuilder();
-                    builder.WithSelectMenu(menuBuilder);
+                    builder.WithSelectMenu(menuBuilder)
+						.WithButton("Подтвердить", customId: $"activity-menu-{today}", ButtonStyle.Success);
 
-                    await ReplyAsync($"Подтвердите активность для {units.Count} бойцов.", components: builder.Build());
+                    await RespondAsync($"Подтвердите активность для {units.Count} бойцов.", components: builder.Build());
                 }
                 else
                 {
-                    await ReplyAsync("Бойцы не найдены");
+                    await RespondAsync("Бойцы не найдены");
                 }
             }
             catch (Exception ex)
             {
                 await _logService.WriteAsync($"Error in FixVoiceCommand: {ex.Message}", LoggingLevel.Error);
-                await ReplyAsync("Ошибка при фиксации активности по голосовому каналу");
+                await RespondAsync("Ошибка при фиксации активности по голосовому каналу");
             }
         }
 
@@ -122,17 +123,17 @@ namespace accs.DiscordBot.Interactions
                         .WithSelectMenu(menuBuilder);
 
                     string message = $"Подтвердите активность для {detectedUnits.Count} бойцов.";
-                    await RespondAsync(message, components: builder.Build());
+                    await ReplyAsync(message, components: builder.Build());
                 }
                 else
                 {
-                    await RespondAsync("Бойцы не найдены на скриншоте");
+                    await ReplyAsync("Бойцы не найдены на скриншоте");
                 }
             }
             catch (Exception ex)
             {
                 await _logService.WriteAsync($"Error in FixScreenshotCommand: {ex.Message}", LoggingLevel.Error);
-                await RespondAsync("Ошибка при обработке скриншота");
+                await ReplyAsync("Ошибка при обработке скриншота");
             }
             finally
             {
@@ -177,7 +178,17 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-        [HasPermission(PermissionType.ConfirmActivity)]
+        /*
+		[HasPermission(PermissionType.ConfirmActivity)]
+		[ComponentInteraction("activity-select-menu", ignoreGroupNames: true)]
+        public async Task SelectMenuHandler(string[] selectedIds)
+        {
+			((SelectMenuComponent)(await GetOriginalResponseAsync()).Components.First()).CustomId = String.Join(',', selectedIds);
+
+		}
+        */
+
+		[HasPermission(PermissionType.ConfirmActivity)]
         [ComponentInteraction("activity-verify-*-*", ignoreGroupNames: true)]
         public async Task VerifyActivityHandler(string dateRaw, string unitIdRaw)
         {
@@ -234,12 +245,25 @@ namespace accs.DiscordBot.Interactions
         }
 
         [HasPermission(PermissionType.ConfirmActivity)]
-        [ComponentInteraction("activity-menu-*", ignoreGroupNames: true)]
-        public async Task ActivityMenuHandler(string dateRaw, string[] selectedIds)
+        [ComponentInteraction("activity-menu-*-*", ignoreGroupNames: true)]
+        public async Task ActivityMenuHandler(string dateRaw, string selectedNums)
         {
             try
             {
-                if (!DateOnly.TryParse(dateRaw, out DateOnly date))
+                List<int> selectedIds = selectedNums.Split(',').Select(s => int.Parse(s)).ToList();
+
+                IReadOnlyCollection<SelectMenuOption>? options = ((SelectMenuComponent)(await GetOriginalResponseAsync()).Components.First()).Options;
+
+                if (options == null)
+                {
+                    await RespondAsync("Ошибка получения выбранных бойцов", ephemeral: true);
+                    await _logService.WriteAsync("ActivityMenuHandler: options is null", LoggingLevel.Error);
+                    return;
+                }
+
+				List<string> selectedIds = options.Select(o => o.Value).ToList();
+
+				if (!DateOnly.TryParse(dateRaw, out DateOnly date))
                 {
                     await RespondAsync("Ошибка: неверный формат даты", ephemeral: true);
                     return;

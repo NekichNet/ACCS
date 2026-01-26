@@ -28,15 +28,23 @@ namespace accs.DiscordBot.Interactions
             _db = db;
 		}
 
-        public override void BeforeExecute(ICommandInfo commandInfo)
+        public override void OnModuleBuilding(InteractionService commandService, ModuleInfo module)
         {
+            base.OnModuleBuilding(commandService, module);
+
 			string voiceChannelIdString = DotNetEnv.Env.GetString("VOICE_CHANNEL_ID", "null");
 			if (!ulong.TryParse(voiceChannelIdString, out _voiceChannelId)) { _logService.WriteAsync("Cannot parse voice channel id!", LoggingLevel.Error); }
+
+			_client.UserVoiceStateUpdated += OnUserJoinedAsync;
+			_client.UserVoiceStateUpdated += OnUserLeftAsync;
 		}
 
         public async Task OnUserJoinedAsync(SocketUser user, SocketVoiceState before, SocketVoiceState after)
         {
             SocketGuild guild = _guildProvider.GetGuild();
+
+            if (after.VoiceChannel == null)
+                return;
 
 			if (after.VoiceChannel.Id == _voiceChannelId)
             {
@@ -97,7 +105,10 @@ namespace accs.DiscordBot.Interactions
 
         public async Task OnUserLeftAsync(SocketUser user, SocketVoiceState before, SocketVoiceState after)
         {
-            if (before.VoiceChannel.Users.Count == 0)
+            if (before.VoiceChannel == null)
+                return;
+
+			if (before.VoiceChannel.Users.Count == 0 && before.VoiceChannel.Id != _voiceChannelId)
             {
                 await before.VoiceChannel.DeleteAsync();
             }

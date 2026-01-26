@@ -56,9 +56,6 @@ namespace accs.Models.Tickets
 
         public async Task AcceptanceHandler(int selectedPostId, IGuildProviderService guildProvider, AppDbContext db, ILogService logService)
         {
-            await db.Units.LoadAsync();
-            await db.Tickets.LoadAsync();
-
             var channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);          
 
             // назначаем должность стрелка

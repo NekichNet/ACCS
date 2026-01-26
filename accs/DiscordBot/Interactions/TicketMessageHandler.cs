@@ -1,6 +1,5 @@
 ﻿using accs.Database;
 using accs.DiscordBot.Preconditions;
-using accs.Models;
 using accs.Models.Enums;
 using accs.Models.Tickets;
 using accs.Services.Interfaces;
@@ -25,6 +24,15 @@ namespace accs.DiscordBot.Interactions
 			_logService = logService;
 			_guildProvider = guildProvider;
 		}
+
+		/*
+        public override void OnModuleBuilding(InteractionService commandService, ModuleInfo module)
+        {
+            base.OnModuleBuilding(commandService, module);
+
+			_client.Connected += InitTicketMessage;
+        }
+		*/
 
 		[HasPermission(PermissionType.Administrator)]
 		[SlashCommand("init-ticket-message", "Инициализация сообщения для тикетов.")]
@@ -52,7 +60,7 @@ namespace accs.DiscordBot.Interactions
 				.WithButton("Техподдержка", "tech-button", ButtonStyle.Secondary, new Emoji("U+1F198"), row: 1)
 				.WithButton("Пожаловаться", "report-button", ButtonStyle.Danger, new Emoji("U+1F46E"), row: 2)
 				.WithButton("Отставка", "retirement-button", ButtonStyle.Danger, new Emoji("U+1FAE1"), row: 2)
-				.WithButton("Спонсировать", "donation-button", ButtonStyle.Premium, new Emoji("U+1F4B5"), row: 3);
+				.WithButton("Спонсировать", "donation-button", ButtonStyle.Primary, new Emoji("U+1F4B5"), row: 3);
 
 			await _channel.SendMessageAsync(embed: embed.Build(), components: component.Build());
 		}

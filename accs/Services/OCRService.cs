@@ -3,10 +3,7 @@ using accs.Models;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord.WebSocket;
-using EasyOcrSharp.Models;
 using EasyOcrSharp.Services;
-using Python.Runtime;
-using Sprache;
 
 
 namespace accs.Services
@@ -32,9 +29,9 @@ namespace accs.Services
                 builder.SetMinimumLevel(LogLevel.Information);
             });
             await using var ocr = new EasyOcrService(logger: loggerFactory.CreateLogger<EasyOcrService>());
-            var result = await ocr.ExtractTextFromImage("sample.png", new[] { "en", "ru" });
+            var result = await ocr.ExtractTextFromImage(imagePath, new[] { "en", "ru" });
 
-            List<Unit> units = await _unitRepository.ReadAllAsync();
+            List<Unit> units = _db.Units.ToList();
 
             HashSet<Unit> exitMatches = new HashSet<Unit>();
 

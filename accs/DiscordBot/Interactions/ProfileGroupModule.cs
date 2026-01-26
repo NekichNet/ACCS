@@ -52,7 +52,7 @@ namespace accs.DiscordBot.Interactions
 
                 EmbedBuilder embed = new EmbedBuilder()
                 {
-                    Title = $"{unit.Rank.Name} {unit.Nickname}",
+                    Title = $"{unit.Rank.Name} {unit.GetOnlyNickname()}",
                     Description = embedDescription
                 };
 
@@ -79,19 +79,19 @@ namespace accs.DiscordBot.Interactions
                     }
                 }
 
-                var unitActivities = unit.Activities;
                 string inLineUnitActivities = string.Empty;
-
-                for (int i = 0; i >= -14; i--)
+                for (int i = -13; i <= 0; i++)
                 {
-                    if(unitActivities.Contains(new Activity { Unit = unit, Date = DateOnly.FromDateTime(DateTime.Today).AddDays(i) }))
+                    if(unit.Activities.Any(a => a.Date == DateOnly.FromDateTime(DateTime.Today).AddDays(i)))
                     {
-                        inLineUnitActivities += "🟩";
+                        inLineUnitActivities += ":green_square:";
                     }
                     else
                     {
-                        inLineUnitActivities += "⬜";
+                        inLineUnitActivities += ":black_medium_square:";
                     }
+                    if (i == -7)
+                        inLineUnitActivities += '\n';
                 }
                 
                 if (inLineUnitStatuses.Length > 0)
@@ -101,7 +101,7 @@ namespace accs.DiscordBot.Interactions
                 embed.AddField(new EmbedFieldBuilder() { Name = "Благодарности:", Value = unit.UnitStatuses.Where(x => x.Status.Type == StatusType.Gratitude).Count() });
                 embed.AddField(new EmbedFieldBuilder() { Name = "Выговоров:", Value = unit.UnitStatuses.Where(x => x.Status.Type == StatusType.Reprimand || x.Status.Type == StatusType.SevereReprimand).Count() });
                 embed.AddField(new EmbedFieldBuilder() { Name = "Дней активности:", Value = unit.Activities.Count() });
-                embed.AddField(new EmbedFieldBuilder() { Name = "Активность в последние 14 дней:", Value = inLineUnitActivities });
+                embed.AddField(new EmbedFieldBuilder() { Name = "Из них последние 14:", Value = inLineUnitActivities });
 				embed.ThumbnailUrl = _guildProvider.GetGuild().GetUser(unit.DiscordId).GetAvatarUrl()
                     ?? _guildProvider.GetGuild().GetUser(unit.DiscordId).GetDefaultAvatarUrl();
                 embed.WithColor(Color.DarkGreen);

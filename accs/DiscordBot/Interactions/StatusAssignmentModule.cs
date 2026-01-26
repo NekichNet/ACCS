@@ -22,7 +22,7 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.GiveReprimandGratitude)]
         [SlashCommand("give", "Выдать благодарность или выговор")] public async Task GiveCommandAsync(IUser user, 
-            [Choice("gratitude", "gratitude"), Choice("reprimand", "reprimand"), Choice("severe-reprimand", "severeReprimand")] string statusType, int amountOfDays = 7)
+            [Choice("gratitude", "gratitude"), Choice("reprimand", "reprimand"), Choice("severe-reprimand", "severeReprimand")] string statusType, int? amountOfDays = null)
         {
             try
             {
@@ -39,7 +39,6 @@ namespace accs.DiscordBot.Interactions
                 }
                 else if (statusType == "severeReprimand")
                 {
-
                     givenType = StatusType.SevereReprimand;
                 }
                 else
@@ -47,14 +46,18 @@ namespace accs.DiscordBot.Interactions
                     throw new Exception("Не удалось спарсить статус!");
                 }
 
-                await _db.UnitStatuses.LoadAsync();
                 Unit? unit = await _db.Units.FindAsync(user.Id);
                 Status? status = await _db.Statuses.FindAsync(givenType);
 
                 if (unit != null && status != null)
                 {
-                    var unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.Now, EndDate = DateTime.Now.AddDays(amountOfDays), Status = status };
+                    DateTime? endDate = amountOfDays == null ? null : DateTime.Now.AddDays((double)amountOfDays);
+					var unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.Now, EndDate = endDate, Status = status };
                     await _db.UnitStatuses.AddAsync(unitStatus);
+                    await RespondAsync(
+                        $"Бойцу {unit.GetOnlyNickname()} выдан {status.Name}"
+                        + (endDate == null ? " безсрочно" : $" до {DateOnly.FromDateTime((DateTime)endDate).ToShortDateString()}"
+                        ));
                 }
                 else
                 {
@@ -108,11 +111,11 @@ namespace accs.DiscordBot.Interactions
 
                 await _db.UnitStatuses.AddAsync(unitStatus);
 
-                await RespondAsync($"Вы успешно вышли в отпуск на {days} дней до {endDate:d}.", ephemeral: true);
+                await RespondAsync($"Оформлен отпуск для {unit.GetOnlyNickname()} на {days} дней до {endDate:d}.");
             }
             catch (Exception ex)
             {
-                await RespondAsync("Не удалось оформить отпуск.", ephemeral: true); 
+                await RespondAsync("Из-за необработанной ошибки не удалось оформить отпуск.", ephemeral: true); 
                 await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
             }
             finally

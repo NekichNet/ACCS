@@ -2,11 +2,9 @@
 using accs.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Models.Enums;
-using accs.Services;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
@@ -17,18 +15,20 @@ namespace accs.DiscordBot.Interactions
     public class ActivityGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
+        private readonly IGuildProviderService _guildProvider;
         private readonly IOCRService _ocr;
         private readonly ILogService _logService;
+
         private string? tempDir;
 
-        public ActivityGroupModule(AppDbContext db, IOCRService ocr, ILogService logService)
+        public ActivityGroupModule(AppDbContext db, IGuildProviderService guildProvider, IOCRService ocr, ILogService logService)
         {
             _db = db;
+            _guildProvider = guildProvider;
             _ocr = ocr;
             _logService = logService;
         }
 
-        [HasPermission(PermissionType.ConfirmActivity)]
         [SlashCommand("voice", "Всех бойцов в голосовом канале")]
         public async Task FixVoiceCommand([ChannelTypes(ChannelType.Voice, ChannelType.Forum)] IChannel channel)
         {
@@ -57,13 +57,13 @@ namespace accs.DiscordBot.Interactions
 
                     foreach (var unit in units)
                     {
-                        menuBuilder.AddOption(unit.Nickname, unit.DiscordId.ToString());
+                        menuBuilder.AddOption(unit.Nickname, unit.DiscordId.ToString(), isDefault: true);
                     }
 
                     ComponentBuilder builder = new ComponentBuilder();
                     builder.WithSelectMenu(menuBuilder);
 
-                    await ReplyAsync("Требуется подтверждение", components: builder.Build());
+                    await ReplyAsync($"Подтвердите активность для {units.Count} бойцов.", components: builder.Build());
                 }
                 else
                 {
@@ -77,8 +77,6 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-
-        [HasPermission(PermissionType.ConfirmActivity)]
         [SlashCommand("screenshot", "зафиксировать активность по скриншоту")]
         public async Task FixScreenshotCommand(IAttachment screenshot)
         {
@@ -105,7 +103,6 @@ namespace accs.DiscordBot.Interactions
                     await File.WriteAllBytesAsync(filePath, bytes);
                 }
 
-
                 HashSet<Unit> detectedUnits = await _ocr.ReceiveNamesFromPhoto(filePath);
 
                 if (detectedUnits.Any())
@@ -118,43 +115,37 @@ namespace accs.DiscordBot.Interactions
 
                     foreach (var unit in detectedUnits)
                     {
-                        menuBuilder.AddOption(unit.Nickname, unit.DiscordId.ToString());
+                        menuBuilder.AddOption(unit.Nickname, unit.DiscordId.ToString(), isDefault: true);
                     }
 
                     ComponentBuilder builder = new ComponentBuilder()
                         .WithSelectMenu(menuBuilder);
 
-                    string message = $"Обнаружено бойцов: {detectedUnits.Count}\n";
-                    await FollowupAsync(message, components: builder.Build());
+                    string message = $"Подтвердите активность для {detectedUnits.Count} бойцов.";
+                    await RespondAsync(message, components: builder.Build());
                 }
                 else
                 {
-                    await FollowupAsync("Бойцы не найдены на скриншоте");
+                    await RespondAsync("Бойцы не найдены на скриншоте");
                 }
             }
             catch (Exception ex)
             {
                 await _logService.WriteAsync($"Error in FixScreenshotCommand: {ex.Message}", LoggingLevel.Error);
-                await FollowupAsync("Ошибка при обработке скриншота");
+                await RespondAsync("Ошибка при обработке скриншота");
             }
             finally
             {
                 if (Directory.Exists(tempDir))
-                {
-                    Directory.Delete(tempDir, recursive: true); 
-                }
+                    Directory.Delete(tempDir, recursive: true);
             }
         }
-
-
 
         [SlashCommand("user", "зафиксировать активность указанного бойца")]
         public async Task FixUserCommand(IUser? user = null)
         {
             try
             {
-                await _db.Units.LoadAsync();
-
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
                 Unit? unit;
@@ -174,23 +165,23 @@ namespace accs.DiscordBot.Interactions
                 }
 
                 ComponentBuilder builder = new ComponentBuilder()
-                    .WithButton("Подтвердить", $"activity-verify-{today}-{unit.DiscordId}");
+                    .WithButton("Подтвердить", customId: $"activity-verify-{today}-{unit.DiscordId}", ButtonStyle.Success);
 
-                string message = $"Обнаружен боец: {unit.Nickname}";
-                await ReplyAsync(message, components: builder.Build());
+                string message = $"Подтвердите активность для бойца {unit.GetOnlyNickname()}";
+                await RespondAsync(message, components: builder.Build());
             }
             catch (Exception ex)
             {
                 await _logService.WriteAsync($"Error in FixUserCommand: {ex.Message}", LoggingLevel.Error);
-                await ReplyAsync("Ошибка при фиксации активности выбранного пользователя");
+                await RespondAsync("Ошибка при фиксации активности пользователя", ephemeral: true);
             }
         }
 
-
         [HasPermission(PermissionType.ConfirmActivity)]
-        [ComponentInteraction("activity-verify-*-*")]
+        [ComponentInteraction("activity-verify-*-*", ignoreGroupNames: true)]
         public async Task VerifyActivityHandler(string dateRaw, string unitIdRaw)
         {
+            Console.WriteLine(dateRaw + " " + unitIdRaw);
             try
             {
                 if (!DateOnly.TryParse(dateRaw, out DateOnly date))
@@ -199,27 +190,23 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                var component = (SocketMessageComponent)Context.Interaction;
-                var selectedIds = component.Data.Values;
-
-                if (component == null)
-                {
-                    await RespondAsync("Ошибка взаимодействия", ephemeral: true);
-                    return;
-                }
-
-
                 if (ulong.TryParse(unitIdRaw, out ulong unitId))
                 {
                     Unit? unit = await _db.Units.FindAsync(unitId);
 
                     if (unit != null)
                     {
+						unit.RankUpCounter++;
 						await RankUpCountAsync(unit);
 						await _db.Activities.AddAsync(new Activity()
                         {
                             Unit = unit,
                             Date = date
+                        });
+                        await ModifyOriginalResponseAsync(properties =>
+                        {
+                            properties.Content = $"Подтверждена активность для: {unit.GetOnlyNickname()}";
+                            properties.Components = null;
                         });
                     }
                     else
@@ -230,7 +217,7 @@ namespace accs.DiscordBot.Interactions
                 }
                 else
                 {
-                    await RespondAsync("Ошибка: неверный формат ID бойца");
+                    await RespondAsync("Ошибка: неверный формат ID бойца", ephemeral: true);
                     await _logService.WriteAsync("Ошибка: неверный формат ID бойца", LoggingLevel.Error);
                     return;
                 }
@@ -240,12 +227,15 @@ namespace accs.DiscordBot.Interactions
                 await _logService.WriteAsync($"Error in VerifyActivity: {ex.Message}", LoggingLevel.Error);
                 await RespondAsync("Ошибка при подтверждении активности", ephemeral: true);
             }
+            finally
+            {
+                await _db.SaveChangesAsync();
+            }
         }
 
-
         [HasPermission(PermissionType.ConfirmActivity)]
-        [ComponentInteraction("activity-menu-*")]
-        public async Task ActivityMenuHandler(string dateRaw)
+        [ComponentInteraction("activity-menu-*", ignoreGroupNames: true)]
+        public async Task ActivityMenuHandler(string dateRaw, string[] selectedIds)
         {
             try
             {
@@ -254,10 +244,6 @@ namespace accs.DiscordBot.Interactions
                     await RespondAsync("Ошибка: неверный формат даты", ephemeral: true);
                     return;
                 }
-
-                var component = (SocketMessageComponent)Context.Interaction;
-
-                var selectedIds = component.Data.Values;
 
                 if (selectedIds == null || !selectedIds.Any())
                 {
@@ -275,45 +261,47 @@ namespace accs.DiscordBot.Interactions
 
                         if (unit != null)
                         {
+                            unit.RankUpCounter++;
                             await RankUpCountAsync(unit);
 							await _db.Activities.AddAsync(new Activity()
                             {
                                 Unit = unit,
                                 Date = date
                             });
-
                             count++;
                         }
                     }
                 }
 
-                await RespondAsync($"Активность за {date} подтверждена для {count} бойцов.");
-
+				await ModifyOriginalResponseAsync(properties =>
+				{
+					properties.Content = $"Подтверждена активность для {count} бойцов.";
+					properties.Components = null;
+				});
             }
             catch (Exception ex)
             {
                 await _logService.WriteAsync($"Error in ActivityMenuHandler: {ex.Message}", LoggingLevel.Error);
-                await RespondAsync("Ошибка при обновлении списка", ephemeral: true);
+                await RespondAsync("Ошибка при подтверждении списка бойцов", ephemeral: true);
+            }
+            finally
+            {
+                await _db.SaveChangesAsync();
             }
         }
 
         private async Task RankUpCountAsync(Unit unit)
         {
-            unit.RankUpCounter++;
             if (unit.Rank.Next != null)
             {
                 if (unit.Rank.Next.CounterToReach <= unit.RankUpCounter)
                 {
                     string channelIdString = DotNetEnv.Env.GetString("NOTIFICATION_CHANNEL_ID", "NOTIFICATION_CHANNEL_ID is not found!");
-                    ulong channelId;
-                    if (!ulong.TryParse(channelIdString, out channelId))
-                    {
-                        await _logService.WriteAsync("Не удалось спарсить NOTIFICATION_CHANNEL_ID!", LoggingLevel.Error);
-                        return;
-                    }
-
-                    //_bot.Guild.GetTextChannel(channelId).SendMessageAsync($"Нужно повысить бойца {unit.Nickname}: {unit.RankUpCounter}/{unit.Rank.Next.CounterToReach}.");
-                }
+                    if (ulong.TryParse(channelIdString, out ulong channelId))
+						await _guildProvider.GetGuild().GetTextChannel(channelId).SendMessageAsync($"Нужно повысить бойца {unit.Nickname}: {unit.RankUpCounter}/{unit.Rank.Next.CounterToReach}.");
+                    else
+						await _logService.WriteAsync("Не удалось спарсить NOTIFICATION_CHANNEL_ID!", LoggingLevel.Error);
+				}
             }
         }
     }

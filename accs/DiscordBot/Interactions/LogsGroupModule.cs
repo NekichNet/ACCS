@@ -82,7 +82,7 @@ namespace accs.DiscordBot.Interactions
             await RespondAsync($"Минимальный уровень логов для файлов установлен: {level}", ephemeral: true);
         }
 
-        [ComponentInteraction("logs-select")]
+        [ComponentInteraction("logs-select", ignoreGroupNames: true)]
         public async Task LogsSelectHandler()
         {
             var component = (SocketMessageComponent)Context.Interaction;
@@ -97,7 +97,6 @@ namespace accs.DiscordBot.Interactions
                 return;
             }
 
-            await RespondAsync($"Файл {fileName}:", ephemeral: true);
             await FollowupWithFileAsync(fullPath, fileName, ephemeral: true);
         }
     }

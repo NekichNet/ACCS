@@ -83,11 +83,18 @@ namespace accs
 			client.Ready += async Task () =>
             {
                 Console.WriteLine("Client is ready");
-				await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), app.Services);
-				SocketGuild guild = client.GetGuild(guildProvider.GetGuildId());
+
+				SocketGuild guild = guildProvider.GetGuild();
 				if (!guild.IsConnected)
 					throw new Exception("Client is not connected to guild!");
-				await interaction.RegisterCommandsToGuildAsync(guildProvider.GetGuildId());
+
+				// Очищаем уже зарегистрированные команды
+				await client.Rest.BulkOverwriteGlobalCommands(new ApplicationCommandProperties[] { });
+				await client.Rest.BulkOverwriteGuildCommands(new ApplicationCommandProperties[] { }, guild.Id);
+
+				// Регистрируем актуальные команды
+				await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), app.Services);
+				await interaction.RegisterCommandsToGuildAsync(guild.Id);
                 Console.WriteLine("Commands registered");
 			};
 

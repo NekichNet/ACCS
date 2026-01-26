@@ -58,7 +58,7 @@ namespace accs.DiscordBot.Interactions
 		}
 
 		[IsUnit(false)]
-		[ComponentInteraction("invite-button")]
+		[ComponentInteraction("invite-button", ignoreGroupNames: true)]
 		public async Task InviteButtonHandler()
 		{
 			InviteTicket ticket = new InviteTicket(Context.User.Id);
@@ -67,7 +67,7 @@ namespace accs.DiscordBot.Interactions
 		}
 
 		[IsUnit(false)]
-		[ComponentInteraction("friend-button")]
+		[ComponentInteraction("friend-button", ignoreGroupNames: true)]
 		public async Task FriendButtonHandler()
 		{
 			FriendTicket ticket = new FriendTicket(Context.User.Id);
@@ -75,7 +75,7 @@ namespace accs.DiscordBot.Interactions
 			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 		}
 
-		[ComponentInteraction("lesson-button")]
+		[ComponentInteraction("lesson-button", ignoreGroupNames: true)]
 		public async Task LessonButtonHandler()
 		{
 			LessonTicket ticket = new LessonTicket(Context.User.Id);
@@ -83,7 +83,7 @@ namespace accs.DiscordBot.Interactions
 			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 		}
 
-		[ComponentInteraction("tech-button")]
+		[ComponentInteraction("tech-button", ignoreGroupNames: true)]
 		public async Task TechButtonHandler()
 		{
 			TechTicket ticket = new TechTicket(Context.User.Id);
@@ -91,7 +91,7 @@ namespace accs.DiscordBot.Interactions
 			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 		}
 
-		[ComponentInteraction("report-button")]
+		[ComponentInteraction("report-button", ignoreGroupNames: true)]
 		public async Task ReportButtonHandler()
 		{
 			ReportTicket ticket = new ReportTicket(Context.User.Id);
@@ -100,7 +100,7 @@ namespace accs.DiscordBot.Interactions
 		}
 
 		[IsUnit()]
-		[ComponentInteraction("retirement-button")]
+		[ComponentInteraction("retirement-button", ignoreGroupNames: true)]
 		public async Task RetirementButtonHandler()
 		{
 			RetirementTicket ticket = new RetirementTicket(Context.User.Id);
@@ -108,7 +108,7 @@ namespace accs.DiscordBot.Interactions
 			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 		}
 
-		[ComponentInteraction("donation-button")]
+		[ComponentInteraction("donation-button", ignoreGroupNames: true)]
 		public async Task DonationButtonHandler()
 		{
 			DonationTicket ticket = new DonationTicket(Context.User.Id);

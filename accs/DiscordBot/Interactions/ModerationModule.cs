@@ -1,5 +1,5 @@
 ﻿using accs.DiscordBot.Preconditions;
-using accs.Models.Enum;
+using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
@@ -10,7 +10,6 @@ using System.Drawing;
 namespace accs.DiscordBot.Interactions
 {
     [IsUnit()]
-    [Group("moderation", "Команды модерации: кик и бан")]
     public class ModerationModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly ILogService _logService;
@@ -20,6 +19,7 @@ namespace accs.DiscordBot.Interactions
             _logService = logService;
         }
 
+        [DefaultMemberPermissions(GuildPermission.KickMembers)]
         [SlashCommand("kick", "Кикнуть участника с сервера")]
         public async Task KickUserCommand(IUser target, string? reason = null)
         {
@@ -27,12 +27,6 @@ namespace accs.DiscordBot.Interactions
             {
                 var moderator = Context.User as SocketGuildUser; 
                 var targetUser = target as SocketGuildUser;
-
-                if (!moderator.GuildPermissions.KickMembers)
-                {
-                    await RespondAsync("У вас нет разрешения на кик участников.", ephemeral: true);
-                    return;
-                }
 
                 if (targetUser == null)
                 {
@@ -54,7 +48,7 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-
+        [DefaultMemberPermissions(GuildPermission.BanMembers)]
         [SlashCommand("ban", "Забанить участника на сервере")]
         public async Task BanUserCommand(IUser target, string? reason = null)
         {
@@ -62,13 +56,7 @@ namespace accs.DiscordBot.Interactions
             {
                 var moderator = Context.User as SocketGuildUser;
 
-                if (!moderator.GuildPermissions.BanMembers)
-                {
-                    await RespondAsync("У вас нет разрешения на бан участников.", ephemeral: true);
-                    return;
-                }
-
-                await Context.Guild.AddBanAsync(target.Id, reason: reason ?? "Ban command issued");
+                await Context.Guild.AddBanAsync(target.Id, reason: reason);
 
                 await RespondAsync($"Пользователь '{target.Username}' был забанен.\nПричина: {reason ?? "не указана"}");
 

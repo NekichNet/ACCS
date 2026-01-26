@@ -20,6 +20,8 @@ namespace accs.Models
 		public virtual List<Activity> Activities { get; set; } = new List<Activity>();
 		public virtual List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
 
+		// ToDo: Добавить дату присоединения к клану
+
         public HashSet<Permission> GetPermissions()
 		{
 			HashSet<Permission> permissions = Rank.GetPermissionsRecursive();
@@ -32,6 +34,11 @@ namespace accs.Models
 		public bool HasPermission(PermissionType permissionType)
 		{
 			return GetPermissions().Where(p => p.Type == permissionType || p.Type == PermissionType.Administrator).Any();
+		}
+
+		public string GetOnlyNickname()
+		{
+			return Nickname.Replace("[РХБЗ]", "").Replace("[Р]", "").Trim();
 		}
 	}
 }

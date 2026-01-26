@@ -1,34 +1,33 @@
 ﻿using accs.Database;
 using accs.DiscordBot.Preconditions;
-using accs.Models.Configurations;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using System.Reactive;
+
 namespace accs.DiscordBot.Interactions
 {
     
     namespace accs.DiscordBot.Interactions
     {
         [IsUnit()]
-        [HasPermission(PermissionType.ChangePosts)]
-        public class PostAssignmentModule : InteractionModuleBase<SocketInteractionContext>
+        [Group("post", "Команды для управления должностями")]
+        public class PostsGroupModule : InteractionModuleBase<SocketInteractionContext>
         {
             private readonly AppDbContext _db;
             private readonly ILogService _logService;
 
-            public PostAssignmentModule(AppDbContext db,
+            public PostsGroupModule(AppDbContext db,
                 ILogService logService)
             {
                 _db = db;
                 _logService = logService; 
             }
 
-
-            [SlashCommand("set-posts", "Назначить должности бойцу")]
+            [HasPermission(PermissionType.ChangePosts)]
+            [SlashCommand("set", "Назначить должности бойцу")]
             public async Task AssignPostCommand(IUser target)
             {
                 try
@@ -84,9 +83,9 @@ namespace accs.DiscordBot.Interactions
                 }
             }
 
-
-            [ComponentInteraction("post-menu-*")]
-            public async Task PostMenuHandler(ulong targetId)
+			[HasPermission(PermissionType.ChangePosts)]
+			[ComponentInteraction("post-menu-*", ignoreGroupNames: true)]
+            public async Task PostMenuHandler(ulong targetId, string[] selectedValues)
             {
                 try
                 {

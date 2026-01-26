@@ -5,33 +5,29 @@ using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
     [IsUnit()]
-    [HasPermission(PermissionType.ChangeRanks)]
 	[Group("rank", "Команды для управления званиями")]
-    public class RankAssignmentModule : InteractionModuleBase<SocketInteractionContext>
+	public class RanksGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
         private readonly ILogService _logService;
 
-        public RankAssignmentModule(AppDbContext db, ILogService logService)
+        public RanksGroupModule(AppDbContext db, ILogService logService)
         {
 			_db = db;
             _logService = logService;
         }
 
-        [SlashCommand("up", "Повысить бойца на одно звание")]
+		[HasPermission(PermissionType.ChangeRanks)]
+		[SlashCommand("up", "Повысить бойца на одно звание")]
         public async Task RankUpCommandAsync(IUser targetedUser)
         {
 			try
 			{
-                await _db.Units.LoadAsync(); 
-				await _db.Ranks.LoadAsync();
-
                 var targetUnit = await _db.Units.Include(u => u.Rank)
 					.FirstOrDefaultAsync(u => u.DiscordId == targetedUser.Id);
 
@@ -44,7 +40,6 @@ namespace accs.DiscordBot.Interactions
 				Rank? rank = targetUnit.Rank.Next;
 				if (rank == null)
 				{
-					await DeleteOriginalResponseAsync();
 					await RespondAsync($"У бойца {targetUnit.Nickname} уже самое высокое на данный момент звание: {targetUnit.Rank.Name}.", ephemeral: true);
 					await _logService.WriteAsync($"У бойца {targetUnit.Nickname} уже самое высокое на данный момент звание: {targetUnit.Rank.Name}.", LoggingLevel.Debug);
 					return;
@@ -55,7 +50,7 @@ namespace accs.DiscordBot.Interactions
 
 				await _db.SaveChangesAsync();
 
-                await RespondAsync($"Боец {targetUnit.Nickname} повышен до звания {targetUnit.Rank}. Счётчик на повышение сброшен.");
+                await RespondAsync($"Боец {targetUnit.Nickname} повышен до звания {targetUnit.Rank.Name}. Счётчик на повышение сброшен.");
 			}
 			catch (Exception ex)
 			{
@@ -63,14 +58,12 @@ namespace accs.DiscordBot.Interactions
 			}
 		}
 
+		[HasPermission(PermissionType.ChangeRanks)]
 		[SlashCommand("set", "Установить бойцу выбранное звание")]
 		public async Task SetRankCommandAsync(IUser targetedUser, int? rankId = null)
 		{
 			try
 			{
-                await _db.Units.LoadAsync(); 
-				await _db.Ranks.LoadAsync();
-
                 var targetUnit = await _db.Units.FindAsync(targetedUser.Id);
 
 				if (targetUnit == null)
@@ -124,7 +117,6 @@ namespace accs.DiscordBot.Interactions
 					Rank? rank = await _db.Ranks.FindAsync(rankId.Value);
                     if (rank == null)
 					{
-						await DeleteOriginalResponseAsync();
 						await RespondAsync($"Звание c Id {rankId} не найдено.", ephemeral: true);
 						await _logService.WriteAsync($"Звание c Id {rankId} не найдено.", LoggingLevel.Error);
 						return;
@@ -144,25 +136,21 @@ namespace accs.DiscordBot.Interactions
 			}
 		}
 
-
-		[ComponentInteraction("rank-menu-*")]
-        public async Task RankMenuHandler(ulong targetId)
+		[HasPermission(PermissionType.ChangeRanks)]
+		[ComponentInteraction("rank-menu-*", ignoreGroupNames: true)]
+        public async Task RankMenuHandler(string targetIdString, string[] selectedValues)
         {
-            try
+			ulong targetId = ulong.Parse(targetIdString);
+			try
             {
-                await _db.Units.LoadAsync(); 
-				await _db.Ranks.LoadAsync();
-
-                var component = (SocketMessageComponent)Context.Interaction;
                 Unit? targetUnit = await _db.Units.FindAsync(targetId);
 
-                string selectedRankIdRaw = component.Data.Values.First(); 
+                string selectedRankIdRaw = selectedValues.First();
 				int selectedRankId = int.Parse(selectedRankIdRaw);
                 Rank? rank = await _db.Ranks.FindAsync(selectedRankId);
 
                 if (targetUnit == null)
 				{
-					await DeleteOriginalResponseAsync();
 					await RespondAsync($"Боец с Id {targetId} не найден в системе.", ephemeral: true);
 					await _logService.WriteAsync($"Боец с Id {targetId} не найден в системе.", LoggingLevel.Error);
 					return;
@@ -170,8 +158,7 @@ namespace accs.DiscordBot.Interactions
 
 				if (rank == null)
                 {
-                    await DeleteOriginalResponseAsync();
-                    await RespondAsync($"Звание c Id {selectedRankIdRaw} не найдено.", ephemeral: true);
+					await RespondAsync($"Звание c Id {selectedRankIdRaw} не найдено.", ephemeral: true);
                     await _logService.WriteAsync($"Звание c Id {selectedRankIdRaw} не найдено.", LoggingLevel.Error);
                     return;
                 }
@@ -182,12 +169,12 @@ namespace accs.DiscordBot.Interactions
 
                 await _db.SaveChangesAsync();
 
-                await RespondAsync($"Установлено звание {rank.Name} для бойца {targetUnit.Nickname}. Счётчик на повышение сброшен.");
+				await RespondAsync($"Установлено звание {rank.Name} для бойца {targetUnit.Nickname}. Счётчик на повышение сброшен.");
             }
             catch (Exception ex)
             {
                 await _logService.WriteAsync($"Ошибка в RankMenuHandler: {ex.Message}", LoggingLevel.Error);
-                await RespondAsync("Ошибка при обновлении должностей.", ephemeral: true);
+				await RespondAsync("Ошибка при обновлении должностей.", ephemeral: true);
             }
         }
     }

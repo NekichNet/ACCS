@@ -89,10 +89,8 @@ namespace accs.DiscordBot.Interactions
             {
                 try
                 {
-                    var component = (SocketMessageComponent)Context.Interaction;
-
-                    var selectedIds = component.Data.Values
-                        .Select(v => int.Parse(v))
+                    var selectedIds = selectedValues
+						.Select(v => int.Parse(v))
                         .ToList();
 
                     

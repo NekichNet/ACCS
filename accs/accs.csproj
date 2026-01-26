@@ -9,9 +9,9 @@
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="3.18.0" />
     <PackageReference Include="DotNetEnv" Version="3.1.1" />
-    <PackageReference Include="IronOcr" Version="2025.12.3" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
+    <PackageReference Include="EasyOcrSharp" Version="1.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

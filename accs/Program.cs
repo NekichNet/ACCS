@@ -6,6 +6,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Reflection;
 
 namespace accs
@@ -88,14 +89,19 @@ namespace accs
 				if (!guild.IsConnected)
 					throw new Exception("Client is not connected to guild!");
 
+				/*
+
 				// Очищаем уже зарегистрированные команды
 				await client.Rest.BulkOverwriteGlobalCommands(new ApplicationCommandProperties[] { });
-				await client.Rest.BulkOverwriteGuildCommands(new ApplicationCommandProperties[] { }, guild.Id);
+				await client.Rest.BulkOverwriteGuildCommands(new ApplicationCommandProperties[] { }, guildProvider.GetGuildId());
 
+				*/
+				
 				// Регистрируем актуальные команды
 				await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), app.Services);
-				await interaction.RegisterCommandsToGuildAsync(guild.Id);
-                Console.WriteLine("Commands registered");
+				await interaction.RegisterCommandsToGuildAsync(guildProvider.GetGuildId());
+
+				Console.WriteLine("Commands registered");
 			};
 
 			client.StartAsync().Wait();

@@ -15,7 +15,6 @@ namespace accs.Models
 		public int Id { get; set; } = 0;
         public ulong AuthorDiscordId { get; set; }
         public ulong ChannelDiscordId { get; set; }
-		public virtual List<Post> Admins { get; set; } = new List<Post>();
         public TicketStatus Status { get; set; }
 		public string? Discriminator { get; set; }
 
@@ -31,18 +30,21 @@ namespace accs.Models
         {
 			Status = TicketStatus.Accepted;
 			await DeleteChannelAsync(guildProvider);
+            await db.SaveChangesAsync();
         }
 
         public virtual async Task CancelAsync(IGuildProviderService guildProvider, AppDbContext db)
         {
 			Status = TicketStatus.Canceled;
 			await DeleteChannelAsync(guildProvider);
+			await db.SaveChangesAsync();
 		}
 
         public virtual async Task RefuseAsync(IGuildProviderService guildProvider, AppDbContext db)
         {
 			Status = TicketStatus.Refused;
 			await DeleteChannelAsync(guildProvider);
+			await db.SaveChangesAsync();
 		}
 
         public virtual async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db) { }
@@ -51,7 +53,7 @@ namespace accs.Models
          * Метод, для финального удаления канала тикета с сохранением истории чата.
          */
 
-        public async Task CreateChannelAsync(IGuildProviderService guildProvider, ILogService logService)
+        public async Task CreateChannelAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
         {
 			SocketGuild guild = guildProvider.GetGuild();
 
@@ -72,7 +74,7 @@ namespace accs.Models
 
             List<Overwrite> overwrites = new List<Overwrite>();
             overwrites.Add(new Overwrite(targetType: PermissionTarget.User, targetId: AuthorDiscordId, permissions: permissions));
-            foreach (Post post in Admins)
+            foreach (Post post in GetAdmins(db))
                 if (post.DiscordRoleId != null)
 				    overwrites.Add(new Overwrite(targetType: PermissionTarget.Role, targetId: (ulong)post.DiscordRoleId, permissions: permissions));
 
@@ -85,13 +87,19 @@ namespace accs.Models
                 x.PermissionOverwrites = overwrites;
 			});
             ChannelDiscordId = channel.Id;
+			await db.SaveChangesAsync();
 		}
 
         public async Task DeleteChannelAsync(IGuildProviderService guildProvider)
         {
             SocketGuild guild = guildProvider.GetGuild();
 			IEnumerable<IMessage> messages = await guild.GetTextChannel(ChannelDiscordId).GetMessagesAsync(100).FlattenAsync();
-            using (FileStream stream = new FileStream(Path.Join(DotNetEnv.Env.GetString("TICKET_MESSAGES_DIRECTORY", "tickets"), $"{Id}.txt"), FileMode.Create))
+            string directoryPath = DotNetEnv.Env.GetString("TICKET_MESSAGES_DIRECTORY", "tickets");
+
+			if (!Path.Exists(directoryPath))
+                Directory.CreateDirectory(directoryPath);
+
+            using (FileStream stream = new FileStream(Path.Join(directoryPath, $"{Id}.txt"), FileMode.Create))
             {
                 foreach (IMessage message in messages)
                 {
@@ -101,5 +109,11 @@ namespace accs.Models
             }
 			await guild.GetTextChannel(ChannelDiscordId).DeleteAsync();
 		}
+
+        public virtual List<Post> GetAdmins(AppDbContext db)
+        {
+            List<Post> administrators = db.Posts.Where(p => p.GetPermissionsRecursive().Any(pr => pr.Type == PermissionType.Administrator)).ToList();
+            return administrators;
+        }
     }
 }

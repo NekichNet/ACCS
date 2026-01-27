@@ -165,11 +165,19 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                ComponentBuilder builder = new ComponentBuilder()
-                    .WithButton("Подтвердить", customId: $"activity-verify-{today}-{unit.DiscordId}", ButtonStyle.Success);
+                ComponentBuilder builder = new ComponentBuilder();
 
-                string message = $"Подтвердите активность для бойца {unit.GetOnlyNickname()}";
-                await RespondAsync(message, components: builder.Build());
+				Dictionary<Unit, bool> dict = new Dictionary<Unit, bool> { { unit, unit.Activities.Any(a => a.Date == today) } };
+
+                if (dict.Any(p => !p.Value))
+                {
+                    builder.WithButton("Подтвердить", customId: $"confirm-activity-{today}-{Context.User.Id}:{string.Join(',', unit.DiscordId)}", ButtonStyle.Success);
+				}
+
+				EmbedBuilder embedBuilder = GetResultsEmbedBuilder(dict, today)
+                    .WithAuthor((await _db.Units.FindAsync(Context.User.Id)).Nickname, Context.User.GetDisplayAvatarUrl());
+
+                await RespondAsync(components: builder.Build(), embed: embedBuilder.Build());
             }
             catch (Exception ex)
             {
@@ -188,6 +196,7 @@ namespace accs.DiscordBot.Interactions
 		}
         */
 
+        /*
 		[HasPermission(PermissionType.ConfirmActivity)]
         [ComponentInteraction("activity-verify-*-*", ignoreGroupNames: true)]
         public async Task VerifyActivityHandler(string dateRaw, string unitIdRaw)
@@ -208,7 +217,7 @@ namespace accs.DiscordBot.Interactions
                     if (unit != null)
                     {
 						unit.RankUpCounter++;
-						await RankUpCountAsync(unit);
+						await CheckRankUpCounterAsync(unit);
 						await _db.Activities.AddAsync(new Activity()
                         {
                             Unit = unit,
@@ -243,78 +252,106 @@ namespace accs.DiscordBot.Interactions
                 await _db.SaveChangesAsync();
             }
         }
+        */
 
         [HasPermission(PermissionType.ConfirmActivity)]
-        [ComponentInteraction("activity-menu-*-*", ignoreGroupNames: true)]
-        public async Task ActivityMenuHandler(string dateRaw, string selectedNums)
+        [ComponentInteraction("confirm-activity-*-*:*", ignoreGroupNames: true)]
+        public async Task ActivityMenuHandler(string dateString, string authorIdString, string idsString)
         {
             try
             {
-                List<int> selectedIds = selectedNums.Split(',').Select(s => int.Parse(s)).ToList();
-
-                IReadOnlyCollection<SelectMenuOption>? options = ((SelectMenuComponent)(await GetOriginalResponseAsync()).Components.First()).Options;
-
-                if (options == null)
-                {
-                    await RespondAsync("Ошибка получения выбранных бойцов", ephemeral: true);
-                    await _logService.WriteAsync("ActivityMenuHandler: options is null", LoggingLevel.Error);
-                    return;
-                }
-
-				List<string> selectedIds = options.Select(o => o.Value).ToList();
-
-				if (!DateOnly.TryParse(dateRaw, out DateOnly date))
+				if (!DateOnly.TryParse(dateString, out DateOnly date))
                 {
                     await RespondAsync("Ошибка: неверный формат даты", ephemeral: true);
-                    return;
+					await _logService.WriteAsync("Неверный формат даты", LoggingLevel.Error);
+					return;
                 }
 
-                if (selectedIds == null || !selectedIds.Any())
+                if (!ulong.TryParse(authorIdString, out ulong authorId))
                 {
-                    await RespondAsync("Вы не выбрали ни одного бойца", ephemeral: true);
-                    return;
-                }
+					await RespondAsync("Ошибка: не удалось получить автора запроса на фиксацию", ephemeral: true);
+					await _logService.WriteAsync("Не удалось получить автора запроса на фиксацию", LoggingLevel.Error);
+					return;
+				}
 
-                int count = 0;
-
-                foreach (var idStr in selectedIds)
+                if (idsString.Length < 2)
                 {
-                    if (ulong.TryParse(idStr, out ulong id))
-                    {
-                        Unit? unit = await _db.Units.FindAsync(id);
+					await RespondAsync("Ошибка: не удалось получить список бойцов на фиксацию", ephemeral: true);
+					await _logService.WriteAsync("Не удалось получить список бойцов на фиксацию", LoggingLevel.Error);
+					return;
+				}
 
-                        if (unit != null)
-                        {
-                            unit.RankUpCounter++;
-                            await RankUpCountAsync(unit);
-							await _db.Activities.AddAsync(new Activity()
-                            {
-                                Unit = unit,
-                                Date = date
-                            });
-                            count++;
-                        }
-                    }
-                }
+                List<ulong> ids = idsString.Split(',').Select(i => ulong.Parse(i)).ToList();
 
-				await ModifyOriginalResponseAsync(properties =>
+				Dictionary<Unit, bool> units = new Dictionary<Unit, bool>();
+
+				foreach (ulong id in ids)
 				{
-					properties.Content = $"Подтверждена активность для {count} бойцов.";
-					properties.Components = null;
-				});
+					Unit? unit = await _db.Units.FindAsync(id);
+
+					if (unit != null)
+					{
+                        if (!unit.Activities.Any(a => a.Date == date))
+                        {
+							unit.RankUpCounter++;
+							await CheckRankUpCounterAsync(unit);
+							await _db.Activities.AddAsync(new Activity()
+							{
+								Unit = unit,
+								Date = date
+							});
+							await _db.SaveChangesAsync();
+						}
+						units.Add(unit, true);
+					}
+				}
+
+                Unit? author = await _db.Units.FindAsync(authorId);
+                Unit? confirmator = await _db.Units.FindAsync(Context.User.Id);
+
+				EmbedBuilder embed = GetResultsEmbedBuilder(units, date);
+
+                if (author != null)
+                    embed.WithAuthor(name: author.Nickname, iconUrl: _guildProvider.GetGuild().GetUser(authorId).GetDisplayAvatarUrl());
+
+                if (confirmator != null)
+                    embed.WithFooter(new EmbedFooterBuilder().WithText($"Подтверждено {confirmator.Nickname}"));
+                else
+					embed.WithFooter(new EmbedFooterBuilder().WithText($"Подтверждено {Context.User.Username}"));
+
+				await RespondAsync(embed: embed.Build());
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in ActivityMenuHandler: {ex.Message}", LoggingLevel.Error);
+                await _logService.WriteAsync($"Error in ActivityMenuHandler: {ex.StackTrace}", LoggingLevel.Error);
                 await RespondAsync("Ошибка при подтверждении списка бойцов", ephemeral: true);
-            }
-            finally
-            {
-                await _db.SaveChangesAsync();
             }
         }
 
-        private async Task RankUpCountAsync(Unit unit)
+        private EmbedBuilder GetResultsEmbedBuilder(Dictionary<Unit, bool> units, DateOnly date)
+        {
+            string unitsString = "";
+            ushort unconfirmedCounter = 0;
+            foreach (KeyValuePair<Unit, bool> pair in units)
+            {
+				unitsString += "\r\n" + (pair.Value ? ":white_check_mark: [" : ":black_medium_square: [") + pair.Key.DiscordId + "] " + pair.Key.Nickname;
+                unconfirmedCounter += pair.Value ? (ushort)0 : (ushort)1;
+			}
+
+            if (units.Count == 0)
+                unitsString = "\r\nБойцов для фиксации не обнаружено";
+
+            EmbedBuilder embed = new EmbedBuilder()
+                .WithTitle("Фиксация активности")
+                .AddField("Дата:", date.ToShortDateString(), inline: true)
+                .AddField("Количество:", units.Count, inline: true)
+                .AddField("Бойцы:", unitsString)
+                .WithColor(unconfirmedCounter > 0 ? Color.Red : Color.DarkGreen);
+
+            return embed;
+        }
+
+        private async Task CheckRankUpCounterAsync(Unit unit)
         {
             if (unit.Rank.Next != null)
             {

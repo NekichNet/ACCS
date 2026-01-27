@@ -128,6 +128,8 @@ namespace accs.DiscordBot.Interactions
                 await guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(guild.GetRole(0), new OverwritePermissions(connect: PermValue.Allow));
             }
         }
+
+
         [SlashCommand("access-role", "Откройте доступ к каналу для определённой роли")]
         public async Task OnGivingAccessByRole(SocketRole role)
         {

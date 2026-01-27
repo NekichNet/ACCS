@@ -9,6 +9,10 @@ namespace accs.Models.Tickets
     {
         public DonationTicket(ulong authorId) : base(authorId) { }
 
+        public DonationTicket()
+        {
+        }
+
         public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
         {
 			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
@@ -26,7 +30,6 @@ namespace accs.Models.Tickets
 				);
 			}
         }
-
 
         public override async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db)
         {
@@ -49,5 +52,12 @@ namespace accs.Models.Tickets
             Status = TicketStatus.Accepted;
             await DeleteChannelAsync(guildProvider);
         }
-    }
+
+		public override List<Post> GetAdmins(AppDbContext db)
+		{
+			List<Post> admins = base.GetAdmins(db);
+			admins.AddRange(db.Posts.Where(p => p.Id < 3));
+			return admins;
+		}
+	}
 }

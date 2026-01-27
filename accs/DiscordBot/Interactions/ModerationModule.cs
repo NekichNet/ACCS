@@ -4,8 +4,6 @@ using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Polly;
-using System.Drawing;
 
 namespace accs.DiscordBot.Interactions
 {

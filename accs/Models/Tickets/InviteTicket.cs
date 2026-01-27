@@ -11,6 +11,10 @@ namespace accs.Models.Tickets
     {
         public InviteTicket (ulong authorId) : base(authorId) { }
 
+        public InviteTicket()
+        {
+        }
+
         public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
         {
 			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
@@ -56,9 +60,6 @@ namespace accs.Models.Tickets
 
         public async Task AcceptanceHandler(int selectedPostId, IGuildProviderService guildProvider, AppDbContext db, ILogService logService)
         {
-            await db.Units.LoadAsync();
-            await db.Tickets.LoadAsync();
-
             var channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);          
 
             // назначаем должность стрелка
@@ -97,5 +98,12 @@ namespace accs.Models.Tickets
             await db.SaveChangesAsync();
             await DeleteChannelAsync(guildProvider);
         }
-    }
+
+		public override List<Post> GetAdmins(AppDbContext db)
+		{
+			List<Post> admins = base.GetAdmins(db);
+            admins.AddRange(db.Posts.Where(p => p.Subdivision != null).Where(p => p.Subdivision.Id == 1));
+			return admins;
+		}
+	}
 }

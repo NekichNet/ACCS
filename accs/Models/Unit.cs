@@ -12,6 +12,7 @@ namespace accs.Models
 		public string Nickname { get; set; }
 		public ulong? SteamId { get; set; }
 		public ushort RankUpCounter { get; set; }
+		public DateTime Joined { get; set; }
 		public virtual Rank Rank { get; set; }
 		public virtual List<Doc> OwnDocs { get; set; }
 		public virtual List<Doc> AssignedDocs { get; set; }

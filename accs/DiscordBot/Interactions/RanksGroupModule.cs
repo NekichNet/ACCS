@@ -6,6 +6,7 @@ using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -15,10 +16,13 @@ namespace accs.DiscordBot.Interactions
     {
         private readonly AppDbContext _db;
         private readonly ILogService _logService;
+		private readonly IGuildProviderService _guildProvider;
 
-        public RanksGroupModule(AppDbContext db, ILogService logService)
+
+		public RanksGroupModule(AppDbContext db, IGuildProviderService guildProvider, ILogService logService)
         {
 			_db = db;
+			_guildProvider = guildProvider;
             _logService = logService;
         }
 
@@ -44,6 +48,16 @@ namespace accs.DiscordBot.Interactions
 					await _logService.WriteAsync($"У бойца {targetUnit.Nickname} уже самое высокое на данный момент звание: {targetUnit.Rank.Name}.", LoggingLevel.Debug);
 					return;
 				}
+
+				List<IRole> roles = new List<IRole>();
+
+				if (rank.DiscordRoleId != null)
+					roles.Add(await _guildProvider.GetGuild().GetRoleAsync((ulong)rank.DiscordRoleId));
+
+				await _guildProvider.GetGuild().GetUser(targetedUser.Id).AddRolesAsync(roles);
+
+				if (targetUnit.Rank.DiscordRoleId != null)
+					await _guildProvider.GetGuild().GetUser(targetedUser.Id).RemoveRoleAsync((ulong)targetUnit.Rank.DiscordRoleId);
 
 				targetUnit.Rank = rank;
 				targetUnit.RankUpCounter = 0;
@@ -121,9 +135,18 @@ namespace accs.DiscordBot.Interactions
 						await _logService.WriteAsync($"Звание c Id {rankId} не найдено.", LoggingLevel.Error);
 						return;
 					}
+					if (targetUnit.Rank.DiscordRoleId != null)
+						await _guildProvider.GetGuild().GetUser(targetedUser.Id).RemoveRoleAsync((ulong)targetUnit.Rank.DiscordRoleId);
 
 					targetUnit.Rank = rank;
 					targetUnit.RankUpCounter = 0;
+
+					List<IRole> roles = new List<IRole>();
+
+					if (rank.DiscordRoleId != null)
+						roles.Add(await _guildProvider.GetGuild().GetRoleAsync((ulong)rank.DiscordRoleId));
+
+					await _guildProvider.GetGuild().GetUser(targetedUser.Id).AddRolesAsync(roles);
 
 					await _db.SaveChangesAsync();
 
@@ -163,11 +186,17 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                // Присвоение звания
-                targetUnit.Rank = rank;
+				if (targetUnit.Rank.DiscordRoleId != null)
+					await _guildProvider.GetGuild().GetUser(targetId).RemoveRoleAsync((ulong)targetUnit.Rank.DiscordRoleId);
+
+				// Присвоение звания
+				targetUnit.Rank = rank;
                 targetUnit.RankUpCounter = 0;
 
-                await _db.SaveChangesAsync();
+				if (rank.DiscordRoleId != null)
+					await _guildProvider.GetGuild().GetUser(targetId).AddRoleAsync((ulong)rank.DiscordRoleId);
+
+				await _db.SaveChangesAsync();
 
 				await RespondAsync($"Установлено звание {rank.Name} для бойца {targetUnit.Nickname}. Счётчик на повышение сброшен.");
             }

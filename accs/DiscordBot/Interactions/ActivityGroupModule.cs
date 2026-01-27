@@ -29,12 +29,12 @@ namespace accs.DiscordBot.Interactions
             _logService = logService;
         }
 
-        //[SlashCommand("voice", "Всех бойцов в голосовом канале")]
+        [SlashCommand("voice", "Всех бойцов в голосовом канале")]
         public async Task FixVoiceCommand([ChannelTypes(ChannelType.Voice, ChannelType.Forum)] IChannel channel)
         {
             try
             {
-                List<Unit> units = new List<Unit>();
+                Dictionary<Unit, bool> units = new Dictionary<Unit, bool>();
                 IEnumerable<IUser> users = await channel.GetUsersAsync().FlattenAsync();
 
 				DateOnly today = DateOnly.FromDateTime(DateTime.Today);
@@ -42,30 +42,21 @@ namespace accs.DiscordBot.Interactions
                 {
                     Unit? unit = await _db.Units.FindAsync(user.Id);
                     if (unit != null)
-                    {
-                        units.Add(unit);
-                    }
+                        units.Add(unit, unit.Activities.Any(a => a.Date == today));
                 }
 
                 if (units.Any())
                 {
-                    SelectMenuBuilder menuBuilder = new SelectMenuBuilder()
-                        .WithPlaceholder("Редактировать список")
-                        .WithCustomId($"activity-select-menu")
-                        .WithMinValues(0)
-                        .WithMaxValues(units.Count);
+					ComponentBuilder component = new ComponentBuilder();
 
-                    foreach (var unit in units)
-                    {
-                        menuBuilder.AddOption(unit.Nickname, unit.DiscordId.ToString(), isDefault: true);
-                    }
+					if (units.Any(p => !p.Value))
+						component.WithButton("Подтвердить", customId: $"confirm-activity-{today}-{Context.User.Id}:{string.Join(',', units.Select(p => p.Key.DiscordId))}", ButtonStyle.Success);
 
-                    ComponentBuilder builder = new ComponentBuilder();
-                    builder.WithSelectMenu(menuBuilder)
-						.WithButton("Подтвердить", customId: $"activity-menu-{today}", ButtonStyle.Success);
+					EmbedBuilder embedBuilder = GetResultsEmbedBuilder(units, today)
+						.WithAuthor((await _db.Units.FindAsync(Context.User.Id)).Nickname, Context.User.GetDisplayAvatarUrl());
 
-                    await RespondAsync($"Подтвердите активность для {units.Count} бойцов.", components: builder.Build());
-                }
+					await RespondAsync(components: component.Build(), embed: embedBuilder.Build());
+				}
                 else
                 {
                     await RespondAsync("Бойцы не найдены");
@@ -105,25 +96,22 @@ namespace accs.DiscordBot.Interactions
                 }
 
                 HashSet<Unit> detectedUnits = await _ocr.ReceiveNamesFromPhoto(filePath);
+                Dictionary<Unit, bool> units = new Dictionary<Unit, bool>();
 
-                if (detectedUnits.Any())
+                foreach (Unit unit in detectedUnits)
+                    units.Add(unit, unit.Activities.Any(a => a.Date == today));
+
+                if (units.Any())
                 {
-                    SelectMenuBuilder menuBuilder = new SelectMenuBuilder()
-                        .WithPlaceholder("Редактировать список")
-                        .WithCustomId($"activity-menu-{today}")
-                        .WithMinValues(0)
-                        .WithMaxValues(detectedUnits.Count);
+                    ComponentBuilder component = new ComponentBuilder();
 
-                    foreach (var unit in detectedUnits)
-                    {
-                        menuBuilder.AddOption(unit.Nickname, unit.DiscordId.ToString(), isDefault: true);
-                    }
+					if (units.Any(p => !p.Value))
+						component.WithButton("Подтвердить", customId: $"confirm-activity-{today}-{Context.User.Id}:{string.Join(',', units.Select(p => p.Key.DiscordId))}", ButtonStyle.Success);
 
-                    ComponentBuilder builder = new ComponentBuilder()
-                        .WithSelectMenu(menuBuilder);
+					EmbedBuilder embedBuilder = GetResultsEmbedBuilder(units, today)
+						.WithAuthor((await _db.Units.FindAsync(Context.User.Id)).Nickname, Context.User.GetDisplayAvatarUrl());
 
-                    string message = $"Подтвердите активность для {detectedUnits.Count} бойцов.";
-                    await ReplyAsync(message, components: builder.Build());
+                    await ReplyAsync(components: component.Build(), embed: embedBuilder.Build());
                 }
                 else
                 {
@@ -186,74 +174,6 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-        /*
-		[HasPermission(PermissionType.ConfirmActivity)]
-		[ComponentInteraction("activity-select-menu", ignoreGroupNames: true)]
-        public async Task SelectMenuHandler(string[] selectedIds)
-        {
-			((SelectMenuComponent)(await GetOriginalResponseAsync()).Components.First()).CustomId = String.Join(',', selectedIds);
-
-		}
-        */
-
-        /*
-		[HasPermission(PermissionType.ConfirmActivity)]
-        [ComponentInteraction("activity-verify-*-*", ignoreGroupNames: true)]
-        public async Task VerifyActivityHandler(string dateRaw, string unitIdRaw)
-        {
-            Console.WriteLine(dateRaw + " " + unitIdRaw);
-            try
-            {
-                if (!DateOnly.TryParse(dateRaw, out DateOnly date))
-                {
-                    await RespondAsync("Ошибка: неверный формат даты", ephemeral: true);
-                    return;
-                }
-
-                if (ulong.TryParse(unitIdRaw, out ulong unitId))
-                {
-                    Unit? unit = await _db.Units.FindAsync(unitId);
-
-                    if (unit != null)
-                    {
-						unit.RankUpCounter++;
-						await CheckRankUpCounterAsync(unit);
-						await _db.Activities.AddAsync(new Activity()
-                        {
-                            Unit = unit,
-                            Date = date
-                        });
-                        await ModifyOriginalResponseAsync(properties =>
-                        {
-                            properties.Content = $"Подтверждена активность для: {unit.GetOnlyNickname()}";
-                            properties.Components = null;
-                        });
-                    }
-                    else
-                    {
-                        await RespondAsync("Боец не найден", ephemeral: true);
-                        return;
-                    }
-                }
-                else
-                {
-                    await RespondAsync("Ошибка: неверный формат ID бойца", ephemeral: true);
-                    await _logService.WriteAsync("Ошибка: неверный формат ID бойца", LoggingLevel.Error);
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                await _logService.WriteAsync($"Error in VerifyActivity: {ex.Message}", LoggingLevel.Error);
-                await RespondAsync("Ошибка при подтверждении активности", ephemeral: true);
-            }
-            finally
-            {
-                await _db.SaveChangesAsync();
-            }
-        }
-        */
-
         [HasPermission(PermissionType.ConfirmActivity)]
         [ComponentInteraction("confirm-activity-*-*:*", ignoreGroupNames: true)]
         public async Task ActivityMenuHandler(string dateString, string authorIdString, string idsString)
@@ -305,6 +225,8 @@ namespace accs.DiscordBot.Interactions
 						units.Add(unit, true);
 					}
 				}
+
+                await ((IComponentInteraction)Context.Interaction).Message.DeleteAsync();
 
                 Unit? author = await _db.Units.FindAsync(authorId);
                 Unit? confirmator = await _db.Units.FindAsync(Context.User.Id);

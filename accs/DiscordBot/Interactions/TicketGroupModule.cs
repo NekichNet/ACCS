@@ -4,8 +4,10 @@ using accs.Models;
 using accs.Models.Enums;
 using accs.Models.Tickets;
 using accs.Services.Interfaces;
+using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -104,14 +106,23 @@ namespace accs.DiscordBot.Interactions
         }
         */
 
-        [ComponentInteraction("invite-select-*")]
+        [ComponentInteraction("invite-select-*", ignoreGroupNames: true)]
         public async Task InviteSelectHandler(int ticketId, int[] postIds)
         {
-            int selectedId = postIds.First();
-            Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
-            if (ticket is InviteTicket invite)
+			int selectedId = postIds.First();
+			Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
+			if (ticket is InviteTicket invite)
 			{
-				await invite.AcceptanceHandler(selectedId, _guildProvider, _db, _logService);
+				Unit? unit = await _db.Units.FindAsync(Context.User.Id);
+				if (unit != null)
+				{
+					if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
+					{
+						await invite.AcceptanceHandler(selectedId, _guildProvider, _db, _logService);
+					}
+				}
+
+				await RespondAsync("Выбрать взвод может только ответственная за тикет служба.", ephemeral: true);
 			}
 			else
 			{
@@ -120,13 +131,10 @@ namespace accs.DiscordBot.Interactions
 			}
         }
 
-		[ComponentInteraction("retirement-select-*")]
+		[ComponentInteraction("retirement-select-*", ignoreGroupNames: true)]
 		public async Task ReturnFromRetirementHandler(int ticketId, int[] postIds)
 		{
-			await _db.UnitStatuses.LoadAsync();
-			await _db.Posts.LoadAsync();
-
-			Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
+			RetirementTicket? ticket = await _db.RetirementTickets.FindAsync(ticketId);
 			if (ticket == null)
 			{
 				await RespondAsync($"Ошибка: тикет с Id {ticketId} не найден!", ephemeral: true);
@@ -142,17 +150,26 @@ namespace accs.DiscordBot.Interactions
 				return;
 			}
 
+			Unit? userUnit = await _db.Units.FindAsync(Context.User.Id);
+			if (userUnit == null)
+			{
+				await RespondAsync("Ошибка: Вы не найдены в системе", ephemeral: true);
+				return;
+			}
+			if (!userUnit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
+			{
+				await RespondAsync("Выбор должностей доступен только ответственной за тикет службе", ephemeral: true);
+				return;
+			}
+
 			// поиск активного статуса Retirement
-			UnitStatus? activeRetirement = unit.UnitStatuses
-				.FirstOrDefault(us =>
+			UnitStatus activeRetirement = unit.UnitStatuses
+				.First(us =>
 					us.Status.Type == StatusType.Retirement &&
-					us.EndDate > DateTime.UtcNow
+					us.EndDate == null
 				);
 
-			if (activeRetirement != null)
-			{
-				activeRetirement.EndDate = DateTime.UtcNow;
-			}
+			activeRetirement.EndDate = DateTime.UtcNow;
 
 			unit.Posts.Clear();
 
@@ -161,14 +178,31 @@ namespace accs.DiscordBot.Interactions
 			{
 				Post? post = await _db.Posts.FindAsync(id);
 				if (post != null)
+				{
 					unit.Posts.Add(post);
+
+					List<IRole> roles = new List<IRole>();
+					if (post.DiscordRoleId != null)
+						roles.Add(await _guildProvider.GetGuild().GetRoleAsync((ulong)post.DiscordRoleId));
+					Subdivision? subdiv = post.Subdivision;
+					while (subdiv != null)
+					{
+						if (subdiv.DiscordRoleId != null)
+							roles.Add(await _guildProvider.GetGuild().GetRoleAsync((ulong)subdiv.DiscordRoleId));
+						subdiv = subdiv.Head;
+					}
+
+					await _guildProvider.GetGuild().GetUser(ticket.AuthorDiscordId).AddRolesAsync(roles);
+				}
 				else
 					await _logService.WriteAsync($"ReturnFromRetirenmentHandler: Post с id {id} не найден", LoggingLevel.Error);
 			}
 
 			ticket.Status = TicketStatus.Accepted;
+			_db.RetirementTickets.Update(ticket);
 
 			await _db.SaveChangesAsync();
+			await RespondAsync("Боец отправлен в отставку");
 			await ticket.DeleteChannelAsync(_guildProvider);
 		}
 	}

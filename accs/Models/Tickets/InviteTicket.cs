@@ -60,20 +60,18 @@ namespace accs.Models.Tickets
 
         public async Task AcceptanceHandler(int selectedPostId, IGuildProviderService guildProvider, AppDbContext db, ILogService logService)
         {
-            var channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);          
-
-            // назначаем должность стрелка
-            var post = await db.Posts.FindAsync(selectedPostId);
-
+            var channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
+			// назначаем должность стрелка
+			var post = await db.Posts.FindAsync(selectedPostId);
+            
             if (post == null)
             {
                 await channel.SendMessageAsync($"Ошибка: выбранная должность стрелка с Id {selectedPostId} не найдена!");
                 await logService.WriteAsync($"Выбранная должность стрелка с Id {selectedPostId} не найдена!", LoggingLevel.Error);
                 return;
             }
-
-            // выдаём звание рекрута
-            var recruitRank = await db.Ranks.FindAsync(1);
+			// выдаём звание рекрута
+			var recruitRank = await db.Ranks.FindAsync(1);
 
 			if (recruitRank == null)
 			{
@@ -82,22 +80,42 @@ namespace accs.Models.Tickets
 				return;
 			}
 
-            await guildProvider.GetGuild().GetUser(AuthorDiscordId).ModifyAsync(u => u.Nickname = "[Р] " + u.Nickname);
-
+			SocketGuildUser author = guildProvider.GetGuild().GetUser(AuthorDiscordId);
+            string nickname = author.DisplayName;
+			await author.ModifyAsync(u => u.Nickname = "[Р] " + nickname);
 			var unit = new Unit
             {
                 DiscordId = AuthorDiscordId,
-                Nickname = guildProvider.GetGuild().GetUser(AuthorDiscordId).DisplayName,
+                Nickname = author.DisplayName,
                 Rank = recruitRank,
+                Joined = DateTime.UtcNow,
                 Posts = new List<Post> { post }
             };
 
-            await db.Units.AddAsync(unit);
+            List<IRole> roles = new List<IRole>();
+            if (recruitRank.DiscordRoleId != null)
+                roles.Add(await guildProvider.GetGuild().GetRoleAsync((ulong)recruitRank.DiscordRoleId));
+            if (post.DiscordRoleId != null)
+                roles.Add(await guildProvider.GetGuild().GetRoleAsync((ulong)post.DiscordRoleId));
+			Subdivision? subdiv = post.Subdivision;
+			while (subdiv != null)
+            {
+				if (subdiv.DiscordRoleId != null)
+					roles.Add(await guildProvider.GetGuild().GetRoleAsync((ulong)subdiv.DiscordRoleId));
+                subdiv = subdiv.Head;
+			}
+
+			await author.AddRolesAsync(roles);
+			string friendRoleIdStr = DotNetEnv.Env.GetString("FRIEND_ROLE_ID");
+			if (ulong.TryParse(friendRoleIdStr, out ulong friendRoleId))
+				if (author.Roles.Any(r => r.Id == friendRoleId))
+                    await author.RemoveRoleAsync(friendRoleId);
+			await db.Units.AddAsync(unit);
             Status = TicketStatus.Accepted;
 
-            await db.SaveChangesAsync();
+			await db.SaveChangesAsync();
             await DeleteChannelAsync(guildProvider);
-        }
+		}
 
 		public override List<Post> GetAdmins(AppDbContext db)
 		{

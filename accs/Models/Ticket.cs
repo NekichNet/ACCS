@@ -1,11 +1,9 @@
 ﻿using accs.Database;
 using accs.Models.Enums;
-using accs.Services;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
-using System.Net;
 using System.Text;
 
 namespace accs.Models
@@ -112,7 +110,7 @@ namespace accs.Models
 
         public virtual List<Post> GetAdmins(AppDbContext db)
         {
-            List<Post> administrators = db.Posts.Where(p => p.GetPermissionsRecursive().Any(pr => pr.Type == PermissionType.Administrator)).ToList();
+            List<Post> administrators = db.Posts.ToList().Where(p => p.GetPermissionsRecursive().Any(pr => pr.Type == PermissionType.Administrator)).ToList();
             return administrators;
         }
     }

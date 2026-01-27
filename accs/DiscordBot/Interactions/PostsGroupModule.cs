@@ -1,11 +1,12 @@
 ﻿using accs.Database;
 using accs.DiscordBot.Preconditions;
+using accs.Models;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -17,12 +18,13 @@ namespace accs.DiscordBot.Interactions
         public class PostsGroupModule : InteractionModuleBase<SocketInteractionContext>
         {
             private readonly AppDbContext _db;
+            private readonly IGuildProviderService _guildProvider;
             private readonly ILogService _logService;
 
-            public PostsGroupModule(AppDbContext db,
-                ILogService logService)
+            public PostsGroupModule(AppDbContext db, IGuildProviderService guildProvider, ILogService logService)
             {
                 _db = db;
+                _guildProvider = guildProvider;
                 _logService = logService; 
             }
 
@@ -32,9 +34,6 @@ namespace accs.DiscordBot.Interactions
             {
                 try
                 {
-                    await _db.Units.LoadAsync(); 
-                    await _db.Posts.LoadAsync();
-
                     var actorUnit = await _db.Units.FindAsync(Context.User.Id);
                     var targetUnit = await _db.Units.FindAsync(target.Id);
 
@@ -93,7 +92,6 @@ namespace accs.DiscordBot.Interactions
 						.Select(v => int.Parse(v))
                         .ToList();
 
-                    
                     for (int i = 0; i < selectedIds.Count; i++)
                     {
                         var post = await _db.Posts.FindAsync(selectedIds[i]);
@@ -106,8 +104,28 @@ namespace accs.DiscordBot.Interactions
 
                     var targetUnit = await _db.Units.FindAsync(targetId);
 
+                    if (targetUnit == null)
+                    {
+                        await RespondAsync($"Ошибка: пользователь с id {targetId} не найден в системе!", ephemeral: true);
+                        await _logService.WriteAsync($"Пользователь с id {targetId} не найден в системе!", LoggingLevel.Error);
+                        return;
+                    }
+
                     // удаление всех текущих должностей
-                    targetUnit?.Posts.Clear();
+                    foreach (Post post in targetUnit.Posts)
+                    {
+						if (post.DiscordRoleId != null)
+							await _guildProvider.GetGuild().GetUser(targetId).RemoveRoleAsync((ulong)post.DiscordRoleId);
+						Subdivision? subdiv = post.Subdivision;
+						while (subdiv != null)
+						{
+							if (subdiv.DiscordRoleId != null)
+								await _guildProvider.GetGuild().GetUser(targetId).RemoveRoleAsync((ulong)subdiv.DiscordRoleId);
+							subdiv = subdiv.Head;
+						}
+					}
+
+					targetUnit.Posts.Clear();
 
                     // добавление выбранных должностей
                     foreach (var postId in selectedIds) 
@@ -115,8 +133,21 @@ namespace accs.DiscordBot.Interactions
                         var post = await _db.Posts.FindAsync(postId);
                         if (post != null)
                         {
-                            targetUnit?.Posts.Add(post);
-                        }
+							List<IRole> roles = new List<IRole>();
+
+							targetUnit.Posts.Add(post);
+							if (post.DiscordRoleId != null)
+								roles.Add(await _guildProvider.GetGuild().GetRoleAsync((ulong)post.DiscordRoleId));
+							Subdivision? subdiv = post.Subdivision;
+							while (subdiv != null)
+							{
+								if (subdiv.DiscordRoleId != null)
+									roles.Add(await _guildProvider.GetGuild().GetRoleAsync((ulong)subdiv.DiscordRoleId));
+								subdiv = subdiv.Head;
+							}
+
+							await _guildProvider.GetGuild().GetUser(targetId).AddRolesAsync(roles);
+						}
                         else
                         {
                             await _logService.WriteAsync($"Пост {postId} не найден.", LoggingLevel.Error);

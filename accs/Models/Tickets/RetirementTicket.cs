@@ -29,9 +29,6 @@ namespace accs.Models.Tickets
 
         public override async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db)
         {
-            await db.UnitStatuses.LoadAsync();
-            await db.Posts.LoadAsync();
-
             Unit? unit = await db.Units.FindAsync(AuthorDiscordId);
             var channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 
@@ -45,14 +42,12 @@ namespace accs.Models.Tickets
             var activeRetirement = unit.UnitStatuses
                 .FirstOrDefault(us =>
                     us.Status.Type == StatusType.Retirement &&
-                    us.EndDate > DateTime.UtcNow
+                    us.EndDate == null
                 );
 
-            // еще не в отставке -> в отставку
             if (activeRetirement == null)
             {
-                unit.Posts.Clear();
-
+				// еще не в отставке -> в отставку
                 Status? retirementStatus = await db.Statuses.FindAsync(StatusType.Retirement);
                 if (retirementStatus == null)
                 {
@@ -67,7 +62,25 @@ namespace accs.Models.Tickets
                     StartDate = DateTime.UtcNow
                 };
 
-                await db.UnitStatuses.AddAsync(unitStatus);
+                foreach (Post post in unit.Posts)
+                {
+					List<IRole> roles = new List<IRole>();
+					if (post.DiscordRoleId != null)
+						roles.Add(await guildProvider.GetGuild().GetRoleAsync((ulong)post.DiscordRoleId));
+					Subdivision? subdiv = post.Subdivision;
+					while (subdiv != null)
+					{
+						if (subdiv.DiscordRoleId != null)
+							roles.Add(await guildProvider.GetGuild().GetRoleAsync((ulong)subdiv.DiscordRoleId));
+						subdiv = subdiv.Head;
+					}
+
+					await guildProvider.GetGuild().GetUser(AuthorDiscordId).RemoveRolesAsync(roles);
+				}
+
+				unit.Posts.Clear();
+				await db.UnitStatuses.AddAsync(unitStatus);
+                
 
                 await channel.SendMessageAsync(
                     "Вы успешно отправлены в отставку. Все ваши должности сняты."
@@ -75,29 +88,31 @@ namespace accs.Models.Tickets
 
                 Status = TicketStatus.Accepted;
                 await DeleteChannelAsync(guildProvider);
-                return;
-            }
-
-            // уже в отставке -> показываем меню выбора должностей
-            List<Post> allPosts = await db.Posts.Include(p => p.Units).ToListAsync();
-
-            var menu = new SelectMenuBuilder()
-                .WithCustomId($"retirement-select-{Id}")
-                .WithPlaceholder("Должности")
-                .WithMinValues(1)
-                .WithMaxValues(allPosts.Count);
-
-            foreach (Post post in allPosts)
+				await db.SaveChangesAsync();
+			}
+            else
             {
-                menu.AddOption(post.GetFullName(), post.Id.ToString(), post.Units.Count + " человек");
-            }
+				// уже в отставке -> показываем меню выбора должностей
+				List<Post> allPosts = await db.Posts.Include(p => p.Units).ToListAsync();
 
-            var builder = new ComponentBuilder().WithSelectMenu(menu);
+				var menu = new SelectMenuBuilder()
+					.WithCustomId($"retirement-select-{Id}")
+					.WithPlaceholder("Должности")
+					.WithMinValues(1)
+					.WithMaxValues(allPosts.Count);
 
-            await channel.SendMessageAsync(
-                "Выберите должности, которые хотите получить после возвращения из отставки:",
-                components: builder.Build()
-            );
+				foreach (Post post in allPosts)
+				{
+					menu.AddOption(post.GetFullName(), post.Id.ToString(), post.Units.Count + " человек");
+				}
+
+				var builder = new ComponentBuilder().WithSelectMenu(menu);
+
+				await channel.SendMessageAsync(
+					"Выберите должности, которые хотите получить после возвращения из отставки:",
+					components: builder.Build()
+				);
+			}
         }
 
 		public override List<Post> GetAdmins(AppDbContext db)

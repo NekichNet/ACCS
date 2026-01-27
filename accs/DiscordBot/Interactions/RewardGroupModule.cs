@@ -69,15 +69,57 @@ namespace accs.DiscordBot.Interactions
 			}
         }
 
-        /*
+        
         [HasPermission(PermissionType.ManageRewards)]
-		public async Task CreateCommand()
+        [SlashCommand("reward-create", "Создать награду")]
+        public async Task CreateCommand(string name, string description,
+            IAttachment? image = null)
         {
+            try
+            {
+                string? savedImagePath = null;
+                if (image != null)
+                {
+                    var http = new HttpClient(); 
+                    var bytes = await http.GetByteArrayAsync(image.Url); 
 
+                    string rewardsDir = Path.Combine("temp", "rewards"); 
+                    Directory.CreateDirectory(rewardsDir); 
+                    string filePath = Path.Combine(rewardsDir, image.Filename);
+
+                    await File.WriteAllBytesAsync(filePath, bytes); 
+                    savedImagePath = filePath;
+                }
+
+                Reward reward = new Reward() 
+                {
+                    Name = name,
+                    Description = description, 
+                    ImagePath = savedImagePath 
+                };
+
+                await _db.Rewards.AddAsync(reward);
+                await _db.SaveChangesAsync();
+
+                await RespondWithFileAsync(
+                    reward.ImagePath,
+                    embed: new EmbedBuilder()
+                        .WithTitle("Награда создана")
+                        .WithDescription(reward.Description)
+                        .WithImageUrl($"attachment://{Path.GetFileName(reward.ImagePath)}")
+                        .Build(),
+                    ephemeral: true
+                );
+            }
+            catch (Exception ex)
+            {
+                await _logService.WriteAsync($"Ошибка при создании награды: {ex.Message}", LoggingLevel.Error); 
+                await RespondAsync("Ошибка при создании награды.", ephemeral: true);
+            }
         }
-        */
 
-		[HasPermission(PermissionType.AssignRewards)]
+
+        [HasPermission(PermissionType.AssignRewards)]
 		[ComponentInteraction("reward-menu-*", ignoreGroupNames: true)]
         public async Task MenuHandler(string unitId, string[] selectedIds)
         {

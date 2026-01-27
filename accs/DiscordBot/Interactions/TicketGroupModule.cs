@@ -6,6 +6,7 @@ using accs.Models.Tickets;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 
@@ -98,13 +99,91 @@ namespace accs.DiscordBot.Interactions
 			await RespondAsync("Отменить тикет может только автор тикета.", ephemeral: true);
 		}
 
-        /*
+        
         [SlashCommand("voice", "Создать приватный голосовой канал для участников тикета")]
         public async Task Voice()
         {
-            TODO
+			try
+			{
+                int ticketId = int.Parse(Context.Channel.Name.Split('-').Last());
+                Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
+
+                if (ticket == null)
+                {
+                    await RespondAsync($"Тикет с id {ticketId} не найден!", ephemeral: true);
+                    await _logService.WriteAsync($"Ticket voice: Тикет {ticketId} не найден", LoggingLevel.Error);
+                    return;
+                }
+
+                SocketGuild guild = _guildProvider.GetGuild();
+
+                List<SocketGuildUser> participants = new();
+
+                var author = guild.GetUser(ticket.AuthorDiscordId);
+                if (author != null)
+				{
+                    participants.Add(author);
+                }
+
+                var adminPosts = ticket.GetAdmins(_db).ToList();
+                await _db.Units.LoadAsync();
+
+                foreach (var unit in _db.Units)
+                {
+                    if (unit.Posts.Intersect(adminPosts).Any())
+                    {
+                        var gu = guild.GetUser(unit.DiscordId);
+                        if (gu != null)
+                            participants.Add(gu);
+                    }
+                }
+
+                participants = participants.Distinct().ToList();
+
+                if (participants.Count == 0)
+                {
+                    await RespondAsync("Не удалось определить участников тикета.", ephemeral: true);
+                    return;
+                }
+
+                if (!ulong.TryParse(DotNetEnv.Env.GetString("VOICE_CATEGORY_ID", "null"), out ulong voiceCategoryId))
+                {
+                    await RespondAsync("VOICE_CATEGORY_ID не найден в конфигурации.", ephemeral: true);
+                    await _logService.WriteAsync("Ticket voice: Cannot parse VOICE_CATEGORY_ID", LoggingLevel.Error);
+                    return;
+                }
+
+                var channel = await guild.CreateVoiceChannelAsync(
+                    $"【🎧】Тикет {ticketId}",
+                    props =>
+                    {
+                        props.CategoryId = voiceCategoryId;
+                        props.Bitrate = 64000;
+                        props.UserLimit = null;
+                    }
+                );
+
+                await channel.AddPermissionOverwriteAsync(guild.EveryoneRole,
+                    new OverwritePermissions(connect: PermValue.Deny));
+
+                foreach (var user in participants)
+                {
+                    await channel.AddPermissionOverwriteAsync(user,
+                        new OverwritePermissions(connect: PermValue.Allow));
+                }
+
+                await RespondAsync(
+                    $"Приватный голосовой канал создан с id: {channel.Id}",
+                    ephemeral: true
+                );
+            }
+            catch (Exception ex)
+			{
+                await RespondAsync("Не удалось создать голосовой канал.", ephemeral: true); 
+				await _logService.WriteAsync($"Ticket voice error: {ex.Message}", LoggingLevel.Error);
+            }
         }
-        */
+        
 
         [ComponentInteraction("invite-select-*", ignoreGroupNames: true)]
         public async Task InviteSelectHandler(int ticketId, int[] postIds)

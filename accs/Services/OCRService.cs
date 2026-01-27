@@ -4,6 +4,7 @@ using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord.WebSocket;
 using EasyOcrSharp.Services;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace accs.Services
@@ -31,7 +32,7 @@ namespace accs.Services
             await using var ocr = new EasyOcrService(logger: loggerFactory.CreateLogger<EasyOcrService>());
             var result = await ocr.ExtractTextFromImage(imagePath, new[] { "en", "ru" });
 
-            List<Unit> units = _db.Units.ToList();
+            List<Unit> units = await _db.Units.ToListAsync();
 
             HashSet<Unit> exitMatches = new HashSet<Unit>();
 

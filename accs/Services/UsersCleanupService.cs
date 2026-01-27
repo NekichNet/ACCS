@@ -26,7 +26,9 @@ namespace accs.Services
             foreach (SocketGuildUser user in _guild.Users)
             {
                 if (user.IsBot)
-                    continue;
+                {
+                    continue;   
+                }
 
                 DateTimeOffset? days = user.JoinedAt;
                 if (days == null)

@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
+    [IsUnit()]
     public class StatusAssignmentModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
@@ -78,11 +79,12 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.VacationAccess)]
         [SlashCommand("vacation", "Выход в отпуск")]
-        public async Task VacationCommandAsync([MinValue(1), MaxValue(7)] int days = 7)
+        public async Task VacationCommand([MinValue(1), MaxValue(7)] int days = 7)
         {
             try
             {
                 await _db.UnitStatuses.LoadAsync();
+                await _db.Units.LoadAsync();
 
                 Unit? unit = await _db.Units.FindAsync(Context.User.Id);
                 if (unit == null)
@@ -116,6 +118,71 @@ namespace accs.DiscordBot.Interactions
             catch (Exception ex)
             {
                 await RespondAsync("Из-за необработанной ошибки не удалось оформить отпуск.", ephemeral: true); 
+                await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
+            }
+            finally
+            {
+                await _db.SaveChangesAsync();
+            }
+        }
+
+
+        [SlashCommand("end-vacation", "Выход из отпуска")]
+        public async Task EndVacationCommand()
+        {
+            try
+            {
+                await _db.UnitStatuses.LoadAsync();
+                await _db.Units.LoadAsync();
+
+                Unit? unit = await _db.Units.FindAsync(Context.User.Id);
+                if (unit == null)
+                {
+                    await RespondAsync("Вы не найдены в базе.", ephemeral: true);
+                    await _logService.WriteAsync(
+                        $"EndVacationCommand: Боец {Context.User.Username} с Id {Context.User.Id} не найден в бд",
+                        LoggingLevel.Error
+                    );
+                    return;
+                }
+
+                Status? vacationStatus = await _db.Statuses.FindAsync(StatusType.Vacation);
+                if (vacationStatus == null)
+                {
+                    await RespondAsync("Статус 'Отпуск' не найден в базе.", ephemeral: true);
+                    await _logService.WriteAsync(
+                        $"EndVacationCommand: Статус 'Отпуск' не найден в базе.",
+                        LoggingLevel.Error
+                    );
+                    return;
+                }
+
+                UnitStatus? activeVacation = await _db.UnitStatuses
+                    .Where(us =>
+                        us.Unit.DiscordId == unit.DiscordId &&
+                        us.Status.Type == StatusType.Vacation &&
+                        (us.EndDate == null || us.EndDate > DateTime.Now)
+                    )
+                    .OrderByDescending(us => us.StartDate)
+                    .FirstOrDefaultAsync();
+
+
+                if (activeVacation == null)
+                {
+                    await RespondAsync("У вас нет активного отпуска.", ephemeral: true);
+                    return;
+                }
+
+                activeVacation.EndDate = DateTime.Now;
+
+                await RespondAsync(
+                    $"Отпуск для {unit.GetOnlyNickname()} завершён досрочно.",
+                    ephemeral: true
+                );
+            }
+            catch (Exception ex)
+            {
+                await RespondAsync("Не удалось завершить отпуск из-за ошибки.", ephemeral: true); 
                 await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
             }
             finally

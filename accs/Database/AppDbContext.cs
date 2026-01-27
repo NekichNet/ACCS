@@ -1,5 +1,6 @@
 ﻿using accs.Models;
 using accs.Models.Enums;
+using accs.Models.Tickets;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Database
@@ -17,7 +18,15 @@ namespace accs.Database
 		public DbSet<Activity> Activities { get; set; }
 		public DbSet<UnitStatus> UnitStatuses { get; set; }
 		public DbSet<Status> Statuses { get; set; }
+
 		public DbSet<Ticket> Tickets { get; set; }
+		public DbSet<InviteTicket> InviteTickets { get; set; }
+		public DbSet<FriendTicket> FriendTickets { get; set; }
+		public DbSet<DonationTicket> DonationTickets { get; set; }
+		public DbSet<LessonTicket> LessonTickets { get; set; }
+		public DbSet<ReportTicket> ReportTickets { get; set; }
+		public DbSet<RetirementTicket> RetirementTickets { get; set; }
+		public DbSet<TechTicket> TechTickets { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
 			: base(options) { }

@@ -27,13 +27,10 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("accept", "Принять")]
         public async Task AcceptCommand()
         {
-			await _db.Units.LoadAsync();
-
             int ticketId = int.Parse(Context.Channel.Name.Split('-').Last());
 			Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
 			if (ticket == null)
             {
-                await DeleteOriginalResponseAsync();
                 await RespondAsync($"Тикет с id {ticketId} не найден!");
                 await _logService.WriteAsync($"Тикет с id {ticketId} не найден!", LoggingLevel.Error);
 				return;
@@ -42,14 +39,13 @@ namespace accs.DiscordBot.Interactions
 			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
 			if (unit != null)
             {
-				if (unit.Posts.Intersect(ticket.Admins).Any())
+				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
 				{
 					await ticket.AcceptAsync(_guildProvider, _db);
 					return;
 				}
 			}
 
-			await DeleteOriginalResponseAsync();
 			await RespondAsync("Принять тикет может только ответственная за него подчасть.", ephemeral: true);
 		}
 
@@ -60,7 +56,6 @@ namespace accs.DiscordBot.Interactions
 			Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
 			if (ticket == null)
 			{
-				await DeleteOriginalResponseAsync();
 				await RespondAsync($"Тикет с id {ticketId} не найден!");
 				await _logService.WriteAsync($"Тикет с id {ticketId} не найден!", LoggingLevel.Error);
 				return;
@@ -69,14 +64,13 @@ namespace accs.DiscordBot.Interactions
 			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
 			if (unit != null)
 			{
-				if (unit.Posts.Intersect(ticket.Admins).Any())
+				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
 				{
 					await ticket.RefuseAsync(_guildProvider, _db);
 					return;
 				}
 			}
 
-			await DeleteOriginalResponseAsync();
 			await RespondAsync("Отказать и закрыть тикет может только ответственная за него подчасть.", ephemeral: true);
 		}
 
@@ -87,7 +81,6 @@ namespace accs.DiscordBot.Interactions
 			Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
 			if (ticket == null)
 			{
-				await DeleteOriginalResponseAsync();
 				await RespondAsync($"Тикет с id {ticketId} не найден!");
 				await _logService.WriteAsync($"Тикет с id {ticketId} не найден!", LoggingLevel.Error);
 				return;
@@ -100,7 +93,6 @@ namespace accs.DiscordBot.Interactions
 				return;
 			}
 
-			await DeleteOriginalResponseAsync();
 			await RespondAsync("Отменить тикет может только автор тикета.", ephemeral: true);
 		}
 

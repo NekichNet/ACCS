@@ -6,6 +6,10 @@ namespace accs.Models.Tickets
 {
     public class TechTicket : Ticket
     {
+        public TechTicket()
+        {
+        }
+
         public TechTicket(ulong authorId) : base(authorId) { }
 
         public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
@@ -18,6 +22,13 @@ namespace accs.Models.Tickets
                     "Вы обратились в техническую поддержку клана.\n" +
                     "Служба Связи скоро ответит на ваш запрос."
                 );
+        }
+
+        public override List<Post> GetAdmins(AppDbContext db)
+        {
+            List<Post> admins = base.GetAdmins(db);
+            admins.AddRange(db.Posts.Where(p => p.Subdivision != null).Where(p => p.Subdivision.Id == 3));
+			return admins;
         }
     }
 }

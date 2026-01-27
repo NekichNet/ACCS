@@ -71,7 +71,7 @@ namespace accs.DiscordBot.Interactions
 
         
         [HasPermission(PermissionType.ManageRewards)]
-        [SlashCommand("reward-create", "Создать награду")]
+        [SlashCommand("create", "Создать награду")]
         public async Task CreateCommand(string name, string description,
             IAttachment? image = null)
         {
@@ -98,18 +98,22 @@ namespace accs.DiscordBot.Interactions
                     ImagePath = savedImagePath 
                 };
 
-                await _db.Rewards.AddAsync(reward);
-                await _db.SaveChangesAsync();
+				await _db.Rewards.AddAsync(reward);
+				await _db.SaveChangesAsync();
 
-                await RespondWithFileAsync(
-                    reward.ImagePath,
-                    embed: new EmbedBuilder()
-                        .WithTitle("Награда создана")
-                        .WithDescription(reward.Description)
-                        .WithImageUrl($"attachment://{Path.GetFileName(reward.ImagePath)}")
-                        .Build(),
-                    ephemeral: true
-                );
+                EmbedBuilder embed = new EmbedBuilder()
+                    .WithTitle("Награда создана")
+                    .WithColor(Color.Gold)
+                    .WithDescription(reward.Description);
+
+				if (image != null)
+                    await RespondWithFileAsync(
+                        reward.ImagePath,
+                        embed: embed.WithImageUrl($"attachment://{Path.GetFileName(reward.ImagePath)}").Build(),
+                        ephemeral: true
+                    );
+                else
+                    await RespondAsync(embed: embed.Build(), ephemeral: true);
             }
             catch (Exception ex)
             {
@@ -152,7 +156,7 @@ namespace accs.DiscordBot.Interactions
 			}
 			unit.Rewards.AddRange(rewards);
 			await _db.SaveChangesAsync();
-			await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выданы награды: {String.Join(", ", rewards)}");
+			await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выданы награды: {String.Join(", ", rewards.Select(r => r.Name))}");
 		}
     }
 }

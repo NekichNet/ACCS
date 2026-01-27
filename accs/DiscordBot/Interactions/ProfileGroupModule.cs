@@ -56,7 +56,7 @@ namespace accs.DiscordBot.Interactions
                     Description = embedDescription
                 };
 
-                var unitStatuses = unit.UnitStatuses.Where(x=>x.EndDate < DateTime.Today);
+                var unitStatuses = unit.UnitStatuses.Where(x=>x.EndDate > DateTime.UtcNow || x.EndDate == null);
                 string inLineUnitStatuses = string.Empty;
                 foreach (var unitStatus in unitStatuses)
                 {

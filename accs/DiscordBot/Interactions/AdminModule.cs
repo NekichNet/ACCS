@@ -1,29 +1,27 @@
 ﻿using accs.Database;
-using accs.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace accs.DiscordBot.Interactions
 {
-    [HasPermission(PermissionType.Administrator)]
+    [DefaultMemberPermissions(GuildPermission.Administrator)]
     public class AdminModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
-        private readonly IGuildProviderService _guildProvider;
         private readonly ILogService _logService;
 
-        public AdminModule(AppDbContext db, IGuildProviderService guildProvider, ILogService logService)
+        public AdminModule(AppDbContext db, ILogService logService)
         {
             _db = db;
-            _guildProvider = guildProvider;
             _logService = logService;
         }
 
-        [SlashCommand("register", "Добавить бойца")]
-        public async Task RegisterUnitCommand(IUser user, int postId, int rankId)
+        [SlashCommand("register", "Добавить бойца в систему.")]
+        public async Task RegisterUnitCommand(SocketGuildUser user, int postId, int rankId, string? name = null, DateTime? joined = null)
         {
             try
             {
@@ -45,39 +43,43 @@ namespace accs.DiscordBot.Interactions
                 if (rank == null) 
                 {
                     await RespondAsync($"Звание с ID: {rankId} не найдено.", ephemeral: true);
-                    return; 
+                    return;
                 }
 
-                var unit = new Models.Unit 
-                { 
-                    DiscordId = user.Id, 
-                    Nickname = user.Username, 
+                if (joined == null)
+                    joined = DateTime.UtcNow;
+                if (name == null)
+                    name = user.DisplayName;
+
+                var unit = new Unit 
+                {
+                    DiscordId = user.Id,
+                    Nickname = name, 
                     Rank = rank, 
                     Posts = new List<Post> { post }, 
-                    RankUpCounter = 0 
+                    RankUpCounter = 0,
+                    Joined = (DateTime)joined
                 };
                 
-                var newUser = _guildProvider.GetGuild().GetUser(user.Id);
-
                 if (rankId == 1)
                 {
-                    await newUser.ModifyAsync(x => 
+                    await user.ModifyAsync(x => 
                     { 
-                        x.Nickname = $"[Р] {user.Username}"; 
+                        x.Nickname = $"[Р] {name}"; 
                     });
                 }
                 else 
                 {
-                    await newUser.ModifyAsync(x =>
+                    await user.ModifyAsync(x =>
                     {
-                        x.Nickname = $"[РХБЗ] {user.Username}";
+                        x.Nickname = $"[РХБЗ] {name}";
                     });
                 }
 
                 await _db.Units.AddAsync(unit);
                 await _db.SaveChangesAsync();
 
-                await RespondAsync($"Пользователь {user.Username} зарегистрирован на должность {post.GetFullName()} со званием {rank.Name}.", ephemeral: true); 
+                await RespondAsync($"Пользователь {name} зарегистрирован на должность {post.GetFullName()} со званием {rank.Name}.", ephemeral: true); 
             }
             catch (Exception ex)
             {

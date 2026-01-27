@@ -23,11 +23,10 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.GiveReprimandGratitude)]
         [SlashCommand("give", "Выдать благодарность или выговор")] public async Task GiveCommandAsync(IUser user, 
-            [Choice("gratitude", "gratitude"), Choice("reprimand", "reprimand"), Choice("severe-reprimand", "severeReprimand")] string statusType, int? amountOfDays = null)
+            [Choice("Благодарность", "gratitude"), Choice("Выговор", "reprimand"), Choice("Строгий выговор", "severeReprimand")] string statusType, int? amountOfDays = null)
         {
             try
             {
-
                 StatusType givenType;
                 if (statusType == "gratitude")
                 {
@@ -35,7 +34,6 @@ namespace accs.DiscordBot.Interactions
                 }
                 else if (statusType == "reprimand")
                 {
-
                     givenType = StatusType.Reprimand;
                 }
                 else if (statusType == "severeReprimand")
@@ -52,19 +50,18 @@ namespace accs.DiscordBot.Interactions
 
                 if (unit != null && status != null)
                 {
-                    DateTime? endDate = amountOfDays == null ? null : DateTime.Now.AddDays((double)amountOfDays);
-					var unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.Now, EndDate = endDate, Status = status };
+                    DateTime? endDate = amountOfDays == null ? null : DateTime.UtcNow.AddDays((double)amountOfDays);
+					var unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.UtcNow, EndDate = endDate, Status = status };
                     await _db.UnitStatuses.AddAsync(unitStatus);
                     await RespondAsync(
                         $"Бойцу {unit.GetOnlyNickname()} выдан {status.Name}"
-                        + (endDate == null ? " безсрочно" : $" до {DateOnly.FromDateTime((DateTime)endDate).ToShortDateString()}"
+                        + (endDate == null ? " беcсрочно" : $" до {DateOnly.FromDateTime((DateTime)endDate).ToShortDateString()}"
                         ));
                 }
                 else
                 {
                     throw new Exception("Пользователь для выдачи статуса или сам статус не найден!");
                 }
-
             }
             catch (Exception e) 
             {
@@ -83,9 +80,6 @@ namespace accs.DiscordBot.Interactions
         {
             try
             {
-                await _db.UnitStatuses.LoadAsync();
-                await _db.Units.LoadAsync();
-
                 Unit? unit = await _db.Units.FindAsync(Context.User.Id);
                 if (unit == null)
                 {
@@ -102,12 +96,12 @@ namespace accs.DiscordBot.Interactions
 					return;
                 }
 
-                DateTime endDate = DateTime.Now.AddDays(days);
+                DateTime endDate = DateTime.UtcNow.AddDays(days);
 				var unitStatus = new UnitStatus()
                 {
                     Unit = unit,
                     Status = vacationStatus,
-                    StartDate = DateTime.Now,
+                    StartDate = DateTime.UtcNow,
                     EndDate = endDate
                 };
 
@@ -132,9 +126,6 @@ namespace accs.DiscordBot.Interactions
         {
             try
             {
-                await _db.UnitStatuses.LoadAsync();
-                await _db.Units.LoadAsync();
-
                 Unit? unit = await _db.Units.FindAsync(Context.User.Id);
                 if (unit == null)
                 {
@@ -146,26 +137,10 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                Status? vacationStatus = await _db.Statuses.FindAsync(StatusType.Vacation);
-                if (vacationStatus == null)
-                {
-                    await RespondAsync("Статус 'Отпуск' не найден в базе.", ephemeral: true);
-                    await _logService.WriteAsync(
-                        $"EndVacationCommand: Статус 'Отпуск' не найден в базе.",
-                        LoggingLevel.Error
-                    );
-                    return;
-                }
-
-                UnitStatus? activeVacation = await _db.UnitStatuses
-                    .Where(us =>
-                        us.Unit.DiscordId == unit.DiscordId &&
-                        us.Status.Type == StatusType.Vacation &&
-                        (us.EndDate == null || us.EndDate > DateTime.Now)
-                    )
-                    .OrderByDescending(us => us.StartDate)
-                    .FirstOrDefaultAsync();
-
+                UnitStatus? activeVacation = unit.UnitStatuses.Where(
+                        us => us.Status.Type == StatusType.Vacation
+                        && (us.EndDate == null || us.EndDate > DateTime.UtcNow)
+                    ).FirstOrDefault();
 
                 if (activeVacation == null)
                 {
@@ -173,21 +148,17 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                activeVacation.EndDate = DateTime.Now;
+                activeVacation.EndDate = DateTime.UtcNow;
+				await _db.SaveChangesAsync();
 
-                await RespondAsync(
-                    $"Отпуск для {unit.GetOnlyNickname()} завершён досрочно.",
-                    ephemeral: true
+				await RespondAsync(
+                    $"Отпуск {unit.GetOnlyNickname()} завершён досрочно."
                 );
             }
             catch (Exception ex)
             {
                 await RespondAsync("Не удалось завершить отпуск из-за ошибки.", ephemeral: true); 
                 await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
-            }
-            finally
-            {
-                await _db.SaveChangesAsync();
             }
         }
     }

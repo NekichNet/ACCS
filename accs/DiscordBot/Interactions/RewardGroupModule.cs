@@ -3,7 +3,6 @@ using accs.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
-using BitMiracle.LibTiff.Classic;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;

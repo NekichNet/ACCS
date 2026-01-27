@@ -43,21 +43,14 @@ namespace accs.Services
                 {
                     matches.Add(unit, 0);
                     for (int i = 0; i < line.Text.Length - ChunkSize; i++)
-                    {
                         if (unit.Nickname.Contains(line.Text.Substring(i, ChunkSize)))
-                        {
                             matches[unit]++;
-                        }
-                    }
 				}
-                Unit mostMatched = matches.MaxBy(m => m.Value).Key;
-                exitMatches.Add(mostMatched);
+                KeyValuePair<Unit, int> mostMatched = matches.MaxBy(m => m.Value);
+                if (mostMatched.Value / (mostMatched.Key.Nickname.Length - 2) >= 0.5)
+                    exitMatches.Add(mostMatched.Key);
                 await _logService.WriteAsync($"line = {line.Text}; matched = {exitMatches.Last().Nickname}", LoggingLevel.Debug);
             }
-            /*
-            OcrResult.Line[] lines = new IronTesseract().Read(imagePath).Lines;
-
-            */
 
             return exitMatches;
         }

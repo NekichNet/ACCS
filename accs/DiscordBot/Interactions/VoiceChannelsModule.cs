@@ -1,12 +1,13 @@
-﻿using accs.Services.Interfaces;
+﻿using accs.Database;
+using accs.DiscordBot.Interactions.Enums;
+using accs.Models;
+using accs.Models.Enums;
+using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using accs.Models;
-using accs.DiscordBot.Interactions.Enums;
-using accs.Models.Enums;
-using accs.Database;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Channels;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -35,13 +36,20 @@ namespace accs.DiscordBot.Interactions
 			string voiceChannelIdString = DotNetEnv.Env.GetString("VOICE_CHANNEL_ID", "null");
 			if (!ulong.TryParse(voiceChannelIdString, out _voiceChannelId)) { _logService.WriteAsync("Cannot parse voice channel id!", LoggingLevel.Error); }
 
-			_client.UserVoiceStateUpdated += OnUserJoinedAsync;
-			_client.UserVoiceStateUpdated += OnUserLeftAsync;
+			_client.UserVoiceStateUpdated += OnUserVoiceStateUpdated;
 		}
 
-        public async Task OnUserJoinedAsync(SocketUser user, SocketVoiceState before, SocketVoiceState after)
+        public async Task OnUserVoiceStateUpdated(SocketUser user, SocketVoiceState before, SocketVoiceState after)
         {
-            SocketGuild guild = _guildProvider.GetGuild();
+			SocketGuild guild = _guildProvider.GetGuild();
+
+			if (before.VoiceChannel is SocketVoiceChannel)
+            {
+				if (before.VoiceChannel.ConnectedUsers.Count == 0 && before.VoiceChannel.Id != _voiceChannelId && (before.VoiceChannel.Name.StartsWith("【🔊】") || before.VoiceChannel.Name.StartsWith("【🎧】")))
+				{
+					await before.VoiceChannel.DeleteAsync();
+				}
+			}
 
             if (after.VoiceChannel == null)
                 return;
@@ -78,39 +86,9 @@ namespace accs.DiscordBot.Interactions
                 var newChannel = await guild.CreateVoiceChannelAsync($"【🔊】Пех {freeNumber}", (props) => { props.Bitrate = 64000; props.UserLimit = null; props.CategoryId = voiceCategoryId; });
 
                 /// Permission for needed users being granted
-                var guildUser = guild.GetUser(user.Id);
-                await newChannel.AddPermissionOverwriteAsync(user, new OverwritePermissions(manageChannel:PermValue.Allow));
+                SocketGuildUser guildUser = guild.GetUser(user.Id);
+                await newChannel.AddPermissionOverwriteAsync(guildUser, new OverwritePermissions(manageChannel: PermValue.Allow));
                 await guild.MoveAsync(guildUser, newChannel);
-
-                Unit? unit = await _db.Units.FindAsync(user.Id);
-                if (unit != null)
-                {
-					await newChannel.AddPermissionOverwriteAsync(guild.EveryoneRole, new OverwritePermissions(connect: PermValue.Deny));
-                    await _db.Posts.LoadAsync();
-
-					foreach (var post in unit.Posts)
-                    {
-                        Post? postAbove = post.Head;
-                        while (postAbove != null) 
-                        {
-                            if (postAbove.DiscordRoleId != null)
-                            {
-                                await newChannel.AddPermissionOverwriteAsync(guild.GetRole((ulong)postAbove.DiscordRoleId), new OverwritePermissions(connect: PermValue.Allow));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        public async Task OnUserLeftAsync(SocketUser user, SocketVoiceState before, SocketVoiceState after)
-        {
-            if (before.VoiceChannel == null)
-                return;
-
-			if (before.VoiceChannel.Users.Count == 0 && before.VoiceChannel.Id != _voiceChannelId)
-            {
-                await before.VoiceChannel.DeleteAsync();
             }
         }
 

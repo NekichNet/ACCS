@@ -72,14 +72,14 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("screenshot", "зафиксировать активность по скриншоту")]
         public async Task FixScreenshotCommand(IAttachment screenshot)
         {
-            await DeferAsync();
+            await DeferAsync(ephemeral: true);
 
             try
             {
                 if (screenshot == null || screenshot.ContentType == null || !screenshot.ContentType.StartsWith("image"))
                 {
-                    await FollowupAsync("Скриншот не найден или не является изображением");
-                    return;
+					await ModifyOriginalResponseAsync((props) => { props.Content = "Неправильный формат файла"; });
+					return;
                 }
 
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
@@ -98,6 +98,7 @@ namespace accs.DiscordBot.Interactions
                 HashSet<Unit> detectedUnits = await _ocr.ReceiveNamesFromPhoto(filePath);
                 Dictionary<Unit, bool> units = new Dictionary<Unit, bool>();
 
+                await _db.Activities.LoadAsync();
                 foreach (Unit unit in detectedUnits)
                     units.Add(unit, unit.Activities.Any(a => a.Date == today));
 
@@ -111,18 +112,19 @@ namespace accs.DiscordBot.Interactions
 					EmbedBuilder embedBuilder = GetResultsEmbedBuilder(units, today)
 						.WithAuthor((await _db.Units.FindAsync(Context.User.Id)).Nickname, Context.User.GetDisplayAvatarUrl());
 
+                    await DeleteOriginalResponseAsync();
                     await ReplyAsync(components: component.Build(), embed: embedBuilder.Build());
                 }
                 else
                 {
-                    await ReplyAsync("Бойцы не найдены на скриншоте");
-                }
+					await ModifyOriginalResponseAsync((props) => { props.Content = "Бойцы не найдены на скриншоте"; });
+				}
             }
             catch (Exception ex)
             {
                 await _logService.WriteAsync($"Error in FixScreenshotCommand: {ex.Message}", LoggingLevel.Error);
-                await ReplyAsync("Ошибка при обработке скриншота");
-            }
+				await ModifyOriginalResponseAsync((props) => { props.Content = "Произошла непредвиденная ошибка"; });
+			}
             finally
             {
                 if (Directory.Exists(tempDir))

@@ -8,7 +8,6 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -101,87 +100,53 @@ namespace accs.DiscordBot.Interactions
 
         
         [SlashCommand("voice", "Создать приватный голосовой канал для участников тикета")]
-        public async Task Voice()
+        public async Task VoiceCommand()
         {
+			await DeferAsync(ephemeral: true);
 			try
 			{
                 int ticketId = int.Parse(Context.Channel.Name.Split('-').Last());
                 Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
-
-                if (ticket == null)
+				if (ticket == null)
                 {
-                    await RespondAsync($"Тикет с id {ticketId} не найден!", ephemeral: true);
-                    await _logService.WriteAsync($"Ticket voice: Тикет {ticketId} не найден", LoggingLevel.Error);
+					await ModifyOriginalResponseAsync((props) => { props.Content = $"Тикет с id {ticketId} не найден!"; });
+					await _logService.WriteAsync($"Ticket voice: Тикет {ticketId} не найден", LoggingLevel.Error);
                     return;
                 }
 
-                SocketGuild guild = _guildProvider.GetGuild();
+				SocketGuild guild = _guildProvider.GetGuild();
+                SocketGuildUser author = guild.GetUser(ticket.AuthorDiscordId);
+				List<ulong> roleIds = ticket.GetAdmins(_db).Where(t => t.DiscordRoleId != null).Select(t => (ulong)t.DiscordRoleId).ToList();
+				ulong voiceCategoryId = ulong.Parse(DotNetEnv.Env.GetString("VOICE_CATEGORY_ID", "null"));
 
-                List<SocketGuildUser> participants = new();
-
-                var author = guild.GetUser(ticket.AuthorDiscordId);
-                if (author != null)
+				if (guild.VoiceChannels.Any(c => c.Name == $"【🎧】Тикет {ticketId}"))
 				{
-                    participants.Add(author);
-                }
-
-                var adminPosts = ticket.GetAdmins(_db).ToList();
-                await _db.Units.LoadAsync();
-
-                foreach (var unit in _db.Units)
-                {
-                    if (unit.Posts.Intersect(adminPosts).Any())
-                    {
-                        var gu = guild.GetUser(unit.DiscordId);
-                        if (gu != null)
-                            participants.Add(gu);
-                    }
-                }
-
-                participants = participants.Distinct().ToList();
-
-                if (participants.Count == 0)
-                {
-                    await RespondAsync("Не удалось определить участников тикета.", ephemeral: true);
-                    return;
-                }
-
-                if (!ulong.TryParse(DotNetEnv.Env.GetString("VOICE_CATEGORY_ID", "null"), out ulong voiceCategoryId))
-                {
-                    await RespondAsync("VOICE_CATEGORY_ID не найден в конфигурации.", ephemeral: true);
-                    await _logService.WriteAsync("Ticket voice: Cannot parse VOICE_CATEGORY_ID", LoggingLevel.Error);
-                    return;
-                }
-
-                var channel = await guild.CreateVoiceChannelAsync(
+					await ModifyOriginalResponseAsync((props) => { props.Content = "Канал уже создан"; });
+					return;
+				}
+				var channel = await guild.CreateVoiceChannelAsync(
                     $"【🎧】Тикет {ticketId}",
                     props =>
                     {
                         props.CategoryId = voiceCategoryId;
                         props.Bitrate = 64000;
-                        props.UserLimit = null;
                     }
                 );
-
-                await channel.AddPermissionOverwriteAsync(guild.EveryoneRole,
+				await channel.AddPermissionOverwriteAsync(guild.EveryoneRole,
                     new OverwritePermissions(connect: PermValue.Deny));
-
-                foreach (var user in participants)
+				await channel.AddPermissionOverwriteAsync(author, new OverwritePermissions(connect: PermValue.Allow));
+				foreach (ulong roleId in roleIds)
                 {
-                    await channel.AddPermissionOverwriteAsync(user,
-                        new OverwritePermissions(connect: PermValue.Allow));
+                    await channel.AddPermissionOverwriteAsync(await guild.GetRoleAsync(roleId), new OverwritePermissions(connect: PermValue.Allow));
                 }
-
-                await RespondAsync(
-                    $"Приватный голосовой канал создан с id: {channel.Id}",
-                    ephemeral: true
-                );
-            }
+				await DeleteOriginalResponseAsync();
+				await ReplyAsync($"Приватный голосовой канал создан: {(await channel.CreateInviteAsync()).Url}");
+			}
             catch (Exception ex)
 			{
-                await RespondAsync("Не удалось создать голосовой канал.", ephemeral: true); 
 				await _logService.WriteAsync($"Ticket voice error: {ex.Message}", LoggingLevel.Error);
-            }
+				await ModifyOriginalResponseAsync((props) => { props.Content = "Произошла непредвиденная ошибка."; });
+			}
         }
         
 

@@ -24,7 +24,7 @@ namespace accs.DiscordBot.Interactions
         }
 
         [SlashCommand("profile", "Показать профиль указанного пользователя")]
-        public async Task ShowUserProfile(IUser? user = null)
+        public async Task ShowProfileCommand(IUser? user = null)
         {
             Unit? unit;
             if (user == null) { unit = await _db.Units.FindAsync(Context.User.Id); }

@@ -93,7 +93,7 @@ namespace accs.DiscordBot.Interactions
         }
 
         [SlashCommand("access", "Откройте доступ к каналу для клана или для всех")] 
-        public async Task OnGivingAccess(AccessChoices accessChoices)
+        public async Task OnGivingAccessCommand(AccessChoices accessChoices)
         {
 			SocketGuild guild = _guildProvider.GetGuild();
 
@@ -109,7 +109,7 @@ namespace accs.DiscordBot.Interactions
 
 
         [SlashCommand("access-role", "Откройте доступ к каналу для определённой роли")]
-        public async Task OnGivingAccessByRole(SocketRole role)
+        public async Task OnGivingAccessByRoleCommand(SocketRole role)
         {
 			SocketGuild guild = _guildProvider.GetGuild();
 			await guild.GetChannel(Context.Interaction.Channel.Id).AddPermissionOverwriteAsync(role, new OverwritePermissions(connect: PermValue.Allow));

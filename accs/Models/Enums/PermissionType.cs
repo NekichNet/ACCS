@@ -12,6 +12,7 @@
 		ManageStructure = 8,
         ManageRewards = 9,
         ManageDocTypes = 10,
-        Administrator = 11
+        Administrator = 11,
+        ModerateNicknames = 12
     }
 }

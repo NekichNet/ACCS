@@ -5,6 +5,7 @@ using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
@@ -114,5 +115,66 @@ namespace accs.DiscordBot.Interactions
                 await RespondAsync($"Пользователь не найден в системе", ephemeral: true);
             }
         }
-    }
+
+		[SlashCommand("nickname", "Изменить никнейм пользователя")]
+		public async Task ChangeNicknameCommand(string newNickname, SocketUser? targetUser = null)
+		{
+			try
+			{
+                if (targetUser == null)
+                    targetUser = Context.User;
+
+				var guild = _guildProvider.GetGuild();
+				var guildUser = guild.GetUser(targetUser.Id);
+
+				if (guildUser == null)
+				{
+					await RespondAsync("Пользователь не найден на сервере.", ephemeral: true);
+					return;
+				}
+				
+                if (Context.User != targetUser)
+                {
+					Unit? caller = await _db.Units.FindAsync(Context.User.Id);
+
+                    if (caller == null)
+                    {
+                        await RespondAsync("Вы можете менять никнейм только себе", ephemeral: true);
+                        return;
+                    }
+
+					bool canModerate = caller.HasPermission(PermissionType.ModerateNicknames);
+					if (!canModerate)
+					{
+						await RespondAsync("Вы можете менять никнейм только себе", ephemeral: true);
+						return;
+					}
+				}
+
+				Unit? targetUnit = await _db.Units.FindAsync(targetUser.Id);
+
+                string fullname;
+
+				if (targetUnit.Rank.Id > 1)
+                    fullname = "[РХБЗ] " + newNickname;
+                else
+					fullname = "[Р] " + newNickname;
+
+				await guildUser.ModifyAsync(props => props.Nickname = fullname);
+				
+				if (targetUnit != null)
+				{
+					targetUnit.Nickname = newNickname;
+					await _db.SaveChangesAsync();
+				}
+
+				await RespondAsync($"Никнейм пользователя '{targetUser.Username}' успешно изменён на '{newNickname}'");
+			}
+			catch (Exception ex)
+			{
+				await RespondAsync("Не удалось изменить никнейм.", ephemeral: true);
+				await _logService.WriteAsync($"Nickname change error: {ex.Message}", LoggingLevel.Error);
+			}
+		}
+	}
 }

@@ -82,7 +82,7 @@ namespace accs.Models.Tickets
 
 			SocketGuildUser author = guildProvider.GetGuild().GetUser(AuthorDiscordId);
             string nickname = author.DisplayName;
-			await author.ModifyAsync(u => u.Nickname = "[Р] " + nickname);
+			//await author.ModifyAsync(u => u.Nickname = "[Р] " + nickname);
 			var unit = new Unit
             {
                 DiscordId = AuthorDiscordId,

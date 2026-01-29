@@ -51,10 +51,12 @@ namespace accs.Database
 			Permission manageRewards = new Permission { Type = PermissionType.ManageRewards, Description = "Создание и редактирование существующих наград." };
 			Permission manageDocTypes = new Permission { Type = PermissionType.ManageDocTypes, Description = "Создание и редактирование шаблонов документов." };
 			Permission administrator = new Permission { Type = PermissionType.Administrator, Description = "Все права без ограничений." };
+			Permission moderateNicknames = new Permission { Type = PermissionType.ModerateNicknames, Description = "Право изменять чужие никнеймы." };
 			
 			modelBuilder.Entity<Permission>().HasData(
 				confirmActivity, vacationAccess, giveReprimandGratitude, forceVacation, changeRanks,
-				changePosts, assignRewards, manageStructure, manageRewards, manageDocTypes, administrator
+				changePosts, assignRewards, manageStructure, manageRewards, manageDocTypes, administrator,
+				moderateNicknames
 			);
 
 			/* Звания */

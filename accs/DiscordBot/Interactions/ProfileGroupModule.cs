@@ -176,5 +176,12 @@ namespace accs.DiscordBot.Interactions
 				await _logService.WriteAsync($"Nickname change error: {ex.Message}", LoggingLevel.Error);
 			}
 		}
-	}
+
+
+        [SlashCommand("color", "Изменить цвет профиля")]
+        public async Task ChooseColorCommand()
+        {
+
+        }
+    }
 }

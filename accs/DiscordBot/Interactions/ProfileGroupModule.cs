@@ -190,14 +190,73 @@ namespace accs.DiscordBot.Interactions
                 await _logService.WriteAsync(ex.StackTrace);
             }
         }
-    }
-		}
 
 
         [SlashCommand("color", "Изменить цвет профиля")]
         public async Task ChooseColorCommand()
         {
+            var colors = new Dictionary<string, Color>
+            {
+                { "Зелёный", Color.Green },
+                { "Красный", Color.Red },
+                { "Синий", Color.Blue },
+                { "Жёлтый", Color.Gold },
+                { "Фиолетовый", Color.Purple },
+                { "Бирюзовый", Color.Teal },
+                { "Оранжевый", Color.Orange },
+                { "Розовый", Color.Magenta },
+                { "Белый", Color.LightGrey },
+                { "Чёрный", Color.DarkGrey }
+            };
 
+            var menu = new SelectMenuBuilder()
+                .WithCustomId("profile-color-select")
+                .WithPlaceholder("Выберите цвет профиля");
+
+            foreach (var c in colors)
+                menu.AddOption(c.Key, c.Value.ToString(), c.Value.RawValue.ToString());
+
+            var builder = new ComponentBuilder()
+                .WithSelectMenu(menu);
+
+            await RespondAsync(
+                text: "Выберите цвет, который будет использоваться в вашем профиле:",
+                components: builder.Build(),
+                ephemeral: true
+            );
+        }
+
+
+        [ComponentInteraction("profile-color-select")]
+        public async Task ColorsHandler(string[] selected)
+        {
+            try
+            {
+                string raw = selected.First();
+
+                Unit? unit = await _db.Units.FindAsync(Context.User.Id);
+                if (unit == null)
+                {
+                    await RespondAsync("Вы не найдены в системе.", ephemeral: true);
+                    return;
+                }
+
+                uint rawValue = uint.Parse(raw);
+                Color color = new Color(rawValue);
+
+                unit.SetColor(color);
+                await _db.SaveChangesAsync();
+
+                await RespondAsync(
+                    $"Цвет профиля успешно изменён на `{color}`.",
+                    ephemeral: true
+                );
+            }
+            catch (Exception ex)
+            {
+                await RespondAsync("Не удалось изменить цвет профиля.", ephemeral: true);
+                await _logService.WriteAsync($"Color select error: {ex.Message}", LoggingLevel.Error);
+            }
         }
     }
 }

@@ -7,5 +7,10 @@
 		public virtual Status Status { get; set; }
         public DateTime StartDate { get; set; } = DateTime.Today;
         public DateTime? EndDate { get; set; }
+
+        public bool IsCompleted()
+        {
+            return EndDate == null ? false : EndDate < DateTime.UtcNow;
+        }
     }
 }

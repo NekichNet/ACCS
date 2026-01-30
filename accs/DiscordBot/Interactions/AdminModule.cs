@@ -23,7 +23,7 @@ namespace accs.DiscordBot.Interactions
         }
 
         [SlashCommand("register", "Добавить бойца в систему.")]
-        public async Task RegisterUnitCommand(SocketGuildUser user, int postId, int rankId, string? name = null, DateTime? joined = null)
+        public async Task RegisterUnitCommand(SocketGuildUser user, int postId, int rankId, string? name = null, string? joinedString = null)
         {
             try
             {
@@ -48,8 +48,18 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                if (joined == null)
-                    joined = DateTime.UtcNow;
+                DateOnly joined = DateOnly.FromDateTime(DateTime.UtcNow);
+                if (joinedString != null)
+                {
+					if (!DateOnly.TryParse(joinedString, out joined))
+                    {
+						await RespondAsync($"Не удалось спарсить дату вступления.", ephemeral: true);
+						return;
+					}
+				}
+                else
+                    
+
                 if (name == null)
                     name = user.DisplayName;
 
@@ -60,7 +70,7 @@ namespace accs.DiscordBot.Interactions
                     Rank = rank, 
                     Posts = new List<Post> { post }, 
                     RankUpCounter = 0,
-                    Joined = (DateTime)joined
+                    Joined = joined
                 };
                 
                 /*

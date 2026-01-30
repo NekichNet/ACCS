@@ -209,7 +209,7 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        //[SlashCommand("color", "Изменить цвет профиля")]
+        [SlashCommand("color", "Изменить цвет профиля")]
         public async Task ChooseColorCommand()
         {
             var colors = new Dictionary<string, Color>
@@ -223,7 +223,7 @@ namespace accs.DiscordBot.Interactions
                 { "Оранжевый", Color.Orange },
                 { "Розовый", Color.Magenta },
                 { "Белый", Color.LightGrey },
-                { "Чёрный", Color.DarkGrey }
+                { "Чёрный", Color.DarkerGrey }
             };
 
             var menu = new SelectMenuBuilder()
@@ -231,7 +231,7 @@ namespace accs.DiscordBot.Interactions
                 .WithPlaceholder("Выберите цвет профиля");
 
             foreach (var c in colors)
-                menu.AddOption(c.Key, c.Value.ToString(), c.Value.RawValue.ToString());
+                menu.AddOption(c.Key, c.Value.RawValue.ToString());
 
             var builder = new ComponentBuilder()
                 .WithSelectMenu(menu);
@@ -244,7 +244,7 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        //[ComponentInteraction("profile-color-select")]
+        [ComponentInteraction("profile-color-select")]
         public async Task ColorsHandler(string[] selected)
         {
             try

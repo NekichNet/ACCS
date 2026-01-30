@@ -48,17 +48,15 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                DateOnly joined = DateOnly.FromDateTime(DateTime.UtcNow);
+                DateTime joined = DateTime.UtcNow;
                 if (joinedString != null)
                 {
-					if (!DateOnly.TryParse(joinedString, out joined))
+					if (!DateTime.TryParse(joinedString, out joined))
                     {
 						await RespondAsync($"Не удалось спарсить дату вступления.", ephemeral: true);
 						return;
 					}
 				}
-                else
-                    
 
                 if (name == null)
                     name = user.DisplayName;
@@ -106,6 +104,8 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("steam-list", "Высылает csv файл со списком бойцов и их Steam Id.")]
         public async Task GetSteamIdCSVCommand()
         {
+            await DeferAsync();
+
             var unitsWithSteamid = _db.Units.Where(x=>x.SteamId != null);
 
             int allUsersAmount = _db.Units.Count();
@@ -118,8 +118,9 @@ namespace accs.DiscordBot.Interactions
             File.Create(filePath);
             foreach (var unit in unitsWithSteamid) 
             {
-                await File.AppendAllTextAsync(filePath, $"{unit.Nickname.Replace(',', '\0')},{unit.SteamId}\n");
+                await File.AppendAllTextAsync(filePath, $"{unit.Nickname.Replace(",", "")},{unit.SteamId}\n");
             }
+            await DeleteOriginalResponseAsync();
             await RespondWithFileAsync(filePath, text:$"Steam Id привязали {usersWithIdAmount} из {allUsersAmount} бойцов.");
         }
     }

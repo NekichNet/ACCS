@@ -12,8 +12,8 @@ namespace accs.Models
 		public string Nickname { get; set; }
 		public ulong? SteamId { get; set; }
 		public ushort RankUpCounter { get; set; }
-		public DateOnly Joined { get; set; }
-		public string? Color { get; set; }
+		public DateTime Joined { get; set; }
+		public string? Colour { get; set; }
 		public virtual Rank Rank { get; set; }
 		public virtual List<Doc> OwnDocs { get; set; }
 		public virtual List<Doc> AssignedDocs { get; set; }
@@ -43,14 +43,14 @@ namespace accs.Models
 			return Nickname.Replace("[РХБЗ]", "").Replace("[Р]", "").Trim();
 		}
 
-		public void SetColor(Discord.Color color)
+		public void SetProfileColor(Discord.Color color)
 		{
-			Color = color.ToString();
+			Colour = color.ToString();
 		}
 
-		public Discord.Color GetColor()
+		public Discord.Color GetProfileColor()
 		{
-			return Discord.Color.Parse(Color);
+			return Discord.Color.Parse(Colour);
 		}
 	}
 }

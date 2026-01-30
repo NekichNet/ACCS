@@ -52,11 +52,12 @@ namespace accs.Database
 			Permission manageDocTypes = new Permission { Type = PermissionType.ManageDocTypes, Description = "Создание и редактирование шаблонов документов." };
 			Permission administrator = new Permission { Type = PermissionType.Administrator, Description = "Все права без ограничений." };
 			Permission moderateNicknames = new Permission { Type = PermissionType.ModerateNicknames, Description = "Право изменять чужие никнеймы." };
-			
+			Permission steamIdView = new Permission { Type = PermissionType.SteamIdView, Description = "Право получать чужие Steam Id." };
+
 			modelBuilder.Entity<Permission>().HasData(
 				confirmActivity, vacationAccess, giveReprimandGratitude, forceVacation, changeRanks,
 				changePosts, assignRewards, manageStructure, manageRewards, manageDocTypes, administrator,
-				moderateNicknames
+				steamIdView
 			);
 
 			/* Звания */
@@ -94,10 +95,10 @@ namespace accs.Database
 			Subdivision hq = new Subdivision("Штаб") { Id = subdivisions.Count + 1 };
 			subdivisions.Add(hq);
 
-            Subdivision communicationService = new Subdivision("Служба связи", "COMMUNICATION_SERVICE_ROLE_ID") { Id = subdivisions.Count + 1 };
-            subdivisions.Add(communicationService);
+			Subdivision communicationService = new Subdivision("Служба связи", "COMMUNICATION_SERVICE_ROLE_ID") { Id = subdivisions.Count + 1 };
+			subdivisions.Add(communicationService);
 
-            Subdivision instructors = new Subdivision("Инструкторский корпус", "INSTRUCTORS_ROLE_ID") { Id = subdivisions.Count + 1, };
+			Subdivision instructors = new Subdivision("Инструкторский корпус", "INSTRUCTORS_ROLE_ID") { Id = subdivisions.Count + 1, };
 			subdivisions.Add(instructors);
 
 			Subdivision rota1 = new Subdivision("1 Рота") { Id = subdivisions.Count + 1 };
@@ -177,7 +178,7 @@ namespace accs.Database
 				new Status() { Type = StatusType.SevereReprimand, Name = "Строгий выговор" },
 				new Status() { Type = StatusType.Retirement, Name = "Отставка" }
 			);
-			
+
 			modelBuilder.Entity<Rank>().HasData(ranks);
 			modelBuilder.Entity<Subdivision>().HasData(subdivisions);
 			modelBuilder.Entity<Post>().HasData(posts);

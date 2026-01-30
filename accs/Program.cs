@@ -89,11 +89,11 @@ namespace accs
 				if (!guild.IsConnected)
 					throw new Exception("Client is not connected to guild!");
 
-				/*
+				
 				// Очищаем уже зарегистрированные команды
 				await client.Rest.BulkOverwriteGlobalCommands(new ApplicationCommandProperties[] { });
 				await client.Rest.BulkOverwriteGuildCommands(new ApplicationCommandProperties[] { }, guildProvider.GetGuildId());
-				*/
+				
 				
 				// Регистрируем актуальные команды
 				await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), app.Services);

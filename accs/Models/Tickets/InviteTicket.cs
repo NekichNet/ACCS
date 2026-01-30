@@ -88,7 +88,7 @@ namespace accs.Models.Tickets
                 DiscordId = AuthorDiscordId,
                 Nickname = author.DisplayName,
                 Rank = recruitRank,
-                Joined = DateOnly.FromDateTime(DateTime.UtcNow),
+                Joined = DateTime.UtcNow,
                 Posts = new List<Post> { post }
             };
 

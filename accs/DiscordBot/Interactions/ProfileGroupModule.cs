@@ -103,10 +103,10 @@ namespace accs.DiscordBot.Interactions
                 embed.AddField(new EmbedFieldBuilder() { Name = "Выговоров:", Value = unit.UnitStatuses.Where(x => x.Status.Type == StatusType.Reprimand || x.Status.Type == StatusType.SevereReprimand).Count() });
                 embed.AddField(new EmbedFieldBuilder() { Name = "Дней активности:", Value = unit.Activities.Count() });
                 embed.AddField(new EmbedFieldBuilder() { Name = "Из них последние 14:", Value = inLineUnitActivities });
-                embed.WithFooter(new EmbedFooterBuilder().WithText("Присоединился к клану: " + unit.Joined));
+                embed.WithFooter(new EmbedFooterBuilder().WithText("Присоединился к клану: " + DateOnly.FromDateTime(unit.Joined).ToShortDateString()));
 				embed.ThumbnailUrl = _guildProvider.GetGuild().GetUser(unit.DiscordId).GetAvatarUrl()
                     ?? _guildProvider.GetGuild().GetUser(unit.DiscordId).GetDefaultAvatarUrl();
-                embed.WithColor(unit.Color == null ? Color.DarkGreen : unit.GetColor());
+                embed.WithColor(unit.Colour == null ? Color.DarkGreen : unit.GetProfileColor());
 
                 await RespondAsync(embed: embed.Build());
             }
@@ -181,12 +181,27 @@ namespace accs.DiscordBot.Interactions
         }
 
         [SlashCommand("steam", "Привязать свой steam Id")]
-        public async Task SteamIdCommand(ulong steamId)
+        public async Task SteamIdCommand(string steamId)
         {
             try {
-                var user = Context.Interaction.User;
-                (await _db.Units.FindAsync(user.Id)).SteamId = steamId;
-            }
+                Unit? unit = await _db.Units.FindAsync(Context.User.Id);
+                ulong newId;
+                if (unit == null)
+                {
+                    await RespondAsync("Ошибка: вы не найдены в системе.", ephemeral: true);
+
+                    return;
+                }
+				if (!ulong.TryParse(steamId, out newId))
+                {
+                    await RespondAsync("Вы ввели некорректный Steam ID.", ephemeral: true);
+                    return;
+                }
+
+                unit.SteamId = newId;
+                await _db.SaveChangesAsync();
+                await RespondAsync("Ваш Steam ID установлен на: " + unit.SteamId.ToString(), ephemeral: true);
+			}
             catch(Exception ex) 
             {
                 await _logService.WriteAsync(ex.StackTrace);
@@ -194,7 +209,7 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [SlashCommand("color", "Изменить цвет профиля")]
+        //[SlashCommand("color", "Изменить цвет профиля")]
         public async Task ChooseColorCommand()
         {
             var colors = new Dictionary<string, Color>
@@ -229,7 +244,7 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [ComponentInteraction("profile-color-select")]
+        //[ComponentInteraction("profile-color-select")]
         public async Task ColorsHandler(string[] selected)
         {
             try
@@ -246,7 +261,7 @@ namespace accs.DiscordBot.Interactions
                 uint rawValue = uint.Parse(raw);
                 Color color = new Color(rawValue);
 
-                unit.SetColor(color);
+                unit.SetProfileColor(color);
                 await _db.SaveChangesAsync();
 
                 await RespondAsync(
@@ -257,7 +272,7 @@ namespace accs.DiscordBot.Interactions
             catch (Exception ex)
             {
                 await RespondAsync("Не удалось изменить цвет профиля.", ephemeral: true);
-                await _logService.WriteAsync($"Color select error: {ex.Message}", LoggingLevel.Error);
+                await _logService.WriteAsync($"Colour select error: {ex.Message}", LoggingLevel.Error);
             }
         }
     }

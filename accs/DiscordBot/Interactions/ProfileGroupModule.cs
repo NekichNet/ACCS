@@ -175,6 +175,19 @@ namespace accs.DiscordBot.Interactions
 				await RespondAsync("Не удалось изменить никнейм.", ephemeral: true);
 				await _logService.WriteAsync($"Nickname change error: {ex.Message}", LoggingLevel.Error);
 			}
-		}
-	}
+
+
+        }
+        [SlashCommand("steam", "привязать свой steam Id")] public async Task SteamIdCommand(ulong steamId)
+        {
+            try                                 {
+                var user = Context.Interaction.User;
+                (await _db.Units.FindAsync(user.Id)).SteamId = steamId;
+            }
+            catch(Exception ex) 
+            {
+                await _logService.WriteAsync(ex.StackTrace);
+            }
+        }
+    }
 }

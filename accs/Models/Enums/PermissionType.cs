@@ -13,6 +13,7 @@
         ManageRewards = 9,
         ManageDocTypes = 10,
         Administrator = 11,
-        ModerateNicknames = 12
+        ModerateNicknames = 12,
+        SteamIdView = 13
     }
 }

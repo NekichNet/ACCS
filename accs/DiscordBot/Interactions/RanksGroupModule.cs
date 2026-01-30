@@ -18,7 +18,6 @@ namespace accs.DiscordBot.Interactions
         private readonly ILogService _logService;
 		private readonly IGuildProviderService _guildProvider;
 
-
 		public RanksGroupModule(AppDbContext db, IGuildProviderService guildProvider, ILogService logService)
         {
 			_db = db;
@@ -206,5 +205,30 @@ namespace accs.DiscordBot.Interactions
 				await RespondAsync("Ошибка при обновлении должностей.", ephemeral: true);
             }
         }
+
+		[HasPermission(PermissionType.ChangeRanks)]
+		[SlashCommand("list", "Вывести очередь на повышение")]
+		public async Task RankListCommand()
+		{
+			List<Unit> units = _db.Units.Where(u => u.Rank.Next != null).Where(u => u.Rank.Next.CounterToReach <= u.RankUpCounter).ToList();
+
+			if (units.Any())
+			{
+				string unitsString = string.Join("\n", units.Select(u =>
+				u.Rank + " " + u.Nickname + ": " + u.RankUpCounter + '/' + u.Rank.Next.CounterToReach));
+
+				EmbedBuilder embed = new EmbedBuilder()
+					.WithTitle("Бойцы на повышение")
+					.WithDescription("Эти соклановцы достигли нужного количества дней активности," +
+					" чтобы получить следующее звание")
+					.WithCurrentTimestamp()
+					.AddField("Список:", unitsString)
+					.WithFooter("Бойцов в очереди: " + units.Count());
+
+				await RespondAsync(embed: embed.Build());
+			}
+			else
+				await RespondAsync("Нет бойцов, ждущих повышение.");
+		}
     }
 }

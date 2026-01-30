@@ -7,6 +7,7 @@ using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using System.Reactive;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -23,7 +24,7 @@ namespace accs.DiscordBot.Interactions
         }
 
         [SlashCommand("register", "Добавить бойца в систему.")]
-        public async Task RegisterUnitCommand(SocketGuildUser user, int postId, int rankId, string? name = null, DateTime? joined = null)
+        public async Task RegisterUnitCommand(SocketGuildUser user, int postId, int rankId, string? name = null, string? joinedString = null)
         {
             try
             {
@@ -48,8 +49,18 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
 
-                if (joined == null)
-                    joined = DateTime.UtcNow;
+                DateOnly joined = DateOnly.FromDateTime(DateTime.UtcNow);
+                if (joinedString != null)
+                {
+					if (!DateOnly.TryParse(joinedString, out joined))
+                    {
+						await RespondAsync($"Не удалось спарсить дату вступления.", ephemeral: true);
+						return;
+					}
+				}
+                else
+                    
+
                 if (name == null)
                     name = user.DisplayName;
 
@@ -60,7 +71,7 @@ namespace accs.DiscordBot.Interactions
                     Rank = rank, 
                     Posts = new List<Post> { post }, 
                     RankUpCounter = 0,
-                    Joined = (DateTime)joined
+                    Joined = joined
                 };
                 
                 /*
@@ -89,6 +100,26 @@ namespace accs.DiscordBot.Interactions
             {
                 await _logService.WriteAsync($"Ошибка при создании бойца: {ex.Message}", LoggingLevel.Error); 
                 await RespondAsync("Произошла ошибка при создании бойца.", ephemeral: true);
+            }
+        }
+        [HasPermission(PermissionType.SteamIdView)]
+        [SlashCommand("get-steam-Ids", "Скачивает файл формата csv, содержащий имена игроков и steam Id. В файле находятся только те люди, что привязали steam Id")]
+        public async Task GetSteamIdCSVCommand()
+        {
+            var unitsWithSteamid = _db.Units.Where(x=>x.SteamId != null);
+
+            int allUsersAmount = _db.Units.Count();
+            int usersWithIdAmount = unitsWithSteamid.Count();
+
+            if (Directory.Exists("temp"))
+            {
+                var filePath = "temp/UnitsWithSteamId.csv";
+                File.Create(filePath);
+                foreach (var unit in unitsWithSteamid) 
+                {
+                    await File.AppendAllTextAsync(filePath, $"{unit.Nickname.Replace(',', '\0')},{unit.SteamId}\n");
+                }
+                await RespondWithFileAsync(filePath, text:$"Steam Id привязали {usersWithIdAmount} из {allUsersAmount} единиц!");
             }
         }
     }

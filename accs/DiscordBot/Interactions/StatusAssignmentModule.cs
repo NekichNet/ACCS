@@ -6,6 +6,7 @@ using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
+using System.Net.NetworkInformation;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -27,6 +28,7 @@ namespace accs.DiscordBot.Interactions
         {
             try
             {
+
                 StatusType givenType;
                 if (statusType == "gratitude")
                 {
@@ -50,11 +52,16 @@ namespace accs.DiscordBot.Interactions
 
                 if (unit != null && status != null)
                 {
+                    UnitStatus? prevUnitStatus = unit.UnitStatuses.FirstOrDefault(us => us.Status == status && !us.IsCompleted());
+                    if (prevUnitStatus != null)
+                        prevUnitStatus.EndDate = DateTime.UtcNow;
+
                     DateTime? endDate = amountOfDays == null ? null : DateTime.UtcNow.AddDays((double)amountOfDays);
-					var unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.UtcNow, EndDate = endDate, Status = status };
+					UnitStatus unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.UtcNow, EndDate = endDate, Status = status };
                     await _db.UnitStatuses.AddAsync(unitStatus);
-                    await RespondAsync(
-                        $"Бойцу {unit.GetOnlyNickname()} выдан {status.Name}"
+					await _db.SaveChangesAsync();
+					await RespondAsync(
+                        $"Бойцу {unit.GetOnlyNickname()} установлен(а) {status.Name}"
                         + (endDate == null ? " беcсрочно" : $" до {DateOnly.FromDateTime((DateTime)endDate).ToShortDateString()}"
                         ));
                 }
@@ -67,10 +74,6 @@ namespace accs.DiscordBot.Interactions
             {
                 await RespondAsync("При присвоении статуса произошла необработанная ошибка!", ephemeral: true);
                 await _logService.WriteAsync(e.Message, LoggingLevel.Error);
-            }
-            finally
-            {
-                await _db.SaveChangesAsync();
             }
         }
 
@@ -96,6 +99,12 @@ namespace accs.DiscordBot.Interactions
 					return;
                 }
 
+                if (unit.UnitStatuses.Any(us => us.Status == vacationStatus && !us.IsCompleted()))
+                {
+					await RespondAsync("Вы уже находитесь в отпуске.", ephemeral: true);
+					return;
+				}
+
                 DateTime endDate = DateTime.UtcNow.AddDays(days);
 				var unitStatus = new UnitStatus()
                 {
@@ -106,17 +115,14 @@ namespace accs.DiscordBot.Interactions
                 };
 
                 await _db.UnitStatuses.AddAsync(unitStatus);
+				await _db.SaveChangesAsync();
 
-                await RespondAsync($"Оформлен отпуск для {unit.GetOnlyNickname()} на {days} дней до {endDate:d}.");
+				await RespondAsync($"Оформлен отпуск для {unit.GetOnlyNickname()} на {days} дней до {endDate:d}.");
             }
             catch (Exception ex)
             {
                 await RespondAsync("Из-за необработанной ошибки не удалось оформить отпуск.", ephemeral: true); 
                 await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
-            }
-            finally
-            {
-                await _db.SaveChangesAsync();
             }
         }
 

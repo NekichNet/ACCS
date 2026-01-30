@@ -103,9 +103,10 @@ namespace accs.DiscordBot.Interactions
                 embed.AddField(new EmbedFieldBuilder() { Name = "Выговоров:", Value = unit.UnitStatuses.Where(x => x.Status.Type == StatusType.Reprimand || x.Status.Type == StatusType.SevereReprimand).Count() });
                 embed.AddField(new EmbedFieldBuilder() { Name = "Дней активности:", Value = unit.Activities.Count() });
                 embed.AddField(new EmbedFieldBuilder() { Name = "Из них последние 14:", Value = inLineUnitActivities });
+                embed.WithFooter(new EmbedFooterBuilder().WithText("Присоединился к клану: " + unit.Joined));
 				embed.ThumbnailUrl = _guildProvider.GetGuild().GetUser(unit.DiscordId).GetAvatarUrl()
                     ?? _guildProvider.GetGuild().GetUser(unit.DiscordId).GetDefaultAvatarUrl();
-                embed.WithColor(Color.DarkGreen);
+                embed.WithColor(unit.Color == null ? Color.DarkGreen : unit.GetColor());
 
                 await RespondAsync(embed: embed.Build());
             }
@@ -175,6 +176,21 @@ namespace accs.DiscordBot.Interactions
 				await RespondAsync("Не удалось изменить никнейм.", ephemeral: true);
 				await _logService.WriteAsync($"Nickname change error: {ex.Message}", LoggingLevel.Error);
 			}
+
+
+        }
+        [SlashCommand("steam", "привязать свой steam Id")] public async Task SteamIdCommand(ulong steamId)
+        {
+            try                                 {
+                var user = Context.Interaction.User;
+                (await _db.Units.FindAsync(user.Id)).SteamId = steamId;
+            }
+            catch(Exception ex) 
+            {
+                await _logService.WriteAsync(ex.StackTrace);
+            }
+        }
+    }
 		}
 
 

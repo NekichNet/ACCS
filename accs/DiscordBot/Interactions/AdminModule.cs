@@ -7,7 +7,6 @@ using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using System.Reactive;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -102,8 +101,9 @@ namespace accs.DiscordBot.Interactions
                 await RespondAsync("Произошла ошибка при создании бойца.", ephemeral: true);
             }
         }
+
         [HasPermission(PermissionType.SteamIdView)]
-        [SlashCommand("get-steam-Ids", "Скачивает файл формата csv, содержащий имена игроков и steam Id. В файле находятся только те люди, что привязали steam Id")]
+        [SlashCommand("steam-list", "Высылает csv файл со списком бойцов и их Steam Id.")]
         public async Task GetSteamIdCSVCommand()
         {
             var unitsWithSteamid = _db.Units.Where(x=>x.SteamId != null);
@@ -111,16 +111,16 @@ namespace accs.DiscordBot.Interactions
             int allUsersAmount = _db.Units.Count();
             int usersWithIdAmount = unitsWithSteamid.Count();
 
-            if (Directory.Exists("temp"))
+            if (!Directory.Exists("temp"))
+                Directory.CreateDirectory("temp");
+            
+            var filePath = "temp/UnitsWithSteamId.csv";
+            File.Create(filePath);
+            foreach (var unit in unitsWithSteamid) 
             {
-                var filePath = "temp/UnitsWithSteamId.csv";
-                File.Create(filePath);
-                foreach (var unit in unitsWithSteamid) 
-                {
-                    await File.AppendAllTextAsync(filePath, $"{unit.Nickname.Replace(',', '\0')},{unit.SteamId}\n");
-                }
-                await RespondWithFileAsync(filePath, text:$"Steam Id привязали {usersWithIdAmount} из {allUsersAmount} единиц!");
+                await File.AppendAllTextAsync(filePath, $"{unit.Nickname.Replace(',', '\0')},{unit.SteamId}\n");
             }
+            await RespondWithFileAsync(filePath, text:$"Steam Id привязали {usersWithIdAmount} из {allUsersAmount} бойцов.");
         }
     }
 }

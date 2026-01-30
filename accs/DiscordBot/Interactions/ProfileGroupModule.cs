@@ -179,9 +179,11 @@ namespace accs.DiscordBot.Interactions
 
 
         }
-        [SlashCommand("steam", "привязать свой steam Id")] public async Task SteamIdCommand(ulong steamId)
+
+        [SlashCommand("steam", "Привязать свой steam Id")]
+        public async Task SteamIdCommand(ulong steamId)
         {
-            try                                 {
+            try {
                 var user = Context.Interaction.User;
                 (await _db.Units.FindAsync(user.Id)).SteamId = steamId;
             }

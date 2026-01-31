@@ -241,7 +241,7 @@ namespace accs.DiscordBot.Interactions
                     embed.WithAuthor(name: author.Nickname, iconUrl: _guildProvider.GetGuild().GetUser(authorId).GetDisplayAvatarUrl());
 
                 if (confirmator != null)
-                    embed.WithFooter(new EmbedFooterBuilder().WithText($"Подтверждено {confirmator.Nickname}"));
+                    embed.WithFooter(new EmbedFooterBuilder().WithText($"Подтверждено {confirmator.Rank} {confirmator.Nickname}"));
                 else
 					embed.WithFooter(new EmbedFooterBuilder().WithText($"Подтверждено {Context.User.Username}"));
 
@@ -260,7 +260,8 @@ namespace accs.DiscordBot.Interactions
             ushort unconfirmedCounter = 0;
             foreach (KeyValuePair<Unit, bool> pair in units)
             {
-				unitsString += "\r\n" + (pair.Value ? ":white_check_mark: [" : ":black_medium_square: [") + pair.Key.DiscordId + "] " + pair.Key.Nickname;
+				unitsString += "\r\n" + (pair.Value ? ":white_check_mark: " : ":black_medium_square: ")
+                    + pair.Key.Rank.Name + ' ' + pair.Key.Nickname;
                 unconfirmedCounter += pair.Value ? (ushort)0 : (ushort)1;
 			}
 

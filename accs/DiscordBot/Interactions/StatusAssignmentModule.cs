@@ -52,7 +52,8 @@ namespace accs.DiscordBot.Interactions
 
                 if (unit != null && status != null)
                 {
-                    UnitStatus? prevUnitStatus = unit.UnitStatuses.FirstOrDefault(us => us.Status == status && !us.IsCompleted());
+                    UnitStatus? prevUnitStatus = unit.UnitStatuses.FirstOrDefault(us =>
+                    (us.Status.Type == StatusType.Gratitude || us.Status.Type == StatusType.Gratitude) && !us.IsCompleted());
                     if (prevUnitStatus != null)
                         prevUnitStatus.EndDate = DateTime.UtcNow;
 

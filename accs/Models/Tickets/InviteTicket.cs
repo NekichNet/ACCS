@@ -19,14 +19,31 @@ namespace accs.Models.Tickets
         {
 			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 			if (channel == null)
-				await logService.WriteAsync("InviteTicket: channel is null");
+				await logService.WriteAsync("InviteTicket: channel is null", LoggingLevel.Error);
 			else
-                await channel.SendMessageAsync(
-                "Добро пожаловать! Оставьте заявку на вступление в клан. " +
-                "Военная полиция скоро свяжется с вами."
-            );
+            {
+                EmbedBuilder embed = new EmbedBuilder()
+                    .WithTitle($"Тикет на вступление №{Id}")
+                    .WithDescription("Автор: " + guildProvider.GetGuild().GetUser(AuthorDiscordId).DisplayName)
+                    .WithColor(Color.DarkGreen)
+                    .AddField("Батальон РХБЗ",
+					"Современная организация, сочетающая военные традиции и сплоченную игру коллективом в Squad.")
+                    .AddField("Основная деятельность",
+					"▫️ Участие в ивентах вместе с другими сообществами" +
+					"\r\n▫️ Обучение и совместные тренировки" +
+                    "\r\n▫️ Строевая подготовка и построения по праздникам" +
+					"\r\n▫️ Поддерживание онлайна личного состава" +
+					"\r\n▫️ Seed проектов")
+                    .AddField("Шаг №1", "[Заполнить анкету для вступления](https://forms.gle/bLPB7AGxecPSWfR2A)")
+                    .AddField("Шаг №2", "Пройти устное собеседование с сотрудником военной полиции. Время нужно согласовать заранее.")
+                    .AddField("Команды",
+					"***/ticket cancel*** — Отменить тикет, доступно автору." +
+					"\r\n***/ticket accept*** — Принять в клан, доступно ВП." +
+					"\r\n***/ticket refuse*** — Отказать в тикете, доступно ВП.")
+                    .WithImageUrl("https://c.tenor.com/mCr1ijrLsyUAAAAd/tenor.gif");
+                await channel.SendMessageAsync(embed: embed.Build());
+            }
         }
-
 
         public override async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db)
         {

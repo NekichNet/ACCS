@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
-    [IsUnit()]
     public class ProfileGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
@@ -24,7 +23,8 @@ namespace accs.DiscordBot.Interactions
             _guildProvider = guildProvider;
         }
 
-        [SlashCommand("profile", "Показать профиль указанного пользователя")]
+		[IsUnit()]
+		[SlashCommand("profile", "Показать профиль указанного пользователя")]
         public async Task ShowProfileCommand(IUser? user = null)
         {
             Unit? unit;
@@ -153,21 +153,25 @@ namespace accs.DiscordBot.Interactions
 				}
 
 				Unit? targetUnit = await _db.Units.FindAsync(targetUser.Id);
-
                 string fullname;
 
-				if (targetUnit.Rank.Id > 1)
-                    fullname = "[РХБЗ] " + newNickname;
-                else
-					fullname = "[Р] " + newNickname;
+                if (targetUnit != null)
+                {
+					if (targetUnit.Rank.Id > 1)
+						fullname = "[РХБЗ] " + newNickname;
+					else
+						fullname = "[Р] " + newNickname;
 
-				await guildUser.ModifyAsync(props => props.Nickname = fullname);
-				
-				if (targetUnit != null)
-				{
-					targetUnit.Nickname = newNickname;
-					await _db.SaveChangesAsync();
+					if (targetUnit != null)
+					{
+						targetUnit.Nickname = newNickname;
+						await _db.SaveChangesAsync();
+					}
 				}
+                else
+                    fullname = newNickname;
+
+                await guildUser.ModifyAsync(props => props.Nickname = fullname);
 
 				await RespondAsync($"Никнейм пользователя '{targetUser.Username}' успешно изменён на '{newNickname}'");
 			}
@@ -180,7 +184,8 @@ namespace accs.DiscordBot.Interactions
 
         }
 
-        [SlashCommand("steam", "Привязать свой steam Id")]
+		[IsUnit()]
+		[SlashCommand("steam", "Привязать свой steam Id")]
         public async Task SteamIdCommand(string steamId)
         {
             try {
@@ -208,8 +213,8 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-
-        [SlashCommand("color", "Изменить цвет профиля")]
+		[IsUnit()]
+		[SlashCommand("color", "Изменить цвет профиля")]
         public async Task ChooseColorCommand()
         {
             var colors = new Dictionary<string, Color>
@@ -243,8 +248,8 @@ namespace accs.DiscordBot.Interactions
             );
         }
 
-
-        [ComponentInteraction("profile-color-select")]
+		[IsUnit()]
+		[ComponentInteraction("profile-color-select")]
         public async Task ColorsHandler(string[] selected)
         {
             try

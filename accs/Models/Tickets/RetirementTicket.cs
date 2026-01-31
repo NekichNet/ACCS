@@ -15,19 +15,40 @@ namespace accs.Models.Tickets
         {
         }
 
-        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
-        {
+		public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
+		{
 			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 			if (channel == null)
-				await logService.WriteAsync("RetirementTicket: channel is null");
+				await logService.WriteAsync("RetirementTicket: channel is null", LoggingLevel.Error);
 			else
-				await channel.SendMessageAsync(
-                "Вы подали заявку на выход в отставку или вернуться из неё.\n" +
-                "Командир РХБЗ или его заместитель скоро рассмотрят ваш запрос."
-            );
-        }
+			{
+				Unit? unit = await db.Units.FindAsync(AuthorDiscordId);
 
-        public override async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db)
+				if (unit == null)
+				{
+					await logService.WriteAsync("RetirementTicket: unit is null", LoggingLevel.Error);
+					await channel.SendMessageAsync("Ошибка: автор тикета не найден в системе!");
+					return;
+				}
+
+				bool inRetirement = unit.UnitStatuses.Any(us =>
+					us.Status.Type == StatusType.Retirement && !us.IsCompleted());
+
+				EmbedBuilder embed = new EmbedBuilder()
+					.WithTitle($"Тикет отставки №{Id}")
+					.WithDescription("Автор: " + guildProvider.GetGuild().GetUser(AuthorDiscordId).DisplayName)
+					.WithColor(inRetirement ? Color.Teal : Color.DarkGrey)
+					.AddField("Вы решили выйти " + (inRetirement ? "из отставки" : "в отставку"),
+					"Можете написать причину и/или сроки.")
+					.AddField("Команды",
+					"***/ticket cancel*** — Отменить тикет, доступно автору." +
+					"\r\n***/ticket accept*** — Помощь оказана, закрыть тикет, доступно администрации." +
+					"\r\n***/ticket refuse*** — Отказать в тикете, доступно администрации.");
+				await channel.SendMessageAsync(embed: embed.Build());
+			}
+		}
+
+		public override async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db)
         {
             Unit? unit = await db.Units.FindAsync(AuthorDiscordId);
             var channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
@@ -42,7 +63,7 @@ namespace accs.Models.Tickets
             var activeRetirement = unit.UnitStatuses
                 .FirstOrDefault(us =>
                     us.Status.Type == StatusType.Retirement &&
-                    us.EndDate == null
+                    !us.IsCompleted()
                 );
 
             if (activeRetirement == null)

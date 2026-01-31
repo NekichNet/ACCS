@@ -1,5 +1,7 @@
 ﻿using accs.Database;
+using accs.Models.Enums;
 using accs.Services.Interfaces;
+using Discord;
 using Discord.WebSocket;
 
 namespace accs.Models.Tickets
@@ -12,17 +14,25 @@ namespace accs.Models.Tickets
 
         public ReportTicket(ulong authorId) : base(authorId) { }
 
-        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
-        {
+		public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
+		{
 			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 			if (channel == null)
-				await logService.WriteAsync("ReportTicket: channel is null");
+				await logService.WriteAsync("ReportTicket: channel is null", LoggingLevel.Error);
 			else
-				await channel.SendMessageAsync(
-                "Вы обратились в отдел жалоб клана.\n" +
-                "Военная Полиция скоро рассмотрит ваш запрос и свяжется с вами."
-            );
-        }
+			{
+				EmbedBuilder embed = new EmbedBuilder()
+					.WithTitle($"Жалоба №{Id}")
+					.WithDescription("Автор: " + guildProvider.GetGuild().GetUser(AuthorDiscordId).DisplayName)
+					.WithColor(Color.DarkBlue)
+					.AddField("С чего начать?", "Изложите Вашу жалобу, не опускайте подробности.")
+					.AddField("Команды",
+					"***/ticket cancel*** — Отменить тикет, доступно автору." +
+					"\r\n***/ticket accept*** — Принять тикет, доступно ВП." +
+					"\r\n***/ticket refuse*** — Отказать в тикете, доступно ВП.");
+				await channel.SendMessageAsync(embed: embed.Build());
+			}
+		}
 
 		public override List<Post> GetAdmins(AppDbContext db)
 		{

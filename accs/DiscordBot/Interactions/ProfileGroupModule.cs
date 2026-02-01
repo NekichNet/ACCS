@@ -112,7 +112,6 @@ namespace accs.DiscordBot.Interactions
             }
             else
             {
-                await DeleteOriginalResponseAsync();
                 await RespondAsync($"Пользователь не найден в системе", ephemeral: true);
             }
         }

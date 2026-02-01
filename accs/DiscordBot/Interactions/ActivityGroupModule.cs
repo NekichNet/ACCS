@@ -237,7 +237,7 @@ namespace accs.DiscordBot.Interactions
                     embed.WithAuthor(name: author.Nickname, iconUrl: _guildProvider.GetGuild().GetUser(authorId).GetDisplayAvatarUrl());
 
                 if (confirmator != null)
-                    embed.WithFooter(new EmbedFooterBuilder().WithText($"Подтверждено {confirmator.Rank} {confirmator.Nickname}"));
+                    embed.WithFooter(new EmbedFooterBuilder().WithText($"Подтверждено {confirmator.Rank.Name} {confirmator.Nickname}"));
                 else
 					embed.WithFooter(new EmbedFooterBuilder().WithText($"Подтверждено {Context.User.Username}"));
 

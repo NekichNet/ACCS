@@ -6,7 +6,6 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Reflection;
 
 namespace accs

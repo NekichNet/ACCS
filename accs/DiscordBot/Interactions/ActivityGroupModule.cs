@@ -20,8 +20,6 @@ namespace accs.DiscordBot.Interactions
         private readonly IOCRService _ocr;
         private readonly ILogService _logService;
 
-        private string? tempDir;
-
         public ActivityGroupModule(AppDbContext db, IGuildProviderService guildProvider, IOCRService ocr, ILogService logService)
         {
             _db = db;

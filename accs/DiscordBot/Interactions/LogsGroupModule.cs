@@ -83,12 +83,9 @@ namespace accs.DiscordBot.Interactions
         }
 
         [ComponentInteraction("logs-select", ignoreGroupNames: true)]
-        public async Task LogsSelectHandler()
+        public async Task LogsSelectHandler(string[] selectedIds)
         {
-            var component = (SocketMessageComponent)Context.Interaction;
-
-            string fileName = component.Data.Values.First();
-
+            string fileName = selectedIds.First();
             string fullPath = Path.Join(_logService.LogDirectoryPath, fileName);
 
             if (!File.Exists(fullPath))
@@ -97,7 +94,7 @@ namespace accs.DiscordBot.Interactions
                 return;
             }
 
-            await FollowupWithFileAsync(fullPath, fileName, ephemeral: true);
+            await RespondWithFileAsync(fullPath, fileName, ephemeral: true);
         }
     }
 }

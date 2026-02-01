@@ -18,7 +18,7 @@ namespace accs.DiscordBot.Interactions
         }
 
         [DefaultMemberPermissions(GuildPermission.KickMembers)]
-        [SlashCommand("kick", "Кикнуть участника с сервера")]
+        [SlashCommand("kick", "Выгнать участника с сервера")]
         public async Task KickUserCommand(IUser target, string? reason = null)
         {
             try

@@ -118,7 +118,7 @@ namespace accs.DiscordBot.Interactions
         }
 
 		[SlashCommand("nickname", "Изменить никнейм пользователя")]
-		public async Task ChangeNicknameCommand(string newNickname, SocketUser? targetUser = null)
+		public async Task ChangeNicknameCommand(string newNickname, IUser? targetUser = null)
 		{
 			try
 			{

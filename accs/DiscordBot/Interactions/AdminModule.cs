@@ -7,6 +7,7 @@ using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -104,23 +105,23 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("steam-list", "Высылает csv файл со списком бойцов и их Steam Id.")]
         public async Task GetSteamIdCSVCommand()
         {
-            await DeferAsync();
-
-            var unitsWithSteamid = _db.Units.Where(x=>x.SteamId != null);
+            List<Unit> unitsWithSteamid = await _db.Units.Where(x=>x.SteamId != null).ToListAsync();
 
             int allUsersAmount = _db.Units.Count();
             int usersWithIdAmount = unitsWithSteamid.Count();
 
-            if (!Directory.Exists("temp"))
+			await RespondAsync($"Steam Id привязали {usersWithIdAmount} из {allUsersAmount} бойцов. Высылаю файл...");
+
+			if (!Directory.Exists("temp"))
                 Directory.CreateDirectory("temp");
             
-            var filePath = Path.Join("temp", "UnitsWithSteamId.csv");
-            foreach (var unit in unitsWithSteamid) 
+            string filePath = Path.Join("temp", "UnitsWithSteamId.csv");
+            File.Create(filePath).Close();
+            foreach (Unit unit in unitsWithSteamid) 
             {
                 await File.AppendAllTextAsync(filePath, $"{unit.Nickname.Replace(",", "")},{unit.SteamId}\n");
             }
-            await DeleteOriginalResponseAsync();
-            await RespondWithFileAsync(filePath, text:$"Steam Id привязали {usersWithIdAmount} из {allUsersAmount} бойцов.");
+            await Context.Channel.SendFileAsync(filePath);
         }
     }
 }

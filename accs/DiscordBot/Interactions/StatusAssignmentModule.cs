@@ -23,13 +23,18 @@ namespace accs.DiscordBot.Interactions
         }
 
         [HasPermission(PermissionType.GiveReprimandGratitude)]
-        [SlashCommand("give", "Выдать благодарность или выговор")] public async Task GiveCommandAsync(IUser user, 
-            [Choice("Благодарность", "gratitude"), Choice("Выговор", "reprimand"), Choice("Строгий выговор", "severeReprimand")] string statusType, int? amountOfDays = null)
+        [SlashCommand("give", "Установить благодарность, выговор, строгий выговор или завершить все")]
+        public async Task GiveCommandAsync(IUser user, 
+            [Choice("Благодарность", "gratitude"),
+            Choice("Без статуса", "nothing"),
+            Choice("Благодарность", "gratitude"),
+            Choice("Выговор", "reprimand"),
+            Choice("Строгий выговор", "severe-reprimand")] string statusType,
+            int? amountOfDays = null)
         {
             try
             {
-
-                StatusType givenType;
+                StatusType? givenType;
                 if (statusType == "gratitude")
                 {
                     givenType = StatusType.Gratitude;
@@ -38,37 +43,55 @@ namespace accs.DiscordBot.Interactions
                 {
                     givenType = StatusType.Reprimand;
                 }
-                else if (statusType == "severeReprimand")
+                else if (statusType == "severe-reprimand")
                 {
                     givenType = StatusType.SevereReprimand;
                 }
+                else if (statusType == "nothing")
+                {
+                    givenType = null;
+                }
                 else
                 {
-                    throw new Exception("Не удалось спарсить статус!");
+                    throw new Exception("Ошибка: Не удалось спарсить статус!");
                 }
 
                 Unit? unit = await _db.Units.FindAsync(user.Id);
-                Status? status = await _db.Statuses.FindAsync(givenType);
 
-                if (unit != null && status != null)
+                if (unit != null)
                 {
                     UnitStatus? prevUnitStatus = unit.UnitStatuses.FirstOrDefault(us =>
-                    (us.Status.Type == StatusType.Gratitude || us.Status.Type == StatusType.Gratitude) && !us.IsCompleted());
+                    (us.Status.Type == StatusType.Gratitude
+                    || us.Status.Type == StatusType.Reprimand
+                    || us.Status.Type == StatusType.SevereReprimand)
+                    && !us.IsCompleted());
                     if (prevUnitStatus != null)
                         prevUnitStatus.EndDate = DateTime.UtcNow;
 
-                    DateTime? endDate = amountOfDays == null ? null : DateTime.UtcNow.AddDays((double)amountOfDays);
-					UnitStatus unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.UtcNow, EndDate = endDate, Status = status };
-                    await _db.UnitStatuses.AddAsync(unitStatus);
-					await _db.SaveChangesAsync();
-					await RespondAsync(
-                        $"Бойцу {unit.GetOnlyNickname()} установлен(а) {status.Name}"
-                        + (endDate == null ? " беcсрочно" : $" до {DateOnly.FromDateTime((DateTime)endDate).ToShortDateString()}"
-                        ));
-                }
+                    if (givenType != null)
+                    {
+						Status? status = await _db.Statuses.FindAsync(givenType);
+						if (status != null)
+						{
+							DateTime? endDate = amountOfDays == null ? null : DateTime.UtcNow.AddDays((double)amountOfDays);
+							UnitStatus unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.UtcNow, EndDate = endDate, Status = status };
+							await _db.UnitStatuses.AddAsync(unitStatus);
+							await _db.SaveChangesAsync();
+							await RespondAsync(
+								$"Бойцу {unit.GetOnlyNickname()} установлен(а) {status.Name}"
+								+ (endDate == null ? " беcсрочно" : $" до {DateOnly.FromDateTime((DateTime)endDate).ToShortDateString()}"
+								));
+						}
+					}
+                    else
+                    {
+						await RespondAsync($"С бойца {unit.GetOnlyNickname()} сняты все благодарности и выговора");
+						await _db.SaveChangesAsync();
+					}
+				}
                 else
                 {
-                    throw new Exception("Пользователь для выдачи статуса или сам статус не найден!");
+                    throw new Exception("Пользователь для выдачи статуса не найден в базе данных!");
                 }
             }
             catch (Exception e) 

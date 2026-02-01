@@ -15,6 +15,10 @@ namespace accs.Services
         {
 			MaxFilesCount = DotNetEnv.Env.GetInt("MAX_FILES_COUNT", -1);
 			LogDirectoryPath = DotNetEnv.Env.GetString("LOG_DIRECTORY_PATH", Path.Join("accs-logs"));
+
+            if (!Directory.Exists(LogDirectoryPath))
+                Directory.CreateDirectory(LogDirectoryPath);
+
             FileLogLevel = (LoggingLevel)DotNetEnv.Env.GetInt("FILE_LOG_LEVEL", 3);
 			FileLogLevel = (LoggingLevel)DotNetEnv.Env.GetInt("CONSOLE_LOG_LEVEL", 3);
 		}

@@ -6,8 +6,6 @@ using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Channels;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -92,7 +90,7 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-        [SlashCommand("access", "Откройте доступ к каналу для клана или для всех")] 
+        //[SlashCommand("access", "Откройте доступ к каналу для клана или для всех")] 
         public async Task OnGivingAccessCommand(AccessChoices accessChoices)
         {
 			SocketGuild guild = _guildProvider.GetGuild();
@@ -108,7 +106,7 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [SlashCommand("access-role", "Откройте доступ к каналу для определённой роли")]
+        //[SlashCommand("access-role", "Откройте доступ к каналу для определённой роли")]
         public async Task OnGivingAccessByRoleCommand(SocketRole role)
         {
 			SocketGuild guild = _guildProvider.GetGuild();

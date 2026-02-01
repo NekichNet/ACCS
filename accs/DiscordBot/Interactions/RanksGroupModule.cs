@@ -215,7 +215,7 @@ namespace accs.DiscordBot.Interactions
 			if (units.Any())
 			{
 				string unitsString = string.Join("\n", units.Select(u =>
-				u.Rank + " " + u.Nickname + ": " + u.RankUpCounter + '/' + u.Rank.Next.CounterToReach));
+				u.Rank.Name + " " + u.Nickname + ": " + u.RankUpCounter + '/' + u.Rank.Next.CounterToReach));
 
 				EmbedBuilder embed = new EmbedBuilder()
 					.WithTitle("Бойцы на повышение")

@@ -71,7 +71,10 @@ namespace accs.Models
             );
 
             List<Overwrite> overwrites = new List<Overwrite>();
-            overwrites.Add(new Overwrite(targetType: PermissionTarget.User, targetId: AuthorDiscordId, permissions: permissions));
+            overwrites.Add(new Overwrite(targetType: PermissionTarget.Role,
+                targetId: guild.EveryoneRole.Id, permissions: new OverwritePermissions(viewChannel: PermValue.Deny)));
+            overwrites.Add(new Overwrite(targetType: PermissionTarget.User,
+                targetId: AuthorDiscordId, permissions: permissions));
             foreach (Post post in GetAdmins(db))
                 if (post.DiscordRoleId != null)
 				    overwrites.Add(new Overwrite(targetType: PermissionTarget.Role, targetId: (ulong)post.DiscordRoleId, permissions: permissions));

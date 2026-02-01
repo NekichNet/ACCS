@@ -5,6 +5,7 @@ using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
@@ -29,15 +30,19 @@ namespace accs.DiscordBot.Interactions
             _logService = logService;
         }
 
-        [SlashCommand("voice", "Всех бойцов в голосовом канале")]
-        public async Task FixVoiceCommand([ChannelTypes(ChannelType.Voice, ChannelType.Forum)] IChannel channel)
+        [SlashCommand("voice", "Зафиксировать активность всех бойцов в голосовом канале")]
+        public async Task FixVoiceCommand([ChannelTypes(ChannelType.Voice, ChannelType.Stage)] IChannel channel)
         {
             try
             {
-                Dictionary<Unit, bool> units = new Dictionary<Unit, bool>();
-                IEnumerable<IUser> users = await channel.GetUsersAsync().FlattenAsync();
+                IEnumerable<SocketGuildUser> users;
+				Dictionary<Unit, bool> units = new Dictionary<Unit, bool>();
+                if (channel.ChannelType == ChannelType.Stage)
+					users = ((SocketStageChannel)channel).ConnectedUsers;
+                else
+					users = ((SocketVoiceChannel)channel).ConnectedUsers;
 
-				DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+                DateOnly today = DateOnly.FromDateTime(DateTime.Today);
                 foreach (IUser user in users)
                 {
                     Unit? unit = await _db.Units.FindAsync(user.Id);
@@ -69,7 +74,7 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-        [SlashCommand("screenshot", "зафиксировать активность по скриншоту")]
+        [SlashCommand("screenshot", "Зафиксировать активность всех бойцов на скриншоте")]
         public async Task FixScreenshotCommand(IAttachment screenshot)
         {
             await DeferAsync(ephemeral: true);
@@ -85,10 +90,10 @@ namespace accs.DiscordBot.Interactions
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
                 /* OCR */
-                string tempDir = Path.Combine(Path.GetTempPath(), "temp");
-                Directory.CreateDirectory(tempDir);
+                if (!Directory.Exists("temp"))
+                    Directory.CreateDirectory("temp");
 
-                string filePath = Path.Combine(tempDir, screenshot.Filename);
+                string filePath = Path.Join("temp", screenshot.Filename);
                 using (var http = new HttpClient())
                 {
                     var bytes = await http.GetByteArrayAsync(screenshot.Url);
@@ -125,16 +130,9 @@ namespace accs.DiscordBot.Interactions
                 await _logService.WriteAsync($"Error in FixScreenshotCommand: {ex.Message}", LoggingLevel.Error);
 				await ModifyOriginalResponseAsync((props) => { props.Content = "Произошла непредвиденная ошибка"; });
 			}
-            finally
-            {
-                if (Directory.Exists(tempDir))
-                {
-                    Directory.Delete(tempDir, recursive: true);  
-                }
-            }
         }
 
-        [SlashCommand("user", "зафиксировать активность указанного бойца")]
+        [SlashCommand("user", "Зафиксировать активность указанного бойца")]
         public async Task FixUserCommand(IUser? user = null)
         {
             try

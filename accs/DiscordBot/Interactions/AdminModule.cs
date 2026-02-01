@@ -114,8 +114,7 @@ namespace accs.DiscordBot.Interactions
             if (!Directory.Exists("temp"))
                 Directory.CreateDirectory("temp");
             
-            var filePath = "temp/UnitsWithSteamId.csv";
-            File.Create(filePath);
+            var filePath = Path.Join("temp", "UnitsWithSteamId.csv");
             foreach (var unit in unitsWithSteamid) 
             {
                 await File.AppendAllTextAsync(filePath, $"{unit.Nickname.Replace(",", "")},{unit.SteamId}\n");

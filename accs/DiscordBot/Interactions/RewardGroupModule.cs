@@ -68,7 +68,6 @@ namespace accs.DiscordBot.Interactions
 				await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выдана награда: {reward.Name}", ephemeral: true);
 			}
         }
-
         
         [HasPermission(PermissionType.ManageRewards)]
         [SlashCommand("create", "Создать награду")]
@@ -82,10 +81,10 @@ namespace accs.DiscordBot.Interactions
                 {
                     var http = new HttpClient(); 
                     var bytes = await http.GetByteArrayAsync(image.Url); 
-
-                    string rewardsDir = Path.Combine("temp", "rewards"); 
-                    Directory.CreateDirectory(rewardsDir); 
-                    string filePath = Path.Combine(rewardsDir, image.Filename);
+                    
+                    if (!Directory.Exists("rewards"))
+                        Directory.CreateDirectory("rewards"); 
+                    string filePath = Path.Join("rewards", image.Filename);
 
                     await File.WriteAllBytesAsync(filePath, bytes); 
                     savedImagePath = filePath;
@@ -102,7 +101,7 @@ namespace accs.DiscordBot.Interactions
 				await _db.SaveChangesAsync();
 
                 EmbedBuilder embed = new EmbedBuilder()
-                    .WithTitle("Награда создана")
+                    .WithTitle($"Награда {reward.Name} создана")
                     .WithColor(Color.Gold)
                     .WithDescription(reward.Description);
 

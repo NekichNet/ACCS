@@ -123,7 +123,7 @@ namespace accs.DiscordBot.Interactions
 
 
         [HasPermission(PermissionType.AssignRewards)]
-		[ComponentInteraction("reward-menu-*", ignoreGroupNames: true)]
+		[ComponentInteraction("menu-*", ignoreGroupNames: true)]
         public async Task MenuHandler(string unitId, string[] selectedIds)
         {
             Unit? unit = await _db.Units.FindAsync(ulong.Parse(unitId));
@@ -157,5 +157,63 @@ namespace accs.DiscordBot.Interactions
 			await _db.SaveChangesAsync();
 			await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выданы награды: {String.Join(", ", rewards.Select(r => r.Name))}");
 		}
+
+
+        [SlashCommand("list", "Список наград")]
+        public async Task RewardListCommand(int page = 1)
+        {
+            const int pageSize = 5;
+
+            var rewards = await _db.Rewards.ToListAsync();
+
+            if (!rewards.Any())
+            {
+                await RespondAsync("Наград пока нет.", ephemeral: true);
+                return;
+            }
+
+            int totalPages = (int)Math.Ceiling(rewards.Count / (double)pageSize);
+            page = Math.Clamp(page, 1, totalPages);
+
+            var pageItems = rewards
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            EmbedBuilder embed = new EmbedBuilder()
+                .WithTitle($"Список наград — страница {page}/{totalPages}")
+                .WithColor(Color.Gold);
+
+            foreach (var reward in pageItems)
+            {
+                embed.AddField(
+                    reward.Name,
+                    $"{reward.Description}\n[Картинка]({reward.ImagePath})"
+                );
+            }
+
+            ComponentBuilder components = new ComponentBuilder();
+
+            if (page > 1)
+            {
+                components.WithButton("⬅ Назад", $"reward-list-{page - 1}", ButtonStyle.Primary);
+            }
+
+            if (page < totalPages)
+            {
+                components.WithButton("Вперёд ➡", $"reward-list-{page + 1}", ButtonStyle.Primary);
+            }
+
+            await RespondAsync(embed: embed.Build(), components: components.Build());
+        }
+
+
+        [ComponentInteraction("reward-list-*")]
+        public async Task RewardListHandler(int page)
+        {
+            await DeferAsync();
+
+            await RewardListCommand(page);
+        }
     }
 }

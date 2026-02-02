@@ -22,7 +22,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
-    <PackageReference Include="System.IO.FileSystem" Version="4.0.1" />
+    <PackageReference Include="System.IO.FileSystem" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>

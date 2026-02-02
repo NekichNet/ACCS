@@ -50,10 +50,15 @@ namespace accs.DiscordBot.Interactions
 
                 if (units.Any())
                 {
-					ComponentBuilder component = new ComponentBuilder();
+                    ComponentBuilder component = new ComponentBuilder();
 
 					if (units.Any(p => !p.Value))
-						component.WithButton("Подтвердить", customId: $"confirm-activity-{today}-{Context.User.Id}:{string.Join(',', units.Select(p => p.Key.DiscordId))}", ButtonStyle.Success);
+                    {
+                        string custommId = $"voice-activity-{DateTime.Now:yyyyMMdd-HHmmss}";
+
+                        component.WithButton("Подтвердить", customId: $"confirm-activity-{today}-{Context.User.Id}:{string.Join(',', units.Select(p => p.Key.DiscordId))}", ButtonStyle.Success);
+                        await SaveActivityJson($"voice-{custommId}-{Context.User.Id}", units);
+                    }
 
 					EmbedBuilder embedBuilder = GetResultsEmbedBuilder(units, today)
 						.WithAuthor((await _db.Units.FindAsync(Context.User.Id)).Nickname, Context.User.GetDisplayAvatarUrl());
@@ -107,6 +112,9 @@ namespace accs.DiscordBot.Interactions
 
                 if (units.Any())
                 {
+                    string custommId = $"screenshot-activity-{DateTime.Now:yyyyMMdd-HHmmss}";
+                    await SaveActivityJson(custommId, units);
+
                     ComponentBuilder component = new ComponentBuilder();
 
 					if (units.Any(p => !p.Value))
@@ -155,7 +163,14 @@ namespace accs.DiscordBot.Interactions
 
                 ComponentBuilder builder = new ComponentBuilder();
 
-				Dictionary<Unit, bool> dict = new Dictionary<Unit, bool> { { unit, unit.Activities.Any(a => a.Date == today) } };
+				Dictionary<Unit, bool> dict = new Dictionary<Unit, bool> 
+                { 
+                    { unit, unit.Activities.Any(a => a.Date == today) } 
+                };
+
+                string custommId = $"user-activity-{DateTime.Now:yyyyMMdd-HHmmss}";
+
+                await SaveActivityJson(custommId, dict);
 
                 if (dict.Any(p => !p.Value))
                 {
@@ -286,6 +301,51 @@ namespace accs.DiscordBot.Interactions
                     else
 						await _logService.WriteAsync("Не удалось спарсить NOTIFICATION_CHANNEL_ID!", LoggingLevel.Error);
 				}
+            }
+        }
+
+
+        private async Task SaveActivityJson(string customId, Dictionary<Unit, bool> units)
+        {
+            try
+            {
+                string dir = Path.Combine("temp", "activity");
+
+                if (!Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
+                string filePath = Path.Combine(dir, $"{customId}.json");
+
+                var jsonObject = new
+                {
+                    units = units.Select(u => new
+                    {
+                        discordId = u.Key.DiscordId
+                    }).ToList(),
+                    customId = customId.Split('-')[2]
+                };
+
+                string json = System.Text.Json.JsonSerializer.Serialize(
+                    jsonObject,
+                    new System.Text.Json.JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    }
+                );
+
+                await File.WriteAllTextAsync(filePath, json);
+
+                await _logService.WriteAsync(
+                    $"[Activity JSON] Создан файл {filePath} для customId '{customId}'",
+                    LoggingLevel.Info
+                );
+            }
+            catch (Exception ex)
+            {
+                await RespondAsync("Ошибка при создании JSON файла активности", ephemeral: true);
+                await _logService.WriteAsync($"Ошибка при создании JSON файла активности: {ex.Message}", LoggingLevel.Error);
             }
         }
     }

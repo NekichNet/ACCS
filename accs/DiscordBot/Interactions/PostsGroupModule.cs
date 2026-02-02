@@ -329,6 +329,30 @@ namespace accs.DiscordBot.Interactions
                 }
             }
 
+
+
+            [HasPermission(PermissionType.ManageStructure)]
+            [SlashCommand("delete", "Уничтожает должность по указанному Id")]
+            public async Task PostDeleteCommand([Summary("posts_autocomplete"), Autocomplete] int Id) // Praise the code
+            {
+                var post = _db.Posts.Find(Id);
+                var invokerUnit = _db.Units.Find(Context.User.Id);
+                if (post != null && (await PostHasPermissionToRedactPostAsync(invokerUnit.Posts, post) || invokerUnit.HasPermission(PermissionType.Administrator)))
+                {
+                    _db.Posts.Remove(post);
+                    await _db.SaveChangesAsync();
+                    await RespondAsync("Должность была успешно удалена");
+                }
+                else
+                {
+                    var err = $"Должность с Id {Id} вызвавший метод не найден в базе данных!";
+                    await _logService.WriteAsync(err, LoggingLevel.Warn);
+                    await RespondAsync(err, ephemeral: true);
+                }
+            }
+
+
+
             /// <summary>
             /// Recursive method to find wether unit is able to redact the post or not.
             /// </summary>

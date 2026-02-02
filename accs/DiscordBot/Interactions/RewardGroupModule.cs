@@ -36,10 +36,10 @@ namespace accs.DiscordBot.Interactions
 
             if (rewardId == null)
             {
-				var menuBuilder = new SelectMenuBuilder()
-		            .WithPlaceholder("Награда")
-		            .WithCustomId($"reward-menu-{unit.DiscordId}")
-		            .WithMinValues(1);
+                var menuBuilder = new SelectMenuBuilder()
+                    .WithPlaceholder("Награда")
+                    .WithCustomId($"reward-menu-{unit.DiscordId}")
+                    .WithMinValues(1);
 
                 var rewards = await _db.Rewards.ToListAsync();
 
@@ -48,27 +48,27 @@ namespace accs.DiscordBot.Interactions
                     menuBuilder.AddOption(reward.Name, reward.Id.ToString(), reward.Description);
                 }
 
-				var builder = new ComponentBuilder()
-					.WithSelectMenu(menuBuilder);
+                var builder = new ComponentBuilder()
+                    .WithSelectMenu(menuBuilder);
 
-				await RespondAsync("Выберите награды, которые выдать " + unit.Nickname, components: builder.Build(), ephemeral: true);
-			}
+                await RespondAsync("Выберите награды, которые выдать " + unit.Nickname, components: builder.Build(), ephemeral: true);
+            }
             else
             {
                 Reward? reward = await _db.Rewards.FindAsync(rewardId.Value);
                 if (reward == null)
                 {
-					await RespondAsync($"Награда с Id {rewardId} не найдена в системе", ephemeral: true);
-					await _logService.WriteAsync($"Награда с Id {rewardId} не найдена в системе", LoggingLevel.Debug);
-					return;
-				}
+                    await RespondAsync($"Награда с Id {rewardId} не найдена в системе", ephemeral: true);
+                    await _logService.WriteAsync($"Награда с Id {rewardId} не найдена в системе", LoggingLevel.Debug);
+                    return;
+                }
 
                 unit.Rewards.Add(reward);
                 await _db.SaveChangesAsync();
-				await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выдана награда: {reward.Name}", ephemeral: true);
-			}
+                await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выдана награда: {reward.Name}", ephemeral: true);
+            }
         }
-        
+
         [HasPermission(PermissionType.ManageRewards)]
         [SlashCommand("create", "Создать награду")]
         public async Task CreateCommand(string name, string description, IAttachment? image = null)
@@ -78,33 +78,33 @@ namespace accs.DiscordBot.Interactions
                 string? savedImagePath = null;
                 if (image != null)
                 {
-                    var http = new HttpClient(); 
-                    var bytes = await http.GetByteArrayAsync(image.Url); 
-                    
+                    var http = new HttpClient();
+                    var bytes = await http.GetByteArrayAsync(image.Url);
+
                     if (!Directory.Exists("rewards"))
-                        Directory.CreateDirectory("rewards"); 
+                        Directory.CreateDirectory("rewards");
                     string filePath = Path.Join("rewards", image.Filename);
 
-                    await File.WriteAllBytesAsync(filePath, bytes); 
+                    await File.WriteAllBytesAsync(filePath, bytes);
                     savedImagePath = filePath;
                 }
 
-                Reward reward = new Reward() 
+                Reward reward = new Reward()
                 {
                     Name = name,
-                    Description = description, 
-                    ImagePath = savedImagePath 
+                    Description = description,
+                    ImagePath = savedImagePath
                 };
 
-				await _db.Rewards.AddAsync(reward);
-				await _db.SaveChangesAsync();
+                await _db.Rewards.AddAsync(reward);
+                await _db.SaveChangesAsync();
 
                 EmbedBuilder embed = new EmbedBuilder()
                     .WithTitle($"Награда {reward.Name} создана")
                     .WithColor(Color.Gold)
                     .WithDescription(reward.Description);
 
-				if (image != null)
+                if (image != null)
                     await RespondWithFileAsync(
                         reward.ImagePath,
                         embed: embed.WithImageUrl($"attachment://{Path.GetFileName(reward.ImagePath)}").Build(),
@@ -115,47 +115,47 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Ошибка при создании награды: {ex.Message}", LoggingLevel.Error); 
+                await _logService.WriteAsync($"Ошибка при создании награды: {ex.Message}", LoggingLevel.Error);
                 await RespondAsync("Ошибка при создании награды.", ephemeral: true);
             }
         }
 
 
         [HasPermission(PermissionType.AssignRewards)]
-		[ComponentInteraction("menu-*", ignoreGroupNames: true)]
+        [ComponentInteraction("menu-*", ignoreGroupNames: true)]
         public async Task MenuHandler(string unitId, string[] selectedIds)
         {
             Unit? unit = await _db.Units.FindAsync(ulong.Parse(unitId));
-			if (unit == null)
-			{
-				await RespondAsync($"Пользователь с Id {unitId} не найден в системе", ephemeral: true);
-				await _logService.WriteAsync($"Пользователь с Id {unitId} не найден в системе", LoggingLevel.Debug);
-				return;
-			}
+            if (unit == null)
+            {
+                await RespondAsync($"Пользователь с Id {unitId} не найден в системе", ephemeral: true);
+                await _logService.WriteAsync($"Пользователь с Id {unitId} не найден в системе", LoggingLevel.Debug);
+                return;
+            }
 
             List<Reward> rewards = new List<Reward>();
 
             foreach (string selectedId in selectedIds)
             {
-                if (!int.TryParse(selectedId, out int rewardId)) 
+                if (!int.TryParse(selectedId, out int rewardId))
                 {
-                    await RespondAsync($"Некорректный ID награды: {selectedId}", ephemeral: true); 
-                    return; 
+                    await RespondAsync($"Некорректный ID награды: {selectedId}", ephemeral: true);
+                    return;
                 }
 
                 Reward? reward = await _db.Rewards.FindAsync(rewardId);
-				if (reward == null)
-				{
-					await RespondAsync($"Награда с Id {selectedId} не найдена в системе", ephemeral: true);
-					await _logService.WriteAsync($"Награда с Id {selectedId} не найдена в системе", LoggingLevel.Debug);
-					return;
-				}
-				rewards.Add(reward);
-			}
-			unit.Rewards.AddRange(rewards);
-			await _db.SaveChangesAsync();
-			await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выданы награды: {String.Join(", ", rewards.Select(r => r.Name))}");
-		}
+                if (reward == null)
+                {
+                    await RespondAsync($"Награда с Id {selectedId} не найдена в системе", ephemeral: true);
+                    await _logService.WriteAsync($"Награда с Id {selectedId} не найдена в системе", LoggingLevel.Debug);
+                    return;
+                }
+                rewards.Add(reward);
+            }
+            unit.Rewards.AddRange(rewards);
+            await _db.SaveChangesAsync();
+            await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выданы награды: {String.Join(", ", rewards.Select(r => r.Name))}");
+        }
 
 
         [SlashCommand("list", "Список наград")]
@@ -195,12 +195,12 @@ namespace accs.DiscordBot.Interactions
 
             if (page > 1)
             {
-                components.WithButton("⬅ Назад", $"reward-list-{page - 1}", ButtonStyle.Primary);
+                components.WithButton("⬅ Назад", $"{page - 1}", ButtonStyle.Primary);
             }
 
             if (page < totalPages)
             {
-                components.WithButton("Вперёд ➡", $"reward-list-{page + 1}", ButtonStyle.Primary);
+                components.WithButton("Вперёд ➡", $"{page + 1}", ButtonStyle.Primary);
             }
 
             await RespondAsync(embed: embed.Build(), components: components.Build());
@@ -217,7 +217,7 @@ namespace accs.DiscordBot.Interactions
 
 
         [HasPermission(PermissionType.ManageRewards)]
-        [SlashCommand("edit", "Редактировать награды")]
+        [SlashCommand("edit", "Редактировать награду")]
         public async Task EditCommand(string? name = null, string? description = null, IAttachment? image = null)
         {
             try
@@ -276,8 +276,96 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in EditCommand: {ex.Message}", LoggingLevel.Error); 
+                await _logService.WriteAsync($"Error in EditCommand: {ex.Message}", LoggingLevel.Error);
                 await RespondAsync("Ошибка при редактировании награды.", ephemeral: true);
+            }
+        }
+
+
+        [HasPermission(PermissionType.ManageRewards)]
+        [SlashCommand("delete", "Удалить награду")]
+        public async Task DeleteCommand(int? id = null)
+        {
+            try
+            {
+                if (id.HasValue)
+                {
+                    var reward = await _db.Rewards.FindAsync(id.Value);
+                    if (reward == null)
+                    {
+                        await RespondAsync("Награда не найдена.", ephemeral: true);
+                        return;
+                    }
+
+                    _db.Rewards.Remove(reward);
+                    await _db.SaveChangesAsync();
+
+                    await RespondAsync($"Награда '{reward.Name}' удалена.");
+                    return;
+                }
+                else
+                {
+                    // Если ID нету — показываем менюху
+                    var rewards = await _db.Rewards.ToListAsync();
+
+                    if (!rewards.Any())
+                    {
+                        await RespondAsync("Наград пока нет.", ephemeral: true);
+                        return;
+                    }
+
+                    var menu = new SelectMenuBuilder()
+                        .WithCustomId("reward-delete-select")
+                        .WithPlaceholder("Выберите награду для удаления");
+
+                    foreach (var reward in rewards)
+                    {
+                        menu.AddOption(reward.Name, reward.Id.ToString(), reward.Description);
+                    }
+
+                    ComponentBuilder builder = new ComponentBuilder()
+                        .WithSelectMenu(menu);
+
+                    await RespondAsync("Выберите награду для удаления:", components: builder.Build(), ephemeral: true);
+                }
+            }
+            catch (Exception ex)
+            {
+                await _logService.WriteAsync($"Error in DeleteCommand: {ex.Message}", LoggingLevel.Error);
+                await RespondAsync("Ошибка при удалении награды.", ephemeral: true);
+            }
+        }
+
+
+        [HasPermission(PermissionType.ManageRewards)]
+        [ComponentInteraction("reward-delete-select")]
+        public async Task RewardDeleteHandler(string selectedId)
+        {
+            try
+            {
+                if (!int.TryParse(selectedId, out int id))
+                {
+                    await RespondAsync("Ошибка: неверный ID награды.", ephemeral: true);
+                    return;
+                }
+
+                var reward = await _db.Rewards.FindAsync(id);
+
+                if (reward == null)
+                {
+                    await RespondAsync("Награда не найдена.", ephemeral: true);
+                    return;
+                }
+
+                _db.Rewards.Remove(reward);
+                await _db.SaveChangesAsync();
+
+                await RespondAsync($"Награда '{reward.Name}' успешно удалена.", ephemeral: true);
+            }
+            catch (Exception ex)
+            {
+                await _logService.WriteAsync($"Error in RewardDeleteSelectHandler: {ex.Message}", LoggingLevel.Error);
+                await RespondAsync("Ошибка при удалении награды.", ephemeral: true);
             }
         }
     }

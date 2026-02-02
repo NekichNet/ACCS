@@ -71,8 +71,7 @@ namespace accs.DiscordBot.Interactions
         
         [HasPermission(PermissionType.ManageRewards)]
         [SlashCommand("create", "Создать награду")]
-        public async Task CreateCommand(string name, string description,
-            IAttachment? image = null)
+        public async Task CreateCommand(string name, string description, IAttachment? image = null)
         {
             try
             {
@@ -214,6 +213,72 @@ namespace accs.DiscordBot.Interactions
             await DeferAsync();
 
             await RewardListCommand(page);
+        }
+
+
+        [HasPermission(PermissionType.ManageRewards)]
+        [SlashCommand("edit", "Редактировать награды")]
+        public async Task EditCommand(string? name = null, string? description = null, IAttachment? image = null)
+        {
+            try
+            {
+                Reward? reward = await _db.Rewards
+                    .FirstOrDefaultAsync(r => r.Name.ToLower() == name.ToLower());
+
+                if (reward == null)
+                {
+                    await RespondAsync("Награда с таким названием не найдена.", ephemeral: true);
+                    return;
+                }
+
+                bool changed = false;
+
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    reward.Description = description;
+                    changed = true;
+                }
+
+                if (image != null)
+                {
+                    if (!image.ContentType.StartsWith("image"))
+                    {
+                        await RespondAsync("Файл должен быть изображением.", ephemeral: true);
+                        return;
+                    }
+
+                    if (!Directory.Exists("rewards"))
+                    {
+                        Directory.CreateDirectory("rewards");
+                    }
+
+                    string filePath = Path.Combine("rewards", image.Filename);
+
+                    using (var http = new HttpClient())
+                    {
+                        var bytes = await http.GetByteArrayAsync(image.Url);
+                        await File.WriteAllBytesAsync(filePath, bytes);
+                    }
+
+                    reward.ImagePath = filePath;
+                    changed = true;
+                }
+
+                if (!changed)
+                {
+                    await RespondAsync("Вы не указали ни одного параметра для изменения.", ephemeral: true);
+                    return;
+                }
+
+                await _db.SaveChangesAsync();
+
+                await RespondAsync($"Награда '{reward.Name}' успешно обновлена.");
+            }
+            catch (Exception ex)
+            {
+                await _logService.WriteAsync($"Error in EditCommand: {ex.Message}", LoggingLevel.Error); 
+                await RespondAsync("Ошибка при редактировании награды.", ephemeral: true);
+            }
         }
     }
 }

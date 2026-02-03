@@ -43,7 +43,7 @@ namespace accs.DiscordBot.Interactions
 
 			if (before.VoiceChannel is SocketVoiceChannel)
             {
-				if (before.VoiceChannel.ConnectedUsers.Count == 0 && before.VoiceChannel.Id != _voiceChannelId && (before.VoiceChannel.Name.StartsWith("【🔊】") || before.VoiceChannel.Name.StartsWith("【🎧】")))
+				if (before.VoiceChannel.ConnectedUsers.Count == 0 && before.VoiceChannel.Id != _voiceChannelId && !(before.VoiceChannel.Name.StartsWith("【🔉】") || before.VoiceChannel.Name.StartsWith("【🎙️】")))
 				{
 					await before.VoiceChannel.DeleteAsync();
 				}

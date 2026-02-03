@@ -33,7 +33,8 @@ namespace accs.Models.Tickets
 					.AddField("Команды",
 					"***/ticket cancel*** — Отменить тикет, доступно автору." +
 					"\r\n***/ticket accept*** — Закрыть тикет как решённый, доступно администраторам." +
-					"\r\n***/ticket refuse*** — Закрыть тикет как не решённый, доступно администраторам.");
+					"\r\n***/ticket refuse*** — Закрыть тикет как не решённый, доступно администраторам." +
+					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.");
 				await channel.SendMessageAsync(embed: embed.Build());
 			}
 		}

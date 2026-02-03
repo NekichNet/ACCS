@@ -39,7 +39,8 @@ namespace accs.Models.Tickets
                     .AddField("Команды",
 					"***/ticket cancel*** — Отменить тикет, доступно автору." +
 					"\r\n***/ticket accept*** — Принять в клан, доступно ВП." +
-					"\r\n***/ticket refuse*** — Отказать в тикете, доступно ВП.")
+					"\r\n***/ticket refuse*** — Отказать в тикете, доступно ВП." +
+					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.")
                     .WithImageUrl("https://c.tenor.com/mCr1ijrLsyUAAAAd/tenor.gif");
                 await channel.SendMessageAsync(embed: embed.Build());
             }

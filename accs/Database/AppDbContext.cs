@@ -40,19 +40,19 @@ namespace accs.Database
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			/* Разрешения */
-			Permission confirmActivity = new Permission { Type = PermissionType.ConfirmActivity, Description = "Подтверждение своей и чужой активности." };
-			Permission vacationAccess = new Permission { Type = PermissionType.VacationAccess, Description = "Разрешение на выход в отпуск." };
-			Permission giveReprimandGratitude = new Permission { Type = PermissionType.GiveReprimandGratitude, Description = "Возможность выдавать выговора и благодарности нижестоящим бойцам." };
-			Permission forceVacation = new Permission { Type = PermissionType.ForceVacation, Description = "Возможность отправлять в отпуск нижестоящих бойцов." };
-			Permission changeRanks = new Permission { Type = PermissionType.ChangeRanks, Description = "Возможность повышать и понижать в звании нижестоящих бойцов." };
-			Permission changePosts = new Permission { Type = PermissionType.ChangePosts, Description = "Возможность менять должность нижестоящих бойцов." };
-			Permission assignRewards = new Permission { Type = PermissionType.AssignRewards, Description = "Возможность присваивать награды у нижестоящим бойцам." };
-			Permission manageStructure = new Permission { Type = PermissionType.ManageStructure, Description = "Возможность управлять нижестоящей структурой клана." };
-			Permission manageRewards = new Permission { Type = PermissionType.ManageRewards, Description = "Создание и редактирование существующих наград." };
-			Permission manageDocTypes = new Permission { Type = PermissionType.ManageDocTypes, Description = "Создание и редактирование шаблонов документов." };
-			Permission administrator = new Permission { Type = PermissionType.Administrator, Description = "Все права без ограничений." };
-			Permission moderateNicknames = new Permission { Type = PermissionType.ModerateNicknames, Description = "Право изменять чужие никнеймы." };
-			Permission steamIdView = new Permission { Type = PermissionType.SteamIdView, Description = "Право получать чужие Steam Id." };
+			Permission confirmActivity = new Permission { Type = PermissionType.ConfirmActivity, Name = "Подтверждение активности", Description = "Подтверждение своей и чужой активности." };
+			Permission vacationAccess = new Permission { Type = PermissionType.VacationAccess, Name = "Выход в отпуск", Description = "Разрешение на выход в отпуск." };
+			Permission giveReprimandGratitude = new Permission { Type = PermissionType.GiveReprimandGratitude, Name = "Выдача выговоров/благодарностей", Description = "Возможность выдавать выговора и благодарности нижестоящим бойцам." };
+			Permission forceVacation = new Permission { Type = PermissionType.ForceVacation, Name = "Отправка других в отпуск", Description = "Возможность отправлять в отпуск нижестоящих бойцов." };
+			Permission changeRanks = new Permission { Type = PermissionType.ChangeRanks, Name = "Присваивание званий", Description = "Возможность повышать и понижать в звании нижестоящих бойцов." };
+			Permission changePosts = new Permission { Type = PermissionType.ChangePosts, Name = "Назначение на должности", Description = "Возможность менять должность нижестоящих бойцов." };
+			Permission assignRewards = new Permission { Type = PermissionType.AssignRewards, Name = "Присваивание наград", Description = "Возможность присваивать награды у нижестоящим бойцам." };
+			Permission manageStructure = new Permission { Type = PermissionType.ManageStructure, Name = "Управление структурой", Description = "Возможность управлять нижестоящей структурой клана." };
+			Permission manageRewards = new Permission { Type = PermissionType.ManageRewards, Name = "Управление наградами", Description = "Создание и редактирование существующих наград." };
+			Permission manageDocTypes = new Permission { Type = PermissionType.ManageDocTypes, Name = "Управление шаблонами документов", Description = "Создание и редактирование шаблонов документов." };
+			Permission administrator = new Permission { Type = PermissionType.Administrator, Name = "Администратор", Description = "Все права без ограничений." };
+			Permission moderateNicknames = new Permission { Type = PermissionType.ModerateNicknames, Name = "Изменение чужих никнеймов", Description = "Право изменять чужие никнеймы." };
+			Permission steamIdView = new Permission { Type = PermissionType.SteamIdView, Name = "Просмотр Steam ID", Description = "Право получать чужие Steam Id." };
 
 			modelBuilder.Entity<Permission>().HasData(
 				confirmActivity, vacationAccess, giveReprimandGratitude, forceVacation, changeRanks,

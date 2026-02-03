@@ -1,4 +1,5 @@
 ﻿using accs.Database;
+using accs.DiscordBot.Interactions.Models;
 using accs.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Models.Enums;
@@ -54,10 +55,10 @@ namespace accs.DiscordBot.Interactions
 
 					if (units.Any(p => !p.Value))
                     {
-                        string custommId = $"voice-activity-{DateTime.Now:yyyyMMdd-HHmmss}";
+						string customId = $"confirm-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds}";
+						await SaveActivityJson(customId, Context.User.Id, units);
 
-                        component.WithButton("Подтвердить", customId: $"confirm-activity-{today}-{Context.User.Id}:{string.Join(',', units.Select(p => p.Key.DiscordId))}", ButtonStyle.Success);
-                        await SaveActivityJson($"voice-{custommId}-{Context.User.Id}", units);
+						component.WithButton("Подтвердить", customId: customId, ButtonStyle.Success);
                     }
 
 					EmbedBuilder embedBuilder = GetResultsEmbedBuilder(units, today)
@@ -112,13 +113,13 @@ namespace accs.DiscordBot.Interactions
 
                 if (units.Any())
                 {
-                    string custommId = $"screenshot-activity-{DateTime.Now:yyyyMMdd-HHmmss}";
-                    await SaveActivityJson(custommId, units);
+                    string customId = $"confirm-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds}";
+                    await SaveActivityJson(customId, Context.User.Id, units);
 
                     ComponentBuilder component = new ComponentBuilder();
 
 					if (units.Any(p => !p.Value))
-						component.WithButton("Подтвердить", customId: $"confirm-activity-{today}-{Context.User.Id}:{string.Join(',', units.Select(p => p.Key.DiscordId))}", ButtonStyle.Success);
+						component.WithButton("Подтвердить", customId: customId, ButtonStyle.Success);
 
 					EmbedBuilder embedBuilder = GetResultsEmbedBuilder(units, today)
 						.WithAuthor((await _db.Units.FindAsync(Context.User.Id)).Nickname, Context.User.GetDisplayAvatarUrl());
@@ -168,13 +169,12 @@ namespace accs.DiscordBot.Interactions
                     { unit, unit.Activities.Any(a => a.Date == today) } 
                 };
 
-                string custommId = $"user-activity-{DateTime.Now:yyyyMMdd-HHmmss}";
+				string customId = $"confirm-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds}";
+				await SaveActivityJson(customId, Context.User.Id, dict);
 
-                await SaveActivityJson(custommId, dict);
-
-                if (dict.Any(p => !p.Value))
+				if (dict.Any(p => !p.Value))
                 {
-                    builder.WithButton("Подтвердить", customId: $"confirm-activity-{today}-{Context.User.Id}:{string.Join(',', unit.DiscordId)}", ButtonStyle.Success);
+                    builder.WithButton("Подтвердить", customId: customId, ButtonStyle.Success);
 				}
 
 				EmbedBuilder embedBuilder = GetResultsEmbedBuilder(dict, today)
@@ -190,37 +190,30 @@ namespace accs.DiscordBot.Interactions
         }
 
         [HasPermission(PermissionType.ConfirmActivity)]
-        [ComponentInteraction("confirm-activity-*-*:*", ignoreGroupNames: true)]
-        public async Task ActivityMenuHandler(string dateString, string authorIdString, string idsString)
+        [ComponentInteraction("confirm-*", ignoreGroupNames: true)]
+        public async Task ConfirmActivityHandler(string unixString)
         {
             try
             {
-				if (!DateOnly.TryParse(dateString, out DateOnly date))
-                {
-                    await RespondAsync("Ошибка: неверный формат даты", ephemeral: true);
-					await _logService.WriteAsync("Неверный формат даты", LoggingLevel.Error);
-					return;
-                }
+                string customId = $"confirm-{unixString}";
+                DateOnly date = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(unixString)).DateTime);
 
-                if (!ulong.TryParse(authorIdString, out ulong authorId))
-                {
-					await RespondAsync("Ошибка: не удалось получить автора запроса на фиксацию", ephemeral: true);
-					await _logService.WriteAsync("Не удалось получить автора запроса на фиксацию", LoggingLevel.Error);
-					return;
+                UnconfirmedActivity? unconfirmedActivity;
+				using (FileStream fs = new FileStream(Path.Join("temp", $"{customId}.json"), FileMode.OpenOrCreate))
+				{
+					unconfirmedActivity = await System.Text.Json.JsonSerializer.DeserializeAsync<UnconfirmedActivity>(fs);
 				}
-
-                if (idsString.Length < 2)
-                {
-					await RespondAsync("Ошибка: не удалось получить список бойцов на фиксацию", ephemeral: true);
-					await _logService.WriteAsync("Не удалось получить список бойцов на фиксацию", LoggingLevel.Error);
-					return;
-				}
-
-                List<ulong> ids = idsString.Split(',').Select(i => ulong.Parse(i)).ToList();
 
 				Dictionary<Unit, bool> units = new Dictionary<Unit, bool>();
+                
+                if (unconfirmedActivity == null)
+                {
+                    await RespondAsync("Ошибка: не удалось прочитать файл запроса фиксации.", ephemeral: true);
+                    await _logService.WriteAsync("Ошибка: не удалось прочитать файл запроса фиксации.", LoggingLevel.Error);
+                    return;
+                }
 
-				foreach (ulong id in ids)
+				foreach (ulong id in unconfirmedActivity.UnitIds)
 				{
 					Unit? unit = await _db.Units.FindAsync(id);
 
@@ -260,7 +253,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in ActivityMenuHandler: {ex.StackTrace}", LoggingLevel.Error);
+                await _logService.WriteAsync($"Error in ConfirmActivityHandler: {ex.StackTrace}", LoggingLevel.Error);
                 await RespondAsync("Ошибка при подтверждении списка бойцов", ephemeral: true);
             }
         }
@@ -304,31 +297,25 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-
-        private async Task SaveActivityJson(string customId, Dictionary<Unit, bool> units)
+        private async Task SaveActivityJson(string customId, ulong authorId, Dictionary<Unit, bool> units)
         {
             try
             {
-                string dir = Path.Combine("temp", "activity");
+                string dir = "temp";
 
                 if (!Directory.Exists(dir))
-                {
                     Directory.CreateDirectory(dir);
-                }
 
-                string filePath = Path.Combine(dir, $"{customId}.json");
+                string filePath = Path.Join(dir, $"{customId}.json");
 
-                var jsonObject = new
+                UnconfirmedActivity activity = new UnconfirmedActivity
                 {
-                    units = units.Select(u => new
-                    {
-                        discordId = u.Key.DiscordId
-                    }).ToList(),
-                    customId = customId.Split('-')[2]
+                    UnitIds = units.Keys.Select(u => u.DiscordId).ToList(),
+                    AuthorId = authorId,
                 };
 
                 string json = System.Text.Json.JsonSerializer.Serialize(
-                    jsonObject,
+                    activity,
                     new System.Text.Json.JsonSerializerOptions
                     {
                         WriteIndented = true

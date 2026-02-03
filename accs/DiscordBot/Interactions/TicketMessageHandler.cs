@@ -60,6 +60,7 @@ namespace accs.DiscordBot.Interactions
 				.AddField("*Пожаловаться*", "Подать жалобу на находящегося на этом сервере пользователя(ей).")
 				.AddField("*Отставка*", "Уйти в отставку или выйти из неё.")
 				.AddField("*Спонсировать*", "При намерении финансово поддержать наш клан.")
+				.AddField("*Получить VIP*", "Подать заявку на получение VIP статуса на игровых серверах, которые мы посещаем.")
 
 				.WithColor(Color.DarkGreen);
 
@@ -70,7 +71,8 @@ namespace accs.DiscordBot.Interactions
 				.WithButton("Техподдержка", "tech-button", ButtonStyle.Secondary, row: 1)
 				.WithButton("Пожаловаться", "report-button", ButtonStyle.Danger, row: 2)
 				.WithButton("Отставка", "retirement-button", ButtonStyle.Danger, row: 2)
-				.WithButton("Спонсировать", "donation-button", ButtonStyle.Primary, row: 3);
+				.WithButton("Спонсировать", "donation-button", ButtonStyle.Primary, row: 3)
+				.WithButton("Получить VIP", "vip-button", ButtonStyle.Primary, row: 3);
 
 			await _channel.SendMessageAsync(embed: embed.Build(), components: component.Build());
 			await RespondAsync("Сообщение для тикетов обновлено", ephemeral: true);
@@ -196,6 +198,23 @@ namespace accs.DiscordBot.Interactions
 			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
 			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 			await RespondAsync("Спасибо, что решили финансово поддержать наш клан. Свяжитесь с руководством в канале тикета.", ephemeral: true);
+		}
+
+		[ComponentInteraction("vip-button", ignoreGroupNames: true)]
+		public async Task VipButtonHandler()
+		{
+			if (_db.VipTickets.Any(t => t.AuthorDiscordId == Context.User.Id && t.Status == TicketStatus.Opened))
+			{
+				await RespondAsync("У Вас уже есть открытый тикет на получение VIP", ephemeral: true);
+				return;
+			}
+
+			VipTicket ticket = new VipTicket(Context.User.Id);
+			await _db.VipTickets.AddAsync(ticket);
+			await _db.SaveChangesAsync();
+			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
+			await RespondAsync("Заявка на получение VIP статуса создана. Перейдите в чат тикета.", ephemeral: true);
 		}
 	}
 }

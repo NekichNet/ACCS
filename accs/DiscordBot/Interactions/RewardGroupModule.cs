@@ -180,28 +180,19 @@ namespace accs.DiscordBot.Interactions
                 .ToList();
 
             EmbedBuilder embed = new EmbedBuilder()
-                .WithTitle($"Список наград — страница {page}/{totalPages}")
-                .WithColor(Color.Gold);
+                .WithTitle($"Награды")
+                .WithColor(Color.Gold)
+                .WithFooter($"Страница {page}/{totalPages}");
 
             foreach (var reward in pageItems)
-            {
-                embed.AddField(
-                    reward.Name,
-                    $"{reward.Description}\n[Картинка]({reward.ImagePath})"
-                );
-            }
+                embed.AddField(reward.Name, $"ID: {reward.Id}\r\n" + reward.Description);
 
             ComponentBuilder components = new ComponentBuilder();
 
             if (page > 1)
-            {
-                components.WithButton("⬅ Назад", $"{page - 1}", ButtonStyle.Primary);
-            }
-
+                components.WithButton("<", $"{page - 1}", ButtonStyle.Primary);
             if (page < totalPages)
-            {
-                components.WithButton("Вперёд ➡", $"{page + 1}", ButtonStyle.Primary);
-            }
+                components.WithButton(">", $"{page + 1}", ButtonStyle.Primary);
 
             await RespondAsync(embed: embed.Build(), components: components.Build());
         }
@@ -211,7 +202,6 @@ namespace accs.DiscordBot.Interactions
         public async Task RewardListHandler(int page)
         {
             await DeferAsync();
-
             await RewardListCommand(page);
         }
 

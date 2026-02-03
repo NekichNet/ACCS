@@ -236,13 +236,13 @@ namespace accs.DiscordBot.Interactions
 
                 await ((IComponentInteraction)Context.Interaction).Message.DeleteAsync();
 
-                Unit? author = await _db.Units.FindAsync(authorId);
+                Unit? author = await _db.Units.FindAsync(unconfirmedActivity.AuthorId);
                 Unit? confirmator = await _db.Units.FindAsync(Context.User.Id);
 
 				EmbedBuilder embed = GetResultsEmbedBuilder(units, date);
 
                 if (author != null)
-                    embed.WithAuthor(name: author.Nickname, iconUrl: _guildProvider.GetGuild().GetUser(authorId).GetDisplayAvatarUrl());
+                    embed.WithAuthor(name: author.Nickname, iconUrl: _guildProvider.GetGuild().GetUser(unconfirmedActivity.AuthorId).GetDisplayAvatarUrl());
 
                 if (confirmator != null)
                     embed.WithFooter(new EmbedFooterBuilder().WithText($"Подтверждено {confirmator.Rank.Name} {confirmator.Nickname}"));

@@ -62,7 +62,7 @@ namespace accs.DiscordBot.Interactions
                 if (name == null)
                     name = user.DisplayName;
 
-                var unit = new Models.Unit 
+                var unit = new Unit 
                 {
                     DiscordId = user.Id,
                     Nickname = name, 

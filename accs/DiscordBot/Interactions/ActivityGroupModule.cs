@@ -55,7 +55,7 @@ namespace accs.DiscordBot.Interactions
 
 					if (units.Any(p => !p.Value))
                     {
-						string customId = $"confirm-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds}";
+						string customId = $"confirm-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
 						await SaveActivityJson(customId, Context.User.Id, units);
 
 						component.WithButton("Подтвердить", customId: customId, ButtonStyle.Success);
@@ -113,7 +113,7 @@ namespace accs.DiscordBot.Interactions
 
                 if (units.Any())
                 {
-                    string customId = $"confirm-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds}";
+                    string customId = $"confirm-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
                     await SaveActivityJson(customId, Context.User.Id, units);
 
                     ComponentBuilder component = new ComponentBuilder();
@@ -169,7 +169,7 @@ namespace accs.DiscordBot.Interactions
                     { unit, unit.Activities.Any(a => a.Date == today) } 
                 };
 
-				string customId = $"confirm-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds}";
+				string customId = $"confirm-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
 				await SaveActivityJson(customId, Context.User.Id, dict);
 
 				if (dict.Any(p => !p.Value))
@@ -199,10 +199,12 @@ namespace accs.DiscordBot.Interactions
                 DateOnly date = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(unixString)).DateTime);
 
                 UnconfirmedActivity? unconfirmedActivity;
-				using (FileStream fs = new FileStream(Path.Join("temp", $"{customId}.json"), FileMode.OpenOrCreate))
+                string filePath = Path.Join("temp", $"{customId}.json");
+				using (FileStream fs = new FileStream(filePath, FileMode.OpenOrCreate))
 				{
 					unconfirmedActivity = await System.Text.Json.JsonSerializer.DeserializeAsync<UnconfirmedActivity>(fs);
 				}
+                File.Delete(filePath);
 
 				Dictionary<Unit, bool> units = new Dictionary<Unit, bool>();
                 

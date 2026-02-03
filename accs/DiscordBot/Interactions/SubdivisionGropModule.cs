@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
-    [IsUnit()]
-    [Group("subdivision", "Команды для работы с подразделениями")]
+    //[IsUnit()]
+    //[Group("subdivision", "Команды для работы с подразделениями")]
     public class SubdivisionGropModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
@@ -27,8 +27,8 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [HasPermission(PermissionType.ManageStructure)]
-        [SlashCommand("create", "Создать подразделение")]
+        //[HasPermission(PermissionType.ManageStructure)]
+        //[SlashCommand("create", "Создать подразделение")]
         public async Task CreateCommand(string name, string? description = null)
         {
             try
@@ -91,8 +91,8 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [HasPermission(PermissionType.ManageStructure)]
-        [ComponentInteraction("subdivision-create-perms:*:*")]
+        //[HasPermission(PermissionType.ManageStructure)]
+        //[ComponentInteraction("subdivision-create-perms:*:*")]
         public async Task PermissionHandler(string name, string? description, string[] selectedPermissions)
         {
             await DeferAsync(ephemeral: true);
@@ -119,8 +119,8 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [HasPermission(PermissionType.ManageStructure)]
-        [ComponentInteraction("subdivision-create-parent:*:*")]
+        //[HasPermission(PermissionType.ManageStructure)]
+        //[ComponentInteraction("subdivision-create-parent:*:*")]
         public async Task SubdivisionCreateParentHandler(string name, string? description, string[] selectedParent)
         {
             try
@@ -176,8 +176,8 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [HasPermission(PermissionType.Administrator)]
-        [SlashCommand("delete", "Удалить подразделение")]
+        //[HasPermission(PermissionType.Administrator)]
+        //[SlashCommand("delete", "Удалить подразделение")]
         public async Task DeleteCommand(int? id = null)
         {
             try
@@ -245,8 +245,8 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [HasPermission(PermissionType.Administrator)]
-        [ComponentInteraction("subdivision-delete-select")]
+        //[HasPermission(PermissionType.Administrator)]
+        //[ComponentInteraction("subdivision-delete-select")]
         public async Task SubdivisionDeleteSelectHandler(string selectedId)
         {
             try
@@ -292,8 +292,8 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [HasPermission(PermissionType.ManageStructure)]
-        [SlashCommand("edit", "Редактировать подразделение")]
+        //[HasPermission(PermissionType.ManageStructure)]
+        //[SlashCommand("edit", "Редактировать подразделение")]
         public async Task EditCommand(int id)
         {
             try

@@ -175,8 +175,6 @@ namespace accs.DiscordBot.Interactions
                 var unit = _db.Units.Find(Context.User.Id);
                 if (unit != null)
                 {
-
-
                     Post post = new Post() { Name = name, Description = description == null ? string.Empty : description };
 
                     await _db.Posts.AddAsync(post);
@@ -189,8 +187,6 @@ namespace accs.DiscordBot.Interactions
                     }
                     var selectMenuSpawner = new ComponentBuilder().WithSelectMenu(permissionMenuBuilder);
                     await RespondAsync("Выберите разрешения доступные этой должности.", components: selectMenuSpawner.Build(), ephemeral: true);
-
-
                 }
                 else
                 {
@@ -206,9 +202,10 @@ namespace accs.DiscordBot.Interactions
                 var post = await _db.Posts.FindAsync(Int32.Parse(postId));
                 if (post != null)
                 {
-                    foreach (var permissionId in selectedPermissions)
+                    foreach (var permissionIdString in selectedPermissions)
                     {
-                        var permission = _db.Permissions.FirstOrDefault(p => p.Type == (PermissionType)Int32.Parse(permissionId));
+                        int permissionId = int.Parse(permissionIdString);
+                        var permission = await _db.Permissions.FindAsync((PermissionType)permissionId);
                         if (permission != null)
                         {
                             post.Permissions.Add(permission);
@@ -230,28 +227,80 @@ namespace accs.DiscordBot.Interactions
             /// </summary>
             /// <returns></returns>
             [AutocompleteCommand("posts_autocomplete", "edit-name")]
-            public async Task AutocompleteForPostEdit() // Praise the code
+            public async Task AutocompleteForPostNameEdit() // Praise the code
             {
                 string userInput = (Context.Interaction as SocketAutocompleteInteraction).Data.Current.Value.ToString();
                 List<AutocompleteResult> searchRes = new List<AutocompleteResult>();
                 foreach (var posts in _db.Posts)
                 {
-                    searchRes.Add(new AutocompleteResult() { Name = posts.Name, Value = posts.Id });
+                    searchRes.Add(new AutocompleteResult() { Name = posts.GetFullName(), Value = posts.Id });
                 }
                 IEnumerable<AutocompleteResult> results = searchRes;
                 // max - 25 suggestions at a time
                 await (Context.Interaction as SocketAutocompleteInteraction).RespondAsync(results.Take(25));
-
             }
 
+			/// <summary>
+			/// Autocomplete for post searching!
+			/// </summary>
+			/// <returns></returns>
+			[AutocompleteCommand("posts_autocomplete", "edit-desctription")]
+			public async Task AutocompleteForPostDescriptionEdit() // Praise the code
+			{
+				string userInput = (Context.Interaction as SocketAutocompleteInteraction).Data.Current.Value.ToString();
+				List<AutocompleteResult> searchRes = new List<AutocompleteResult>();
+				foreach (var posts in _db.Posts)
+				{
+					searchRes.Add(new AutocompleteResult() { Name = posts.GetFullName(), Value = posts.Id });
+				}
+				IEnumerable<AutocompleteResult> results = searchRes;
+				// max - 25 suggestions at a time
+				await (Context.Interaction as SocketAutocompleteInteraction).RespondAsync(results.Take(25));
+			}
 
-            /// <summary>
-            /// Edit name of existing post!
-            /// </summary>
-            /// <param name="Id"> Id of the post in database </param>
-            /// <param name="newName"> New name to be set! </param>
-            /// <returns></returns>
-            [HasPermission(PermissionType.ManageStructure)]
+			/// <summary>
+			/// Autocomplete for post searching!
+			/// </summary>
+			/// <returns></returns>
+			[AutocompleteCommand("posts_autocomplete", "edit-permissions")]
+			public async Task AutocompleteForPostPermissionEdit() // Praise the code
+			{
+				string userInput = (Context.Interaction as SocketAutocompleteInteraction).Data.Current.Value.ToString();
+				List<AutocompleteResult> searchRes = new List<AutocompleteResult>();
+				foreach (var posts in _db.Posts)
+				{
+					searchRes.Add(new AutocompleteResult() { Name = posts.GetFullName(), Value = posts.Id });
+				}
+				IEnumerable<AutocompleteResult> results = searchRes;
+				// max - 25 suggestions at a time
+				await (Context.Interaction as SocketAutocompleteInteraction).RespondAsync(results.Take(25));
+			}
+
+			/// <summary>
+			/// Autocomplete for post searching!
+			/// </summary>
+			/// <returns></returns>
+			[AutocompleteCommand("posts_autocomplete", "delete")]
+			public async Task AutocompleteForPostDelete() // Praise the code
+			{
+				string userInput = (Context.Interaction as SocketAutocompleteInteraction).Data.Current.Value.ToString();
+				List<AutocompleteResult> searchRes = new List<AutocompleteResult>();
+				foreach (var posts in _db.Posts)
+				{
+					searchRes.Add(new AutocompleteResult() { Name = posts.GetFullName(), Value = posts.Id });
+				}
+				IEnumerable<AutocompleteResult> results = searchRes;
+				// max - 25 suggestions at a time
+				await (Context.Interaction as SocketAutocompleteInteraction).RespondAsync(results.Take(25));
+			}
+
+			/// <summary>
+			/// Edit name of existing post!
+			/// </summary>
+			/// <param name="Id"> Id of the post in database </param>
+			/// <param name="newName"> New name to be set! </param>
+			/// <returns></returns>
+			[HasPermission(PermissionType.ManageStructure)]
             [SlashCommand("edit-name", "Изменить название для уже существующей должности.")]
             public async Task PostEditNameCommand([Summary("posts_autocomplete"), Autocomplete] int Id, string newName) // Praise the code
             {
@@ -332,7 +381,7 @@ namespace accs.DiscordBot.Interactions
 
 
             [HasPermission(PermissionType.ManageStructure)]
-            [SlashCommand("delete", "Уничтожает должность по указанному Id")]
+            [SlashCommand("delete", "Удаляет должность по указанному Id")]
             public async Task PostDeleteCommand([Summary("posts_autocomplete"), Autocomplete] int Id) // Praise the code
             {
                 var post = _db.Posts.Find(Id);

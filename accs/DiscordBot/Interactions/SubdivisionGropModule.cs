@@ -172,5 +172,121 @@ namespace accs.DiscordBot.Interactions
                 await FollowupAsync("Ошибка при создании подразделения.", ephemeral: true);
             }
         }
+
+
+        [HasPermission(PermissionType.ManageStructure)]
+        [SlashCommand("delete", "Удалить подразделение")]
+        public async Task DeleteCommand(int? id = null)
+        {
+            try
+            {
+                if (id.HasValue)
+                {
+                    var subdivision = await _db.Subdivisions
+                        .Include(s => s.Subordinates)
+                        .Include(s => s.Permissions)
+                        .FirstOrDefaultAsync(s => s.Id == id.Value);
+
+                    if (subdivision == null)
+                    {
+                        await RespondAsync("Подразделение не найдено.", ephemeral: true);
+                        return;
+                    }
+
+                    if (subdivision.Subordinates.Any())
+                    {
+                        await RespondAsync("Нельзя удалить подразделение, у которого есть подчинённые.", ephemeral: true);
+                        return;
+                    }
+
+                    foreach (var perm in subdivision.Permissions)
+                        perm.Subdivisions.Remove(subdivision);
+
+                    _db.Subdivisions.Remove(subdivision);
+                    await _db.SaveChangesAsync();
+
+                    await RespondAsync($"Подразделение **{subdivision.Name}** удалено.");
+                    return;
+                }
+
+                // Если ID нету — показываем менюху
+                var subdivisions = await _db.Subdivisions.ToListAsync();
+
+                if (!subdivisions.Any())
+                {
+                    await RespondAsync("Подразделений пока нет.", ephemeral: true);
+                    return;
+                }
+
+                var menu = new SelectMenuBuilder()
+                    .WithCustomId("subdivision-delete-select")
+                    .WithPlaceholder("Выберите подразделение для удаления")
+                    .WithMinValues(1)
+                    .WithMaxValues(1);
+
+                foreach (var sub in subdivisions)
+                    menu.AddOption(sub.Name, sub.Id.ToString());
+
+                ComponentBuilder builder = new ComponentBuilder()
+                    .WithSelectMenu(menu);
+
+                await RespondAsync(
+                    "Выберите подразделение для удаления:",
+                    components: builder.Build(), ephemeral: true
+                );
+            }
+            catch (Exception ex)
+            {
+                await _logService.WriteAsync($"Ошибка в DeleteCommand: {ex.Message}", LoggingLevel.Error);
+                await RespondAsync("Ошибка при удалении подразделения.", ephemeral: true);
+            }
+        }
+
+
+        [HasPermission(PermissionType.ManageStructure)]
+        [ComponentInteraction("subdivision-delete-select")]
+        public async Task SubdivisionDeleteSelectHandler(string selectedId)
+        {
+            try
+            {
+                await DeferAsync(ephemeral: true);
+
+                if (!int.TryParse(selectedId, out int id))
+                {
+                    await FollowupAsync("Ошибка: неверный ID подразделения.", ephemeral: true);
+                    return;
+                }
+
+                var subdivision = await _db.Subdivisions
+                    .Include(s => s.Subordinates)
+                    .Include(s => s.Permissions)
+                    .FirstOrDefaultAsync(s => s.Id == id);
+
+                if (subdivision == null)
+                {
+                    await FollowupAsync("Подразделение не найдено.", ephemeral: true);
+                    return;
+                }
+
+                if (subdivision.Subordinates.Any())
+                {
+                    await FollowupAsync("Нельзя удалить подразделение, у которого есть подчинённые.", ephemeral: true);
+                    return;
+                }
+
+                foreach (var perm in subdivision.Permissions)
+                    perm.Subdivisions.Remove(subdivision);
+
+                _db.Subdivisions.Remove(subdivision);
+                await _db.SaveChangesAsync();
+
+                await FollowupAsync($"Подразделение '{subdivision.Name}' успешно удалено.", ephemeral: true);
+            }
+            catch (Exception ex)
+            {
+                await _logService.WriteAsync($"Ошибка в SubdivisionDeleteSelectHandler: {ex.Message}", LoggingLevel.Error);
+                await FollowupAsync("Ошибка при удалении подразделения.", ephemeral: true);
+            }
+        }
     }
 }

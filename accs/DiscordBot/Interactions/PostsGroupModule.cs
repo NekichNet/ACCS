@@ -7,7 +7,6 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using System.Xml.Linq;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -21,20 +20,18 @@ namespace accs.DiscordBot.Interactions
             private readonly IGuildProviderService _guildProvider;
             private readonly ILogService _logService;
 
-			public int PostsPerPage { get; set; } = 4; // Количество должностей на одну страницу
-
 			public PostsGroupModule(AppDbContext db, IGuildProviderService guildProvider, ILogService logService)
             {
                 _db = db;
                 _guildProvider = guildProvider;
-                _logService = logService; 
+                _logService = logService;
             }
 
             public override Task BeforeExecuteAsync(ICommandInfo command)
             {
                 _db.Posts.LoadAsync();
                 _db.Units.LoadAsync();
-                return base.BeforeExecuteAsync(command);
+				return base.BeforeExecuteAsync(command);
             }
 
             [HasPermission(PermissionType.ChangePosts)]
@@ -233,7 +230,7 @@ namespace accs.DiscordBot.Interactions
                 await DeferAsync(ephemeral: true);
 
 				int postsAmount = await _db.Posts.CountAsync();
-				int pagesAmount = postsAmount / PostsPerPage + (postsAmount % PostsPerPage > 0 ? 1 : 0);
+				int pagesAmount = postsAmount / 4 + (postsAmount % 4 > 0 ? 1 : 0);
 
 				ComponentBuilder component = new ComponentBuilder();
 
@@ -280,7 +277,7 @@ namespace accs.DiscordBot.Interactions
 
 			public async Task<EmbedBuilder> CreatePostsListPageAsync(int page) // пагинация начинается с единицы
 			{
-				List<Post> posts = await _db.Posts.Skip((page - 1) * PostsPerPage).Take(PostsPerPage).ToListAsync();
+				List<Post> posts = await _db.Posts.Skip((page - 1) * 4).Take(4).ToListAsync();
 
 				EmbedBuilder embed = new EmbedBuilder()
 					.WithTitle("Должности")
@@ -354,7 +351,7 @@ namespace accs.DiscordBot.Interactions
             {
                 int newPage = int.Parse(prevPageString) + int.Parse(pageActionString);
                 int postsAmount = await _db.Posts.CountAsync();
-                int pagesAmount = postsAmount / PostsPerPage + (postsAmount % PostsPerPage > 0 ? 1 : 0);
+                int pagesAmount = postsAmount / 4 + (postsAmount % 4 > 0 ? 1 : 0);
 
                 ComponentBuilder component = new ComponentBuilder();
 
@@ -409,7 +406,7 @@ namespace accs.DiscordBot.Interactions
             [ComponentInteraction("post-edit-*", ignoreGroupNames: true)]
             public async Task PostPermissionChoice(string postId, string[] selectedPermissions) // Praise the code
             {
-                var post = await _db.Posts.FindAsync(Int32.Parse(postId));
+                var post = await _db.Posts.FindAsync(int.Parse(postId));
                 if (post != null)
                 {
                     foreach (var permissionIdString in selectedPermissions)

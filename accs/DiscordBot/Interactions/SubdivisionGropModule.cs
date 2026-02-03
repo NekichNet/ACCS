@@ -91,6 +91,7 @@ namespace accs.DiscordBot.Interactions
         }
 
 
+        [HasPermission(PermissionType.ManageStructure)]
         [ComponentInteraction("subdivision-create-perms:*:*")]
         public async Task PermissionHandler(string name, string? description, string[] selectedPermissions)
         {
@@ -118,6 +119,7 @@ namespace accs.DiscordBot.Interactions
         }
 
 
+        [HasPermission(PermissionType.ManageStructure)]
         [ComponentInteraction("subdivision-create-parent:*:*")]
         public async Task SubdivisionCreateParentHandler(string name, string? description, string[] selectedParent)
         {
@@ -174,7 +176,7 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [HasPermission(PermissionType.ManageStructure)]
+        [HasPermission(PermissionType.Administrator)]
         [SlashCommand("delete", "Удалить подразделение")]
         public async Task DeleteCommand(int? id = null)
         {
@@ -243,7 +245,7 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [HasPermission(PermissionType.ManageStructure)]
+        [HasPermission(PermissionType.Administrator)]
         [ComponentInteraction("subdivision-delete-select")]
         public async Task SubdivisionDeleteSelectHandler(string selectedId)
         {
@@ -286,6 +288,22 @@ namespace accs.DiscordBot.Interactions
             {
                 await _logService.WriteAsync($"Ошибка в SubdivisionDeleteSelectHandler: {ex.Message}", LoggingLevel.Error);
                 await FollowupAsync("Ошибка при удалении подразделения.", ephemeral: true);
+            }
+        }
+
+
+        [HasPermission(PermissionType.ManageStructure)]
+        [SlashCommand("edit", "Редактировать подразделение")]
+        public async Task EditCommand(int id)
+        {
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+                await _logService.WriteAsync($"Ошибка в EditCommand: {ex.Message}", LoggingLevel.Error);
+                await RespondAsync("Ошибка при реадктировании подразделения.", ephemeral: true);
             }
         }
     }

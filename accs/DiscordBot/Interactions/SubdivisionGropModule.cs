@@ -16,9 +16,9 @@ namespace accs.DiscordBot.Interactions
         private readonly AppDbContext _db;
         private readonly ILogService _logService;
 
-        private static readonly Dictionary<ulong, (string name, string? description, List<string> perms)> _tempData
-    = new();
+        private static readonly Dictionary<ulong, (string name, string? description, List<string> perms)> _tempData = new();\
 
+        private static readonly Dictionary<ulong, (int id, List<string> perms)> _tempEditData = new();
 
         public SubdivisionGropModule(AppDbContext db, ILogService logService)
         {
@@ -121,7 +121,7 @@ namespace accs.DiscordBot.Interactions
 
         //[HasPermission(PermissionType.ManageStructure)]
         //[ComponentInteraction("subdivision-create-parent:*:*")]
-        public async Task SubdivisionCreateParentHandler(string name, string? description, string[] selectedParent)
+        public async Task CreateParentHandler(string name, string? description, string[] selectedParent)
         {
             try
             {
@@ -247,7 +247,7 @@ namespace accs.DiscordBot.Interactions
 
         //[HasPermission(PermissionType.Administrator)]
         //[ComponentInteraction("subdivision-delete-select")]
-        public async Task SubdivisionDeleteSelectHandler(string selectedId)
+        public async Task DeleteSelectHandler(string selectedId)
         {
             try
             {
@@ -294,16 +294,147 @@ namespace accs.DiscordBot.Interactions
 
         //[HasPermission(PermissionType.ManageStructure)]
         //[SlashCommand("edit", "Редактировать подразделение")]
-        public async Task EditCommand(int id)
+        public async Task EditCommand(int id, string? name = null, string? description = null)
         {
             try
             {
+                var subdivision = await _db.Subdivisions
+                    .Include(s => s.Permissions)
+                    .FirstOrDefaultAsync(s => s.Id == id);
+
+                if (subdivision == null)
+                {
+                    await RespondAsync("Подразделение не найдено.", ephemeral: true);
+                    return;
+                }
+
+                if (!string.IsNullOrWhiteSpace(name))
+                    subdivision.Name = name;
+
+                if (!string.IsNullOrWhiteSpace(description))
+                    subdivision.Description = description;
+
+                await _db.SaveChangesAsync();
+
+                var unit = await _db.Units
+                    .Include(u => u.GetPermissions())
+                    .FirstOrDefaultAsync(u => u.DiscordId == Context.User.Id);
+
+                if (unit == null)
+                {
+                    await RespondAsync("Вы не зарегистрированы в системе.", ephemeral: true);
+                    return;
+                }
+
+                var permissions = unit.GetPermissions();
+
+                var permMenu = new SelectMenuBuilder()
+                    .WithCustomId($"subdivision-edit-perms:{id}")
+                    .WithPlaceholder("Выберите разрешения (опционально)")
+                    .WithMinValues(0)
+                    .WithMaxValues(permissions.Count);
+
+                foreach (var perm in permissions)
+                {
+                    bool isCurrent = subdivision.Permissions.Any(p => p.Type == perm.Type);
+
+                    permMenu.AddOption(
+                        perm.Type.ToString(),
+                        perm.Type.ToString(),
+                        isCurrent ? "Текущее" : null
+                    );
+                }
+
+                var subdivisions = await _db.Subdivisions.ToListAsync();
+
+                var parentMenu = new SelectMenuBuilder()
+                    .WithCustomId($"subdivision-edit-parent:{id}")
+                    .WithPlaceholder("Выберите родительское подразделение (опционально)")
+                    .WithMinValues(0)
+                    .WithMaxValues(1);
+
+                foreach (var sub in subdivisions.Where(s => s.Id != id))
+                    parentMenu.AddOption(sub.Name, sub.Id.ToString());
+
+                ComponentBuilder builder = new ComponentBuilder()
+                    .WithSelectMenu(permMenu)
+                    .WithSelectMenu(parentMenu);
+
+                await RespondAsync(
+                    $"Редактирование подразделения '{subdivision.Name}'.\n" +
+                    "Вы можете изменить разрешения и родительское подразделение (оба параметра опциональны).",
+                    components: builder.Build(),
+                    ephemeral: true
+                );
 
             }
             catch (Exception ex)
             {
                 await _logService.WriteAsync($"Ошибка в EditCommand: {ex.Message}", LoggingLevel.Error);
                 await RespondAsync("Ошибка при реадктировании подразделения.", ephemeral: true);
+            }
+        }
+
+
+        [HasPermission(PermissionType.ManageStructure)]
+        [ComponentInteraction("subdivision-edit-perms:*")]
+        public async Task EditPermissionsHandler(int id, string[] selectedPermissions)
+        {
+            await DeferAsync(ephemeral: true); 
+            _tempEditData[Context.User.Id] = (id, selectedPermissions.ToList());
+
+            await RespondAsync("Разрешения сохранены. Теперь при необходимости выберите родительское подразделение.", ephemeral: true);
+        }
+
+
+        [HasPermission(PermissionType.ManageStructure)]
+        [ComponentInteraction("subdivision-edit-parent:*")]
+        public async Task EditParentHandler(int id, string[] selectedParent)
+        {
+            try
+            {
+                await DeferAsync(ephemeral: true);
+
+                var subdivision = await _db.Subdivisions
+                    .Include(s => s.Permissions)
+                    .FirstOrDefaultAsync(s => s.Id == id);
+
+                if (subdivision == null)
+                {
+                    await FollowupAsync("Подразделение не найдено.", ephemeral: true);
+                    return;
+                }
+
+                subdivision.HeadId = selectedParent.Length > 0
+                    ? int.Parse(selectedParent[0])
+                    : null;
+
+                if (_tempEditData.TryGetValue(Context.User.Id, out var data) && data.id == id)
+                {
+                    subdivision.Permissions.Clear();
+
+                    foreach (var perm in data.perms)
+                    {
+                        var permissionType = Enum.Parse<PermissionType>(perm);
+
+                        var permission = await _db.Permissions
+                            .Include(p => p.Subdivisions)
+                            .FirstOrDefaultAsync(p => p.Type == permissionType);
+
+                        if (permission != null)
+                            permission.Subdivisions.Add(subdivision);
+                    }
+
+                    _tempEditData.Remove(Context.User.Id);
+                }
+                await _db.SaveChangesAsync();
+
+                await FollowupAsync($"Подразделение '{subdivision.Name}' успешно обновлено.", ephemeral: true);
+            }
+            catch (Exception ex)
+            {
+                await _logService.WriteAsync($"Ошибка в SubdivisionEditParentHandler: {ex.Message}", LoggingLevel.Error); 
+                await RespondAsync("Ошибка при редактировании подразделения.", ephemeral: true);
             }
         }
     }

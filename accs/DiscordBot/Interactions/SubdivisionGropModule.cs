@@ -376,8 +376,8 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [HasPermission(PermissionType.ManageStructure)]
-        [ComponentInteraction("subdivision-edit-perms:*")]
+        //[HasPermission(PermissionType.ManageStructure)]
+        //[ComponentInteraction("subdivision-edit-perms:*")]
         public async Task EditPermissionsHandler(int id, string[] selectedPermissions)
         {
             await DeferAsync(ephemeral: true); 
@@ -387,8 +387,8 @@ namespace accs.DiscordBot.Interactions
         }
 
 
-        [HasPermission(PermissionType.ManageStructure)]
-        [ComponentInteraction("subdivision-edit-parent:*")]
+        //[HasPermission(PermissionType.ManageStructure)]
+        //[ComponentInteraction("subdivision-edit-parent:*")]
         public async Task EditParentHandler(int id, string[] selectedParent)
         {
             try
@@ -433,7 +433,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Ошибка в SubdivisionEditParentHandler: {ex.Message}", LoggingLevel.Error); 
+                await _logService.WriteAsync($"Ошибка в EditParentHandler: {ex.Message}", LoggingLevel.Error); 
                 await RespondAsync("Ошибка при редактировании подразделения.", ephemeral: true);
             }
         }

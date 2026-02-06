@@ -46,7 +46,7 @@ namespace accs.Models.Tickets
             }
         }
 
-        public override async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db)
+        public override async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db, ulong closedUserId)
         {
             SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 
@@ -76,7 +76,7 @@ namespace accs.Models.Tickets
         }
 
 
-        public async Task AcceptanceHandler(int selectedPostId, IGuildProviderService guildProvider, AppDbContext db, ILogService logService)
+        public async Task AcceptanceHandler(int selectedPostId, IGuildProviderService guildProvider, AppDbContext db, ILogService logService, ulong closedUserId)
         {
             var channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 			// назначаем должность стрелка
@@ -129,7 +129,9 @@ namespace accs.Models.Tickets
 				if (author.Roles.Any(r => r.Id == friendRoleId))
                     await author.RemoveRoleAsync(friendRoleId);
 			await db.Units.AddAsync(unit);
-            Status = TicketStatus.Accepted;
+
+            ClosedUserId = closedUserId;
+			Status = TicketStatus.Accepted;
 
 			await db.SaveChangesAsync();
             await DeleteChannelAsync(guildProvider);

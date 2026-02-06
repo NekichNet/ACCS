@@ -45,7 +45,7 @@ namespace accs
 			builder.Services.AddDbContext<AppDbContext>(options =>
 				options.UseNpgsql(connectionString));
 
-			builder.Services.AddSingleton<IOCRService, OCRService>();
+			builder.Services.AddScoped<IOCRService, OCRService>();
 			builder.Services.AddScoped<ILogService, LogService>();
 			builder.Services.AddTransient<IUsersCleanUpService, UsersCleanupService>();
 

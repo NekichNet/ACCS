@@ -43,7 +43,7 @@ namespace accs.Models.Tickets
 			}
 		}
 
-		public override async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db)
+		public override async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db, ulong closedUserId)
         {
             var user = guildProvider.GetGuild().GetUser(AuthorDiscordId);
             if (user != null)
@@ -60,6 +60,7 @@ namespace accs.Models.Tickets
                 }
             }
 
+			ClosedUserId = closedUserId;
             Status = TicketStatus.Accepted;
             await DeleteChannelAsync(guildProvider);
         }

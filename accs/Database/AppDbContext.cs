@@ -27,6 +27,7 @@ namespace accs.Database
 		public DbSet<ReportTicket> ReportTickets { get; set; }
 		public DbSet<RetirementTicket> RetirementTickets { get; set; }
 		public DbSet<TechTicket> TechTickets { get; set; }
+		public DbSet<RewardTicket> RewardTickets { get; set; }
 		public DbSet<VipTicket> VipTickets { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)

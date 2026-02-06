@@ -59,8 +59,9 @@ namespace accs.DiscordBot.Interactions
 				" или же есть предложение по улучшению бота — нажимаем.")
 				.AddField("*Пожаловаться*", "Подать жалобу на находящегося на этом сервере пользователя(ей).")
 				.AddField("*Отставка*", "Уйти в отставку или выйти из неё.")
-				.AddField("*Спонсировать*", "При намерении финансово поддержать наш клан.")
 				.AddField("*Получить VIP*", "Подать заявку на получение VIP статуса на игровых серверах, которые мы посещаем.")
+				.AddField("*Награждение*", "Подать тикет на представление к заслуженной награде.")
+				.AddField("*Спонсировать*", "При намерении финансово поддержать наш клан.")
 
 				.WithColor(Color.DarkGreen);
 
@@ -72,7 +73,8 @@ namespace accs.DiscordBot.Interactions
 				.WithButton("Пожаловаться", "report-button", ButtonStyle.Danger, row: 2)
 				.WithButton("Отставка", "retirement-button", ButtonStyle.Danger, row: 2)
 				.WithButton("Спонсировать", "donation-button", ButtonStyle.Primary, row: 3)
-				.WithButton("Получить VIP", "vip-button", ButtonStyle.Primary, row: 3);
+				.WithButton("Награждение", "reward-button", ButtonStyle.Primary, row: 3)
+				.WithButton("Получить VIP", "vip-button", ButtonStyle.Primary, row: 4);
 
 			await _channel.SendMessageAsync(embed: embed.Build(), components: component.Build());
 			await RespondAsync("Сообщение для тикетов обновлено", ephemeral: true);
@@ -215,6 +217,23 @@ namespace accs.DiscordBot.Interactions
 			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
 			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
 			await RespondAsync("Заявка на получение VIP статуса создана. Перейдите в чат тикета.", ephemeral: true);
+		}
+
+		[ComponentInteraction("reward-button", ignoreGroupNames: true)]
+		public async Task RewardButtonHandler()
+		{
+			if (_db.VipTickets.Any(t => t.AuthorDiscordId == Context.User.Id && t.Status == TicketStatus.Opened))
+			{
+				await RespondAsync("У Вас уже есть открытый тикет на представление к награде", ephemeral: true);
+				return;
+			}
+
+			VipTicket ticket = new VipTicket(Context.User.Id);
+			await _db.VipTickets.AddAsync(ticket);
+			await _db.SaveChangesAsync();
+			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
+			await RespondAsync("Тикет на представление к награде создан. Перейдите в чат тикета.", ephemeral: true);
 		}
 	}
 }

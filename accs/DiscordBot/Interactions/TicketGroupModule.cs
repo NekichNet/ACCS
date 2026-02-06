@@ -43,7 +43,7 @@ namespace accs.DiscordBot.Interactions
             {
 				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
 				{
-					await ticket.AcceptAsync(_guildProvider, _db);
+					await ticket.AcceptAsync(_guildProvider, _db, unit.DiscordId);
 					return;
 				}
 			}
@@ -68,7 +68,7 @@ namespace accs.DiscordBot.Interactions
 			{
 				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
 				{
-					await ticket.RefuseAsync(_guildProvider, _db);
+					await ticket.RefuseAsync(_guildProvider, _db, unit.DiscordId);
 					return;
 				}
 			}
@@ -162,7 +162,7 @@ namespace accs.DiscordBot.Interactions
 				{
 					if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
 					{
-						await invite.AcceptanceHandler(selectedId, _guildProvider, _db, _logService);
+						await invite.AcceptanceHandler(selectedId, _guildProvider, _db, _logService, unit.DiscordId);
 					}
 				}
 

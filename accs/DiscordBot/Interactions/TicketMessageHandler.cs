@@ -222,14 +222,14 @@ namespace accs.DiscordBot.Interactions
 		[ComponentInteraction("reward-button", ignoreGroupNames: true)]
 		public async Task RewardButtonHandler()
 		{
-			if (_db.VipTickets.Any(t => t.AuthorDiscordId == Context.User.Id && t.Status == TicketStatus.Opened))
+			if (_db.RewardTickets.Any(t => t.AuthorDiscordId == Context.User.Id && t.Status == TicketStatus.Opened))
 			{
 				await RespondAsync("У Вас уже есть открытый тикет на представление к награде", ephemeral: true);
 				return;
 			}
 
-			VipTicket ticket = new VipTicket(Context.User.Id);
-			await _db.VipTickets.AddAsync(ticket);
+			RewardTicket ticket = new RewardTicket(Context.User.Id);
+			await _db.RewardTickets.AddAsync(ticket);
 			await _db.SaveChangesAsync();
 			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
 			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);

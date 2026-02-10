@@ -5,7 +5,6 @@ using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
@@ -27,16 +26,24 @@ namespace accs.DiscordBot.Interactions
 		[SlashCommand("profile", "Показать профиль указанного пользователя")]
         public async Task ShowProfileCommand(IUser? user = null)
         {
-            Unit? unit;
-            if (user == null) { unit = await _db.Units.FindAsync(Context.User.Id); }
-            else { unit = await _db.Units.FindAsync(user.Id); }
+            await DeferAsync();
 
-            if (unit != null)
+            Unit? unit;
+			await _logService.WriteAsync($"user: {user}", LoggingLevel.Debug);
+			if (user == null) { unit = await _db.Units.FindAsync(Context.User.Id); }
+            else
+            {
+				await _logService.WriteAsync($"user id: {user.Id}", LoggingLevel.Debug);
+				unit = await _db.Units.FindAsync(user.Id);
+            }
+            await _logService.WriteAsync($"unit: {unit}", LoggingLevel.Debug);
+
+			if (unit != null)
             {
                 EmbedBuilder embed = new EmbedBuilder()
                 {
                     Title = $"{unit.Rank.Name} {unit.GetOnlyNickname()}",
-                    Description = String.Join(", ", unit.Posts.Select(p => p.GetFullName()))
+                    Description = String.Join("\n", unit.Posts.Select(p => p.GetFullName()))
                 };
 
                 string inLineUnitActivities = string.Empty;
@@ -65,12 +72,16 @@ namespace accs.DiscordBot.Interactions
                     ?? _guildProvider.GetGuild().GetUser(unit.DiscordId).GetDefaultAvatarUrl();
                 embed.WithColor(unit.Colour == null ? Color.DarkGreen : unit.GetProfileColor());
 
-                await RespondAsync(embed: embed.Build());
+                await ModifyOriginalResponseAsync(func: (opt) =>
+                {
+                    opt.Embed = embed.Build();
+                    opt.Content = "";
+                });
             }
             else
             {
-                await RespondAsync($"Пользователь не найден в системе", ephemeral: true);
-            }
+				await ModifyOriginalResponseAsync(func: (opt) => { opt.Content = "Пользователь не найден в системе"; });
+			}
         }
 
 		[SlashCommand("nickname", "Изменить никнейм пользователя")]

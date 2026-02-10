@@ -55,5 +55,19 @@ namespace accs.Models
 
             return result;
         }
+
+		public List<Post> GetAllHeadsRecursive()
+		{
+			List<Post> result = new List<Post>();
+			Post? tempHead = Head;
+
+			while (tempHead != null)
+			{
+				result.Add(tempHead);
+				tempHead = tempHead.Head;
+			}
+
+			return result;
+		}
     }
 }

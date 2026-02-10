@@ -49,6 +49,19 @@ namespace accs.DiscordBot.Interactions
                         return;
                     }
 
+                    if (actorUnit == null)
+                    {
+						await RespondAsync("Вы не найдены в системе.", ephemeral: true);
+						return;
+					}
+
+                    if (actorUnit.Posts.SelectMany(p => p.GetAllHeadsRecursive()).Intersect(targetUnit.Posts).Any())
+                    {
+						await RespondAsync("Вы не можете поменять должности этого бойца." +
+                            " Одна из его должностей главенствует над Вашей.", ephemeral: true);
+						return;
+					}
+
                     if (postId != null)
                     {
 						var post = await _db.Posts.FindAsync(postId);
@@ -105,10 +118,7 @@ namespace accs.DiscordBot.Interactions
                     if (actorUnit.HasPermission(PermissionType.Administrator))
                         allowedPosts.AddRange(await _db.Posts.ToListAsync());
                     else
-                        allowedPosts.AddRange(actorPosts
-                            .SelectMany(p => p.GetAllSubordinatesRecursive())
-                            .DistinctBy(p => p.Id)
-                            .ToList());
+                        allowedPosts.AddRange(_db.Posts.Except(actorPosts.SelectMany(p => p.GetAllHeadsRecursive())));
 
 					if (!allowedPosts.Any())
                     {
@@ -224,7 +234,7 @@ namespace accs.DiscordBot.Interactions
                 }
             }
 
-            [SlashCommand("list", "Вывести список всех существующих должностей")]
+            //[SlashCommand("list", "Вывести список всех существующих должностей")]
             public async Task PostListCommand()
             {
                 await DeferAsync(ephemeral: true);

@@ -45,8 +45,10 @@ namespace accs.DiscordBot.Interactions
 
                 foreach (Reward reward in rewards)
                 {
-                    menuBuilder.AddOption(reward.Name, reward.Id.ToString(), reward.Description);
-                }
+					string description = reward.Description.Substring(0, 95);
+					menuBuilder.AddOption(reward.Name, reward.Id.ToString(),
+						description.Length == 95 ? description + "..." : description);
+				}
 
                 var builder = new ComponentBuilder()
                     .WithSelectMenu(menuBuilder);
@@ -310,7 +312,9 @@ namespace accs.DiscordBot.Interactions
 
                     foreach (var reward in rewards)
                     {
-                        menu.AddOption(reward.Name, reward.Id.ToString(), reward.Description);
+                        string description = reward.Description.Substring(0, 95);
+						menu.AddOption(reward.Name, reward.Id.ToString(),
+                            description.Length == 95 ?description + "..." : description);
                     }
 
                     ComponentBuilder builder = new ComponentBuilder()

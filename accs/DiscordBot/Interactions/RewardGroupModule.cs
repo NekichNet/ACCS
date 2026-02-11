@@ -45,7 +45,7 @@ namespace accs.DiscordBot.Interactions
 
                 foreach (Reward reward in rewards)
                 {
-					string description = reward.Description.Substring(0, 95);
+					string description = reward.Description.Length > 95 ? reward.Description.Substring(0, 95) : reward.Description;
 					menuBuilder.AddOption(reward.Name, reward.Id.ToString(),
 						description.Length == 95 ? description + "..." : description);
 				}
@@ -312,7 +312,7 @@ namespace accs.DiscordBot.Interactions
 
                     foreach (var reward in rewards)
                     {
-                        string description = reward.Description.Substring(0, 95);
+						string description = reward.Description.Length > 95 ? reward.Description.Substring(0, 95) : reward.Description;
 						menu.AddOption(reward.Name, reward.Id.ToString(),
                             description.Length == 95 ?description + "..." : description);
                     }

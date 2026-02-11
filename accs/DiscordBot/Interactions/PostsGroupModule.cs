@@ -29,8 +29,8 @@ namespace accs.DiscordBot.Interactions
 
             public override Task BeforeExecuteAsync(ICommandInfo command)
             {
-                _db.Posts.LoadAsync();
-                _db.Units.LoadAsync();
+                _db.Posts.Load();
+                _db.Units.Load();
 				return base.BeforeExecuteAsync(command);
             }
 

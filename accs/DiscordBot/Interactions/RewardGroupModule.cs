@@ -22,6 +22,12 @@ namespace accs.DiscordBot.Interactions
             _logService = logService;
         }
 
+        public override Task BeforeExecuteAsync(ICommandInfo command)
+        {
+            _db.Rewards.Load();
+            return base.BeforeExecuteAsync(command);
+        }
+
         [HasPermission(PermissionType.AssignRewards)]
         [SlashCommand("assign", "Присвоить награду бойцу")]
         public async Task AssignCommand(IUser user, int? rewardId = null)
@@ -36,18 +42,26 @@ namespace accs.DiscordBot.Interactions
 
             if (rewardId == null)
             {
-                var menuBuilder = new SelectMenuBuilder()
+                string customId = $"reward-menu-{unit.DiscordId}:1";
+
+				var menuBuilder = new SelectMenuBuilder()
                     .WithPlaceholder("Награда")
-                    .WithCustomId($"reward-menu-{unit.DiscordId}")
-                    .WithMinValues(1);
+                    .WithCustomId(customId)
+                    .WithMinValues(1)
+                    .WithMaxValues(1);
 
                 var rewards = await _db.Rewards.ToListAsync();
 
-                foreach (Reward reward in rewards)
+                for (int i = 0; i < rewards.Count; i++)
                 {
-					string description = reward.Description.Length > 95 ? reward.Description.Substring(0, 95) : reward.Description;
-					menuBuilder.AddOption(reward.Name, reward.Id.ToString(),
+					string description = rewards[i].Description.Length > 95 ? rewards[i].Description.Substring(0, 95) : rewards[i].Description;
+					menuBuilder.AddOption(rewards[i].Name, rewards[i].Id.ToString(),
 						description.Length == 95 ? description + "..." : description);
+                    if (i == 23)
+                    {
+                        menuBuilder.AddOption("Следующая страница", $"next-page");
+                        break;
+                    }
 				}
 
                 var builder = new ComponentBuilder()
@@ -83,9 +97,9 @@ namespace accs.DiscordBot.Interactions
                     var http = new HttpClient();
                     var bytes = await http.GetByteArrayAsync(image.Url);
 
-                    if (!Directory.Exists("rewards"))
-                        Directory.CreateDirectory("rewards");
-                    string filePath = Path.Join("rewards", image.Filename);
+                    if (!Directory.Exists("newRewards"))
+                        Directory.CreateDirectory("newRewards");
+                    string filePath = Path.Join("newRewards", image.Filename);
 
                     await File.WriteAllBytesAsync(filePath, bytes);
                     savedImagePath = filePath;
@@ -124,9 +138,45 @@ namespace accs.DiscordBot.Interactions
 
 
         [HasPermission(PermissionType.AssignRewards)]
-        [ComponentInteraction("menu-*", ignoreGroupNames: true)]
-        public async Task MenuHandler(string unitId, string[] selectedIds)
+        [ComponentInteraction("reward-menu-*:*", ignoreGroupNames: true)]
+        public async Task MenuHandler(string unitId, string pageString, string[] selectedIds)
         {
+            if (selectedIds[0] == "next-page")
+            {
+                int page = int.Parse(pageString);
+
+				string customId = $"reward-menu-{unitId}:{page + 1}";
+
+				var menuBuilder = new SelectMenuBuilder()
+					.WithPlaceholder("Награда")
+					.WithCustomId(customId)
+					.WithMinValues(1)
+					.WithMaxValues(1);
+
+				var newRewards = await _db.Rewards.ToListAsync();
+
+				for (int i = 24 * page; i < newRewards.Count; i++)
+				{
+					string description = newRewards[i].Description.Length > 95 ? newRewards[i].Description.Substring(0, 95) : newRewards[i].Description;
+					menuBuilder.AddOption(newRewards[i].Name, newRewards[i].Id.ToString(),
+						description.Length == 95 ? description + "..." : description);
+					if (i == 24 * int.Parse(pageString) + 23)
+					{
+						menuBuilder.AddOption("Следующая страница", customId + $"next-page");
+						break;
+					}
+				}
+
+				var builder = new ComponentBuilder()
+					.WithSelectMenu(menuBuilder);
+
+                await ModifyOriginalResponseAsync(func: (opt) =>
+                {
+                    opt.Components = builder.Build();
+                });
+                return;
+			}
+
             Unit? unit = await _db.Units.FindAsync(ulong.Parse(unitId));
             if (unit == null)
             {
@@ -239,12 +289,12 @@ namespace accs.DiscordBot.Interactions
                         return;
                     }
 
-                    if (!Directory.Exists("rewards"))
+                    if (!Directory.Exists("newRewards"))
                     {
-                        Directory.CreateDirectory("rewards");
+                        Directory.CreateDirectory("newRewards");
                     }
 
-                    string filePath = Path.Combine("rewards", image.Filename);
+                    string filePath = Path.Combine("newRewards", image.Filename);
 
                     using (var http = new HttpClient())
                     {
@@ -310,14 +360,19 @@ namespace accs.DiscordBot.Interactions
                         .WithCustomId("reward-delete-select")
                         .WithPlaceholder("Выберите награду для удаления");
 
-                    foreach (var reward in rewards)
-                    {
-						string description = reward.Description.Length > 95 ? reward.Description.Substring(0, 95) : reward.Description;
-						menu.AddOption(reward.Name, reward.Id.ToString(),
-                            description.Length == 95 ?description + "..." : description);
-                    }
+					for (int i = 0; i < rewards.Count; i++)
+					{
+						string description = rewards[i].Description.Length > 95 ? rewards[i].Description.Substring(0, 95) : rewards[i].Description;
+						menu.AddOption(rewards[i].Name, rewards[i].Id.ToString(),
+							description.Length == 95 ? description + "..." : description);
+						if (i == 23)
+						{
+							menu.AddOption("Следующая страница", "next-page");
+							break;
+						}
+					}
 
-                    ComponentBuilder builder = new ComponentBuilder()
+					ComponentBuilder builder = new ComponentBuilder()
                         .WithSelectMenu(menu);
 
                     await RespondAsync("Выберите награду для удаления:", components: builder.Build(), ephemeral: true);
@@ -332,12 +387,48 @@ namespace accs.DiscordBot.Interactions
 
 
         [HasPermission(PermissionType.ManageRewards)]
-        [ComponentInteraction("reward-delete-select")]
-        public async Task RewardDeleteHandler(string selectedId)
+        [ComponentInteraction("reward-delete-select:*")]
+        public async Task RewardDeleteHandler(string pageString, string[] selectedIds)
         {
             try
             {
-                if (!int.TryParse(selectedId, out int id))
+				if (selectedIds[0] == "next-page")
+				{
+					int page = int.Parse(pageString);
+
+					string customId = $"reward-delete-select:{page + 1}";
+
+					var menuBuilder = new SelectMenuBuilder()
+						.WithPlaceholder("Награда")
+						.WithCustomId(customId)
+						.WithMinValues(1)
+						.WithMaxValues(1);
+
+					var newRewards = await _db.Rewards.ToListAsync();
+
+					for (int i = 24 * page; i < newRewards.Count; i++)
+					{
+						string description = newRewards[i].Description.Length > 95 ? newRewards[i].Description.Substring(0, 95) : newRewards[i].Description;
+						menuBuilder.AddOption(newRewards[i].Name, newRewards[i].Id.ToString(),
+							description.Length == 95 ? description + "..." : description);
+						if (i == 24 * int.Parse(pageString) + 23)
+						{
+							menuBuilder.AddOption("Следующая страница", customId + $"next-page");
+							break;
+						}
+					}
+
+					var builder = new ComponentBuilder()
+						.WithSelectMenu(menuBuilder);
+
+					await ModifyOriginalResponseAsync(func: (opt) =>
+					{
+						opt.Components = builder.Build();
+					});
+					return;
+				}
+
+				if (!int.TryParse(selectedIds[0], out int id))
                 {
                     await RespondAsync("Ошибка: неверный ID награды.", ephemeral: true);
                     return;

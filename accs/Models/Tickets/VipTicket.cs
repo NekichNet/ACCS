@@ -21,7 +21,20 @@ namespace accs.Models.Tickets
 				await logService.WriteAsync("VipTicket: channel is null", LoggingLevel.Error);
 			else
 			{
-				string requisites = DotNetEnv.Env.GetString("DONATION_REQUISITES",
+				string steamId = "Не указан";
+				string authorName = "";
+
+				Unit? authorUnit = db.Units.Find(AuthorDiscordId);
+                if (authorUnit != null)
+                {
+					authorName = authorUnit.GetOnlyNickname();
+                    if (authorUnit.SteamId != null)
+					{
+						steamId = ((ulong)authorUnit.SteamId).ToString();
+					}
+                }
+
+                string requisites = DotNetEnv.Env.GetString("DONATION_REQUISITES",
 				"Реквизиты для пожертвований не найдены.");
 
 				EmbedBuilder embed = new EmbedBuilder()
@@ -34,7 +47,8 @@ namespace accs.Models.Tickets
 					"***/ticket cancel*** — Отменить тикет, доступно автору." +
 					"\r\n***/ticket accept*** — Закрыть тикет как решённый, доступно администраторам." +
 					"\r\n***/ticket refuse*** — Закрыть тикет как не решённый, доступно администраторам." +
-					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.");
+					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.")
+					.AddField($"Steam ID {authorName}", steamId);
 				await channel.SendMessageAsync(embed: embed.Build());
 			}
 		}

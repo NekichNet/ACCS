@@ -46,7 +46,7 @@ namespace accs.DiscordBot.Interactions
 			string filePath = Path.Join("temp", "Units.csv");
 			using (StreamWriter writer = new StreamWriter(filePath, false, System.Text.Encoding.UTF8))
 			{
-				await writer.WriteLineAsync("Должность;Звание;Позывной\r\n");
+				await writer.WriteLineAsync("Должность;Звание;Позывной");
 				foreach (IGrouping<Subdivision?, Post> grouping in posts)
 				{
 					if (grouping.Select(g => g.Units.Count()).Sum() > 0)

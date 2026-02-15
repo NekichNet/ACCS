@@ -20,38 +20,43 @@ namespace accs.DiscordBot.Interactions
             await RespondAsync("Ok");
         }
 
-        [SlashCommand("table", "Сформировать таблицу со всеми бойцами клана")]
+        [SlashCommand("table", "Сформировать csv файл всего клана")]
         public async Task ListCommand()
         {
 			await DeferAsync();
 
-			_db.Units.Load();
-			_db.Ranks.Load();
-			_db.Posts.Load();
+			await _db.Units.LoadAsync();
+			await _db.Ranks.LoadAsync();
 
-			List<Unit> units = (await _db.Units
-				.ToListAsync())
-				.OrderByDescending(u => u.Rank.Id)
-				.GroupBy(u => u.Posts.Any() ? u.Posts.First().SubdivisionId : 999)
-				.SelectMany(g => g.ToList().GroupBy(u => u.Posts.FirstOrDefault()).SelectMany(sg => sg.ToList()))
-				.ToList();
+			int count = _db.Units.Where(u => u.Posts.Any()).Count();
 
 			await ModifyOriginalResponseAsync(func: (opt) =>
 			{
-				opt.Content = "Количество бойцов в клане: " + units.Count().ToString();
+				opt.Content = "Количество бойцов в клане: " + count.ToString()
+				+ "\nБойцов в отставке: " + (_db.Units.Count() - count).ToString();
 			});
+
+			List<IGrouping<Subdivision?, Post>> posts = (await _db.Posts.FindAsync(1))
+				.GetAllSubordinatesRecursive()
+				.GroupBy(p => p.Subdivision).ToList();
 
 			if (!Directory.Exists("temp"))
 				Directory.CreateDirectory("temp");
 
 			string filePath = Path.Join("temp", "Units.csv");
-			File.Create(filePath).Close();
-			await File.AppendAllTextAsync(filePath, $"Должность,Звание,Позывной\r\n");
-			foreach (Unit unit in units)
+			using (StreamWriter writer = new StreamWriter(filePath, false, System.Text.Encoding.UTF8))
 			{
-				string postName = unit.Posts.Any() ? unit.Posts.First().GetFullName() : "Отставка";
-				await File.AppendAllTextAsync(filePath, $"{postName},{unit.Rank.Name},{unit.GetOnlyNickname().Replace(",", "")}\r\n");
+				await writer.WriteLineAsync("Должность;Звание;Позывной\r\n");
+				foreach (IGrouping<Subdivision?, Post> grouping in posts)
+				{
+					if (grouping.Select(g => g.Units.Count()).Sum() > 0)
+						writer.Write("\n");
+					foreach (Post post in grouping.ToList())
+						foreach (Unit unit in post.Units)
+							writer.WriteLine($"{post.GetFullName()};{unit.Rank.Name};{unit.GetOnlyNickname()}");
+				}
 			}
+
 			await Context.Channel.SendFileAsync(filePath);
 		}
     }

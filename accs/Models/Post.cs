@@ -69,5 +69,16 @@ namespace accs.Models
 
 			return result;
 		}
+
+		public Subdivision? GetHighestLevelSubdivision()
+		{
+			Subdivision? currentSubdivision = Subdivision;
+
+			if (currentSubdivision != null)
+				while (currentSubdivision.Head != null)
+					currentSubdivision = currentSubdivision.Head;
+
+			return currentSubdivision;
+		}
     }
 }

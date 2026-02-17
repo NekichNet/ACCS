@@ -49,6 +49,9 @@ namespace accs
 			builder.Services.AddScoped<ILogService, LogService>();
 			builder.Services.AddTransient<IUsersCleanUpService, UsersCleanupService>();
 
+			builder.Services.AddHostedService<DailyCleanupService>();
+			builder.Services.AddHostedService<AutoStatusService>();
+
 			var app = builder.Build();
 
 			string token = Env.GetString("TOKEN", "Token not found");

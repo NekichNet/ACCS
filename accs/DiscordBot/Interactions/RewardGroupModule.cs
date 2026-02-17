@@ -55,6 +55,8 @@ namespace accs.DiscordBot.Interactions
                 for (int i = 0; i < rewards.Count; i++)
                 {
 					string description = rewards[i].Description.Length > 95 ? rewards[i].Description.Substring(0, 95) : rewards[i].Description;
+					if (description.Length < 2)
+						description = "Нет описания";
 					menuBuilder.AddOption(rewards[i].Name, rewards[i].Id.ToString(),
 						description.Length == 95 ? description + "..." : description);
                     if (i == 23)
@@ -67,7 +69,7 @@ namespace accs.DiscordBot.Interactions
                 var builder = new ComponentBuilder()
                     .WithSelectMenu(menuBuilder);
 
-                await RespondAsync("Выберите награды, которые выдать " + unit.Nickname, components: builder.Build(), ephemeral: true);
+                await RespondAsync("(Страница 1) Выберите награду" + unit.Nickname, components: builder.Build(), ephemeral: true);
             }
             else
             {
@@ -158,6 +160,8 @@ namespace accs.DiscordBot.Interactions
 				for (int i = 24 * page; i < newRewards.Count; i++)
 				{
 					string description = newRewards[i].Description.Length > 95 ? newRewards[i].Description.Substring(0, 95) : newRewards[i].Description;
+					if (description.Length < 2)
+						description = "Нет описания";
 					menuBuilder.AddOption(newRewards[i].Name, newRewards[i].Id.ToString(),
 						description.Length == 95 ? description + "..." : description);
 					if (i == 24 * int.Parse(pageString) + 23)
@@ -170,10 +174,7 @@ namespace accs.DiscordBot.Interactions
 				var builder = new ComponentBuilder()
 					.WithSelectMenu(menuBuilder);
 
-                await ModifyOriginalResponseAsync(func: (opt) =>
-                {
-                    opt.Components = builder.Build();
-                });
+                await RespondAsync($"(Страница {page + 1}) Выберите награду", components: builder.Build(), ephemeral: true);
                 return;
 			}
 
@@ -363,6 +364,8 @@ namespace accs.DiscordBot.Interactions
 					for (int i = 0; i < rewards.Count; i++)
 					{
 						string description = rewards[i].Description.Length > 95 ? rewards[i].Description.Substring(0, 95) : rewards[i].Description;
+						if (description.Length < 2)
+							description = "Нет описания";
 						menu.AddOption(rewards[i].Name, rewards[i].Id.ToString(),
 							description.Length == 95 ? description + "..." : description);
 						if (i == 23)
@@ -409,6 +412,8 @@ namespace accs.DiscordBot.Interactions
 					for (int i = 24 * page; i < newRewards.Count; i++)
 					{
 						string description = newRewards[i].Description.Length > 95 ? newRewards[i].Description.Substring(0, 95) : newRewards[i].Description;
+						if (description.Length < 2)
+							description = "Нет описания";
 						menuBuilder.AddOption(newRewards[i].Name, newRewards[i].Id.ToString(),
 							description.Length == 95 ? description + "..." : description);
 						if (i == 24 * int.Parse(pageString) + 23)

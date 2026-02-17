@@ -127,36 +127,99 @@ namespace accs.DiscordBot.Interactions
                     }
 
                     var menu = new SelectMenuBuilder()
-                        .WithCustomId($"post-menu-{target.Id}")
-                        .WithPlaceholder("Выберите должности")
-                        .WithMinValues(0)
-                        .WithMaxValues(allowedPosts.Count);
+                        .WithCustomId($"post-menu-{target.Id}-{actorUnit.DiscordId}:1")
+                        .WithPlaceholder("Должности")
+                        .WithMinValues(1)
+                        .WithMaxValues(1);
 
-                    foreach (var post in allowedPosts)
-                        menu.AddOption(post.GetFullName(), post.Id.ToString());
+					for (int i = 0; i < allowedPosts.Count; i++)
+					{
+						string description = allowedPosts[i].Description.Length > 95 ? allowedPosts[i].Description.Substring(0, 95) : allowedPosts[i].Description;
+						if (description.Length < 2)
+							description = "Нет описания";
+						menu.AddOption(allowedPosts[i].GetFullName(), allowedPosts[i].Id.ToString(),
+							description.Length == 95 ? description + "..." : description);
+						if (i == 23)
+						{
+							menu.AddOption("Следующая страница", $"next-page");
+							break;
+						}
+					}
 
-                    var builder = new ComponentBuilder()
+					var builder = new ComponentBuilder()
                         .WithSelectMenu(menu);
 
                     await RespondAsync(
-                        $"Назначение должностей для {targetUnit.Nickname}",
+                        $"Выберите должность",
                         components: builder.Build(),
                         ephemeral: true);
 
                 }
                 catch (Exception ex)
                 {
-                    await _logService.WriteAsync($"Ошибка в AssignRankCommand: {ex.Message}", LoggingLevel.Error);
+                    await _logService.WriteAsync($"Ошибка в AssignPostCommand: {ex.Message}", LoggingLevel.Error);
                     await RespondAsync("Ошибка при назначении должностей.", ephemeral: true);
                 }
             }
 
 			[HasPermission(PermissionType.ChangePosts)]
-			[ComponentInteraction("post-menu-*", ignoreGroupNames: true)]
-            public async Task PostMenuHandler(ulong targetId, string[] selectedValues)
+			[ComponentInteraction("post-menu-*-*:*", ignoreGroupNames: true)]
+            public async Task PostMenuHandler(string targetIdString, string actorIdString, string pageString, string[] selectedValues)
             {
-                try
+				if (selectedValues[0] == "next-page")
+				{
+					int page = int.Parse(pageString);
+
+					string customId = $"post-menu-{targetIdString}-{actorIdString}:{page + 1}";
+
+					var menuBuilder = new SelectMenuBuilder()
+						.WithPlaceholder("Должности")
+						.WithCustomId(customId)
+						.WithMinValues(1)
+						.WithMaxValues(1);
+
+                    Unit? actorUnit = (await _db.Units.FindAsync(ulong.Parse(actorIdString)));
+
+                    if (actorUnit == null)
+                    {
+                        await RespondAsync("Ошибка: вы не найдены в системе!", ephemeral: true);
+                        await _logService.WriteAsync($"Боец с ID {actorIdString} не найден в базе данных!", LoggingLevel.Error);
+                        return;
+                    }
+
+					List<Post> actorPosts = actorUnit.Posts;
+					List<Post> allowedPosts = new List<Post>();
+
+					if (actorUnit.HasPermission(PermissionType.Administrator))
+						allowedPosts.AddRange(await _db.Posts.ToListAsync());
+					else
+						allowedPosts.AddRange(_db.Posts.Except(actorPosts.SelectMany(p => p.GetAllHeadsRecursive())));
+
+					for (int i = 24 * page; i < allowedPosts.Count; i++)
+					{
+						string description = allowedPosts[i].Description.Length > 95 ? allowedPosts[i].Description.Substring(0, 95) : allowedPosts[i].Description;
+                        if (description.Length < 2)
+                            description = "Нет описания";
+						menuBuilder.AddOption(allowedPosts[i].GetFullName(), allowedPosts[i].Id.ToString(),
+							description.Length == 95 ? description + "..." : description);
+						if (i == 24 * int.Parse(pageString) + 23)
+						{
+							menuBuilder.AddOption("Следующая страница", customId + $"next-page");
+							break;
+						}
+					}
+
+					var builder = new ComponentBuilder()
+						.WithSelectMenu(menuBuilder);
+
+					await RespondAsync($"(Страница {page + 1}) Выберите должность", components: builder.Build(), ephemeral: true);
+					return;
+				}
+
+				try
                 {
+                    ulong targetId = ulong.Parse(targetIdString);
+
                     var selectedIds = selectedValues
 						.Select(v => int.Parse(v))
                         .ToList();
@@ -258,7 +321,7 @@ namespace accs.DiscordBot.Interactions
 				});
 			}
 
-            [SlashCommand("view", "Узнать о должности подробнее")]
+            //[SlashCommand("view", "Узнать о должности подробнее")]
             public async Task PostViewCommand(int? postId = null)
             {
                 await DeferAsync(ephemeral: true);

@@ -206,7 +206,7 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-		[HasPermission(PermissionType.ChangeRanks)]
+		[IsUnit()]
 		[SlashCommand("list", "Вывести очередь на повышение")]
 		public async Task RankListCommand()
 		{

@@ -5,6 +5,8 @@ using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
+using Discord.Rest;
+using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
@@ -15,11 +17,13 @@ namespace accs.DiscordBot.Interactions
     {
         private readonly AppDbContext _db;
         private readonly ILogService _logService;
+		private readonly IGuildProviderService _guildProvider;
 
-        public RewardGroupModule(AppDbContext db, ILogService logService)
+		public RewardGroupModule(AppDbContext db,  ILogService logService, IGuildProviderService guildProvider)
         {
             _db = db;
             _logService = logService;
+            _guildProvider = guildProvider;
         }
 
         public override Task BeforeExecuteAsync(ICommandInfo command)
@@ -82,6 +86,10 @@ namespace accs.DiscordBot.Interactions
                 }
 
                 unit.Rewards.Add(reward);
+
+                SocketGuildUser guildUser = _guildProvider.GetGuild().GetUser(user.Id);
+                await guildUser.AddRoleAsync(reward.DiscordRoleId);
+
                 await _db.SaveChangesAsync();
                 await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выдана награда: {reward.Name}", ephemeral: true);
             }
@@ -107,10 +115,13 @@ namespace accs.DiscordBot.Interactions
                     savedImagePath = filePath;
                 }
 
+                RestRole role = await _guildProvider.GetGuild().CreateRoleAsync(name: name, color: Color.Gold);
+
                 Reward reward = new Reward()
                 {
                     Name = name,
                     Description = description,
+                    DiscordRoleId = role.Id,
                     ImagePath = savedImagePath
                 };
 
@@ -188,7 +199,9 @@ namespace accs.DiscordBot.Interactions
 
             List<Reward> rewards = new List<Reward>();
 
-            foreach (string selectedId in selectedIds)
+			SocketGuildUser guildUser = _guildProvider.GetGuild().GetUser(ulong.Parse(unitId));
+
+			foreach (string selectedId in selectedIds)
             {
                 if (!int.TryParse(selectedId, out int rewardId))
                 {
@@ -204,7 +217,8 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
                 rewards.Add(reward);
-            }
+				await guildUser.AddRoleAsync(reward.DiscordRoleId);
+			}
             unit.Rewards.AddRange(rewards);
             await _db.SaveChangesAsync();
             await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выданы награды: {String.Join(", ", rewards.Select(r => r.Name))}");
@@ -238,7 +252,11 @@ namespace accs.DiscordBot.Interactions
                 .WithFooter($"Страница {page}/{totalPages}");
 
             foreach (var reward in pageItems)
-                embed.AddField(reward.Name, $"ID: {reward.Id}\r\n" + reward.Description);
+                embed.AddField(reward.Name,
+                    $"ID: {reward.Id}\n"
+                    + reward.Description
+                    + "\nНаграждённые бойцы:\n"
+                    + String.Join("\n", reward.Units.Select(u => u.GetOnlyNickname())));
 
             ComponentBuilder components = new ComponentBuilder();
 

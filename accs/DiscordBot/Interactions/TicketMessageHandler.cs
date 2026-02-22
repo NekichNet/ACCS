@@ -38,6 +38,8 @@ namespace accs.DiscordBot.Interactions
 		[SlashCommand("init-ticket-message", "Инициализация сообщения для тикетов.")]
 		public async Task InitTicketMessage()
 		{
+			await DeferAsync(ephemeral: true);
+
 			string channelIdString = DotNetEnv.Env.GetString("TICKET_CHANNEL_ID", "Ticket channel id not found");
 			ulong channelId;
 			if (!ulong.TryParse(channelIdString, out channelId)) { await _logService.WriteAsync("Cannot parse ticket channel id!", LoggingLevel.Error); return; }
@@ -49,11 +51,10 @@ namespace accs.DiscordBot.Interactions
 			EmbedBuilder embed = new EmbedBuilder()
 				.WithTitle("Тикеты")
 				.WithDescription("Тикет — текстовое обращение, которое видят только Вы и нужная Вам служба.")
-				.WithFooter(footer => footer.Text = "Чтобы сформировать тикет, нажмите на соответствующую кнопку ниже:")
+				.WithFooter("Чтобы сформировать тикет, нажмите на соответствующую кнопку ниже:")
 
 				.AddField("*Вступить*", "Подать заявку на вступление в клан.")
-				.AddField("*Сотрудничать*", "Если у Вас есть предложение, которое может заинтересовать руководство," +
-				" или же хотите поддерживать дружеские отношения с РХБЗ — нажимаем.")
+				.AddField("*Сотрудничать*", "Если хотите сотрудничать, получить роль «Друг клана» и доступ к голосовым каналам.")
 				.AddField("*Инструктор*", "Попросить инструкторский корпус об уроке, либо задать вопрос по игре.")
 				.AddField("*Техподдержка*", "Если обнаружили техническую неисправность, столкнулись с трудностями," +
 				" или же есть предложение по улучшению бота — нажимаем.")
@@ -77,7 +78,7 @@ namespace accs.DiscordBot.Interactions
 				.WithButton("Получить VIP", "vip-button", ButtonStyle.Primary, row: 4);
 
 			await _channel.SendMessageAsync(embed: embed.Build(), components: component.Build());
-			await RespondAsync("Сообщение для тикетов обновлено", ephemeral: true);
+			await DeleteOriginalResponseAsync();
 		}
 
 		[IsUnit(false)]

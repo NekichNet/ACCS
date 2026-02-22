@@ -2,7 +2,9 @@
 using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
+using Discord.Rest;
 using Discord.WebSocket;
+using System;
 
 namespace accs.Models.Tickets
 {
@@ -21,6 +23,29 @@ namespace accs.Models.Tickets
 				await logService.WriteAsync("VipTicket: channel is null", LoggingLevel.Error);
 			else
 			{
+				List<Post> adminPosts = GetAdmins(db);
+				string text = "";
+				SocketGuildUser authorUser = guildProvider.GetGuild().GetUser(AuthorDiscordId);
+				if (authorUser != null)
+				{
+					text += authorUser.Mention;
+				}
+				else
+				{
+					await logService.WriteAsync($"Ticket: authorUser with Id {AuthorDiscordId} is null", LoggingLevel.Error);
+				}
+
+				foreach (Post post in adminPosts)
+				{
+					if (post.DiscordRoleId != null)
+					{
+						RestRole role = await guildProvider.GetGuild().GetRoleAsync((ulong)post.DiscordRoleId);
+						if (role != null)
+							text += role.Mention;
+					}
+				}
+				await channel.SendMessageAsync(text: text, allowedMentions: AllowedMentions.All);
+
 				string steamId = "Не указан";
 				string authorName = "";
 
@@ -55,7 +80,7 @@ namespace accs.Models.Tickets
 
 		public override List<Post> GetAdmins(AppDbContext db)
 		{
-			List<Post> admins = base.GetAdmins(db);
+			List<Post> admins = new List<Post>();
 			admins.AddRange(db.Posts.Where(p => p.Subdivision != null).Where(p => p.Subdivision.Id == 1));
 			return admins;
 		}

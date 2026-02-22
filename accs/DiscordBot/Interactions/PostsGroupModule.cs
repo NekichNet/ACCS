@@ -108,6 +108,8 @@ namespace accs.DiscordBot.Interactions
 
 						await _db.SaveChangesAsync();
 						await RespondAsync("Должности обновлены.", ephemeral: true);
+
+                        await post.NotifyOnAssignAsync(Context.Guild, _db, targetUnit);
                         return;
 					}
 
@@ -279,6 +281,8 @@ namespace accs.DiscordBot.Interactions
 							}
 
 							await _guildProvider.GetGuild().GetUser(targetId).AddRolesAsync(roles);
+
+							await post.NotifyOnAssignAsync(Context.Guild, _db, targetUnit);
 						}
                         else
                         {
@@ -707,6 +711,39 @@ namespace accs.DiscordBot.Interactions
                 }
                 return hasPermission;
             }
-        }
+
+			[HasPermission(PermissionType.Administrator)]
+			[SlashCommand("notify", "Вызвать показ приветственного сообщения")]
+			public async Task NotificationShowCommand(int postId, IUser user, [ChannelTypes(ChannelType.Text)] IChannel? channel)
+            {
+                Unit? unit = await _db.Units.FindAsync(user.Id);
+                if (unit == null)
+                {
+                    await RespondAsync($"Пользователь {user.Username} не найден в системе");
+                    await _logService.WriteAsync($"NotificationShowCommand: Пользователь {user.Username} не найден в системе", LoggingLevel.Info);
+                    return;
+                }
+
+                Post? post = await _db.Posts.FindAsync(postId);
+                if (post == null)
+				{
+					await RespondAsync($"Должность с Id {postId} не найдена в системе");
+					await _logService.WriteAsync($"NotificationShowCommand: Должность с Id {postId} не найдена в системе", LoggingLevel.Info);
+					return;
+				}
+
+                if (post.DiscordNotification == null)
+                {
+					await RespondAsync($"Должность {post.GetFullName()} не имеет привязанных сообщений");
+					await _logService.WriteAsync($"NotificationShowCommand: Должность {post.GetFullName()} не имеет привязанных сообщений", LoggingLevel.Info);
+				}
+                else
+                {
+                    await RespondAsync("Сообщение принудительно вызвано.", ephemeral: true);
+					await post.NotifyOnAssignAsync(_guildProvider.GetGuild(), _db, unit,
+                        channel == null ? post.DiscordNotification.ChannelId : channel.Id);
+                }
+			}
+		}
     }
 }

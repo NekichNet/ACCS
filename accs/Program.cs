@@ -1,4 +1,5 @@
 using accs.Database;
+using accs.Models.Enums;
 using accs.Services;
 using accs.Services.Interfaces;
 using Discord;
@@ -52,6 +53,14 @@ namespace accs
 			builder.Services.AddHostedService<DailyCleanupService>();
 			builder.Services.AddHostedService<AutoStatusService>();
 
+			builder.Services.AddAuthentication(options => { /* Authentication options */ })
+				.AddDiscord(options =>
+				{
+					options.ClientId = Env.GetString("CLIENT_ID");
+					options.ClientSecret = Env.GetString("CLIENT_SECRET");
+				});
+			builder.Services.AddAuthorization();
+
 			var app = builder.Build();
 
 			string token = Env.GetString("TOKEN", "Token not found");
@@ -59,10 +68,12 @@ namespace accs
 
 			DiscordSocketClient client = app.Services.GetRequiredService<DiscordSocketClient>();
 
+			ILogService logService = app.Services.GetRequiredService<ILogService>();
+
 			client.Log += async (msg) =>
 			{
 				await Task.CompletedTask;
-				Console.WriteLine(msg);
+				Console.WriteLine(msg.Message, LoggingLevel.Info);
 			};
 			
 			client.LoginAsync(TokenType.Bot, token).Wait();
@@ -72,7 +83,7 @@ namespace accs
 			interaction.Log += async (msg) =>
 			{
 				await Task.CompletedTask;
-				Console.WriteLine(msg);
+				Console.WriteLine(msg.Message, LoggingLevel.Info);
 			};
 			
 			client.InteractionCreated += async (msg) =>
@@ -85,26 +96,30 @@ namespace accs
 
 			client.Ready += async Task () =>
             {
-                Console.WriteLine("Client is ready");
+				Console.WriteLine("Client is ready");
 
 				SocketGuild guild = guildProvider.GetGuild();
 				if (!guild.IsConnected)
 					throw new Exception("Client is not connected to guild!");
 
-				
+				/*
 				// Очищаем уже зарегистрированные команды
 				await client.Rest.BulkOverwriteGlobalCommands(new ApplicationCommandProperties[] { });
 				await client.Rest.BulkOverwriteGuildCommands(new ApplicationCommandProperties[] { }, guildProvider.GetGuildId());
-				
-				
+				Console.WriteLine("Commands vanished", LoggingLevel.Info);
+				*/
+
 				// Регистрируем актуальные команды
 				await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), app.Services);
 				await interaction.RegisterCommandsToGuildAsync(guildProvider.GetGuildId());
 
-				Console.WriteLine("Commands registered");
+				Console.WriteLine("Commands registered", LoggingLevel.Info);
 			};
 
 			client.StartAsync().Wait();
+
+			app.UseAuthentication();
+			app.UseAuthorization();
 
 			app.Run();
 		}

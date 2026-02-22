@@ -18,6 +18,7 @@ namespace accs.Database
 		public DbSet<Activity> Activities { get; set; }
 		public DbSet<UnitStatus> UnitStatuses { get; set; }
 		public DbSet<Status> Statuses { get; set; }
+		public DbSet<DiscordNotification> DiscordNotifications { get; set; }
 
 		public DbSet<Ticket> Tickets { get; set; }
 		public DbSet<InviteTicket> InviteTickets { get; set; }

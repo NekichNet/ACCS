@@ -237,6 +237,7 @@ namespace accs.DiscordBot.Interactions
 					}
 
 					await _guildProvider.GetGuild().GetUser(ticket.AuthorDiscordId).AddRolesAsync(roles);
+					await post.NotifyOnAssignAsync(Context.Guild, _db, unit);
 				}
 				else
 					await _logService.WriteAsync($"ReturnFromRetirenmentHandler: Post с id {id} не найден", LoggingLevel.Error);

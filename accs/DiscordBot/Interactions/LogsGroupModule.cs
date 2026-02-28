@@ -4,7 +4,6 @@ using accs.Services;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 
 namespace accs.DiscordBot.Interactions
 {

@@ -23,7 +23,7 @@ namespace accs.Services
 
         public async Task CleanupAsync()
         {
-            foreach (SocketGuildUser user in _guild.Users)
+            await foreach (SocketGuildUser user in _guild.GetUsersAsync())
             {
                 if (user.IsBot)
                 {

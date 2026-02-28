@@ -43,7 +43,6 @@ namespace accs.Models.Tickets
 							text += role.Mention;
 					}
 				}
-				await channel.SendMessageAsync(text: text, allowedMentions: AllowedMentions.All);
 
 				EmbedBuilder embed = new EmbedBuilder()
 					.WithTitle($"Жалоба №{Id}")
@@ -55,7 +54,7 @@ namespace accs.Models.Tickets
 					"\r\n***/ticket accept*** — Принять тикет, доступно ВП." +
 					"\r\n***/ticket refuse*** — Отказать в тикете, доступно ВП." +
 					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.");
-				await channel.SendMessageAsync(embed: embed.Build());
+				await channel.SendMessageAsync(embed: embed.Build(), text: text, allowedMentions: AllowedMentions.All);
 			}
 		}
 

@@ -36,6 +36,7 @@ namespace accs.Models
         public virtual async Task CancelAsync(IGuildProviderService guildProvider, AppDbContext db)
         {
 			Status = TicketStatus.Canceled;
+            ClosedUserId = AuthorDiscordId;
 			await DeleteChannelAsync(guildProvider);
 			await db.SaveChangesAsync();
 		}
@@ -103,15 +104,46 @@ namespace accs.Models
 			if (!Path.Exists(directoryPath))
                 Directory.CreateDirectory(directoryPath);
 
-            using (FileStream stream = new FileStream(Path.Join(directoryPath, $"{Id}.txt"), FileMode.Create))
+            string dialogue = "";
+            string filePath = Path.Join(directoryPath, $"{Id}.txt");
+
+			using (StreamWriter stream = new StreamWriter(filePath, false, Encoding.UTF8))
             {
-                foreach (IMessage message in messages)
+                foreach (IMessage message in messages.Reverse())
                 {
-					byte[] text = Encoding.Unicode.GetBytes($"[{message.Timestamp.ToString()}] " + message.Author.Username + ": " + message.Content + "\n");
+                    DateTime messageTime = message.Timestamp.LocalDateTime;
+					string text = $"[{messageTime.ToShortDateString()}, {messageTime.ToShortTimeString()}] " + message.Author.GlobalName + ": " + message.Content + "\n";
 					await stream.WriteAsync(text);
+                    dialogue += text;
 				}
             }
 			await guild.GetTextChannel(ChannelDiscordId).DeleteAsync();
+
+            ulong storageChannelId;
+            if (ulong.TryParse(DotNetEnv.Env.GetString("TICKET_STORAGE_CHANNEL_ID"), out storageChannelId) == false)
+            {
+                storageChannelId = guild.PublicUpdatesChannel.Id;
+            }
+
+            SocketGuildUser authorUser = guild.GetUser(AuthorDiscordId);
+            string authorNickname = "Не найден на сервере";
+            if (authorUser != null)
+            {
+                authorNickname = authorUser.DisplayName;
+            }
+
+			SocketGuildUser closedUser = guild.GetUser((ulong)ClosedUserId);
+			string closedNickname = "Не найден на сервере";
+			if (closedUser != null)
+			{
+				closedNickname = closedUser.DisplayName;
+			}
+
+			SocketTextChannel storageChannel = guild.GetTextChannel(storageChannelId);
+            if (storageChannel != null)
+                await storageChannel.SendFileAsync(filePath, $"{Discriminator} #{Id} {Status.ToString()}. Автор: {authorNickname}. Закрыл: {closedNickname}");
+            else
+                Console.WriteLine("Не найден канал для сохранения сообщений тикета!");
 		}
 
         public virtual List<Post> GetAdmins(AppDbContext db)

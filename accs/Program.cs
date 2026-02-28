@@ -48,18 +48,10 @@ namespace accs
 
 			builder.Services.AddScoped<IOCRService, OCRService>();
 			builder.Services.AddScoped<ILogService, LogService>();
-			builder.Services.AddTransient<IUsersCleanUpService, UsersCleanupService>();
+			//builder.Services.AddTransient<IUsersCleanUpService, UsersCleanupService>();
 
-			builder.Services.AddHostedService<DailyCleanupService>();
+			//builder.Services.AddHostedService<DailyCleanupService>();
 			builder.Services.AddHostedService<AutoStatusService>();
-
-			builder.Services.AddAuthentication(options => { /* Authentication options */ })
-				.AddDiscord(options =>
-				{
-					options.ClientId = Env.GetString("CLIENT_ID");
-					options.ClientSecret = Env.GetString("CLIENT_SECRET");
-				});
-			builder.Services.AddAuthorization();
 
 			var app = builder.Build();
 
@@ -117,9 +109,6 @@ namespace accs
 			};
 
 			client.StartAsync().Wait();
-
-			app.UseAuthentication();
-			app.UseAuthorization();
 
 			app.Run();
 		}

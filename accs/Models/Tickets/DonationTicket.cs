@@ -43,7 +43,6 @@ namespace accs.Models.Tickets
 							text += role.Mention;
 					}
 				}
-				await channel.SendMessageAsync(text: text, allowedMentions: AllowedMentions.All);
 
 				string requisites = DotNetEnv.Env.GetString("DONATION_REQUISITES",
 				"Реквизиты для пожертвований не найдены.");
@@ -59,7 +58,7 @@ namespace accs.Models.Tickets
 					"\r\n***/ticket accept*** — Закрыть тикет как решённый, доступно администраторам." +
 					"\r\n***/ticket refuse*** — Закрыть тикет как не решённый, доступно администраторам." +
 					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.");
-				await channel.SendMessageAsync(embed: embed.Build());
+				await channel.SendMessageAsync(embed: embed.Build(), text: text, allowedMentions: AllowedMentions.All);
 			}
 		}
 

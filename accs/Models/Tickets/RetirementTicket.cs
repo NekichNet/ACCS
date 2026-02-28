@@ -44,7 +44,6 @@ namespace accs.Models.Tickets
 							text += role.Mention;
 					}
 				}
-				await channel.SendMessageAsync(text: text, allowedMentions: AllowedMentions.All);
 
 				Unit? unit = await db.Units.FindAsync(AuthorDiscordId);
 
@@ -69,7 +68,7 @@ namespace accs.Models.Tickets
 					"\r\n***/ticket accept*** — Помощь оказана, закрыть тикет, доступно администрации." +
 					"\r\n***/ticket refuse*** — Отказать в тикете, доступно администрации." +
 					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.");
-				await channel.SendMessageAsync(embed: embed.Build());
+				await channel.SendMessageAsync(embed: embed.Build(), text: text, allowedMentions: AllowedMentions.All);
 			}
 		}
 

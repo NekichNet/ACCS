@@ -44,7 +44,6 @@ namespace accs.Models.Tickets
 							text += role.Mention;
 					}
 				}
-				await channel.SendMessageAsync(text: text, allowedMentions: AllowedMentions.All);
 
 				string steamId = "Не указан";
 				string authorName = "";
@@ -74,14 +73,15 @@ namespace accs.Models.Tickets
 					"\r\n***/ticket refuse*** — Закрыть тикет как не решённый, доступно администраторам." +
 					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.")
 					.AddField($"Steam ID {authorName}", steamId);
-				await channel.SendMessageAsync(embed: embed.Build());
+				await channel.SendMessageAsync(embed: embed.Build(), text: text, allowedMentions: AllowedMentions.All);
 			}
 		}
 
 		public override List<Post> GetAdmins(AppDbContext db)
 		{
 			List<Post> admins = new List<Post>();
-			admins.AddRange(db.Posts.Where(p => p.Subdivision != null).Where(p => p.Subdivision.Id == 1));
+			admins.Add(db.Posts.First(p => p.Id == 16));
+			admins.Add(db.Posts.First(p => p.Id == 17));
 			return admins;
 		}
 	}

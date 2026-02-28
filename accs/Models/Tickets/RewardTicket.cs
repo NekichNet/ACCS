@@ -4,23 +4,22 @@ using accs.Services.Interfaces;
 using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
-using System;
 
 namespace accs.Models.Tickets
 {
-    public class VipTicket : Ticket
-	{
-        public VipTicket()
-        {
-        }
+    public class RewardTicket : Ticket
+    {
+		public RewardTicket()
+		{
+		}
 
-        public VipTicket(ulong authorId) : base(authorId) { }
+		public RewardTicket(ulong authorId) : base(authorId) { }
 
 		public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
 		{
 			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 			if (channel == null)
-				await logService.WriteAsync("VipTicket: channel is null", LoggingLevel.Error);
+				await logService.WriteAsync("RewardTicket: channel is null", LoggingLevel.Error);
 			else
 			{
 				List<Post> adminPosts = GetAdmins(db);
@@ -46,34 +45,17 @@ namespace accs.Models.Tickets
 				}
 				await channel.SendMessageAsync(text: text, allowedMentions: AllowedMentions.All);
 
-				string steamId = "Не указан";
-				string authorName = "";
-
-				Unit? authorUnit = db.Units.Find(AuthorDiscordId);
-                if (authorUnit != null)
-                {
-					authorName = authorUnit.GetOnlyNickname();
-                    if (authorUnit.SteamId != null)
-					{
-						steamId = ((ulong)authorUnit.SteamId).ToString();
-					}
-                }
-
-                string requisites = DotNetEnv.Env.GetString("DONATION_REQUISITES",
-				"Реквизиты для пожертвований не найдены.");
-
 				EmbedBuilder embed = new EmbedBuilder()
-					.WithTitle($"Тикет на получение Vip сервера №{Id}")
+					.WithTitle($"Тикет на представление к награде №{Id}")
 					.WithDescription("Автор: " + guildProvider.GetGuild().GetUser(AuthorDiscordId).DisplayName)
-					.WithColor(Color.Blue)
-					.AddField("Если Вы всё ещё не привязали Steam ID",
-					"Воспользуйтесь командой `/steam` прямо сейчас. Также, сообщите свой Steam ID в этом тикете.")
+					.WithColor(Color.DarkPurple)
+					.AddField("С чего начать?",
+					"Напишите никнейм, на какую награду претендуете и скиньте необходимые пруфы.")
 					.AddField("Команды",
 					"***/ticket cancel*** — Отменить тикет, доступно автору." +
 					"\r\n***/ticket accept*** — Закрыть тикет как решённый, доступно администраторам." +
 					"\r\n***/ticket refuse*** — Закрыть тикет как не решённый, доступно администраторам." +
-					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.")
-					.AddField($"Steam ID {authorName}", steamId);
+					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.");
 				await channel.SendMessageAsync(embed: embed.Build());
 			}
 		}
@@ -81,7 +63,7 @@ namespace accs.Models.Tickets
 		public override List<Post> GetAdmins(AppDbContext db)
 		{
 			List<Post> admins = new List<Post>();
-			admins.AddRange(db.Posts.Where(p => p.Subdivision != null).Where(p => p.Subdivision.Id == 1));
+			admins.AddRange(db.Posts.Where(p => p.Id == 23));
 			return admins;
 		}
 	}

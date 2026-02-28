@@ -18,6 +18,7 @@ namespace accs.Database
 		public DbSet<Activity> Activities { get; set; }
 		public DbSet<UnitStatus> UnitStatuses { get; set; }
 		public DbSet<Status> Statuses { get; set; }
+		public DbSet<DiscordNotification> DiscordNotifications { get; set; }
 
 		public DbSet<Ticket> Tickets { get; set; }
 		public DbSet<InviteTicket> InviteTickets { get; set; }
@@ -27,6 +28,7 @@ namespace accs.Database
 		public DbSet<ReportTicket> ReportTickets { get; set; }
 		public DbSet<RetirementTicket> RetirementTickets { get; set; }
 		public DbSet<TechTicket> TechTickets { get; set; }
+		public DbSet<RewardTicket> RewardTickets { get; set; }
 		public DbSet<VipTicket> VipTickets { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
@@ -54,11 +56,12 @@ namespace accs.Database
 			Permission administrator = new Permission { Type = PermissionType.Administrator, Name = "Администратор", Description = "Все права без ограничений." };
 			Permission moderateNicknames = new Permission { Type = PermissionType.ModerateNicknames, Name = "Изменение чужих никнеймов", Description = "Право изменять чужие никнеймы." };
 			Permission steamIdView = new Permission { Type = PermissionType.SteamIdView, Name = "Просмотр Steam ID", Description = "Право получать чужие Steam Id." };
+			Permission autoReprimandImmune = new Permission { Type = PermissionType.AutoReprimandImmune, Name = "Освобождение от сборов", Description = "Иммунитет к автоматической выдаче выговора за отстутствие на сборах." };
 
 			modelBuilder.Entity<Permission>().HasData(
 				confirmActivity, vacationAccess, giveReprimandGratitude, forceVacation, changeRanks,
 				changePosts, assignRewards, manageStructure, manageRewards, manageDocTypes, administrator,
-				steamIdView
+				steamIdView, autoReprimandImmune
 			);
 
 			/* Звания */

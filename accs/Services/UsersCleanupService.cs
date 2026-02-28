@@ -33,14 +33,15 @@ namespace accs.Services
                 DateTimeOffset? days = user.JoinedAt;
                 if (days == null)
                 {
-                    await _logService.WriteAsync("Cannot read user.JoinedAt, stopping cleanup.", LoggingLevel.Error);
-                    return;
+                    await _logService.WriteAsync($"Cannot read {user.DisplayName}'s user.JoinedAt, continuing.", LoggingLevel.Warn);
+                    continue;
                 }
 
 				if (!user.Roles.Any(r => r.Id != _guild.EveryoneRole.Id)
                     && ((DateTimeOffset)days).Day > DaysTimer
                     && !_db.Tickets.Any(t => t.AuthorDiscordId == user.Id && t.Status == TicketStatus.Opened))
                 {
+                    await _logService.WriteAsync($"Кик пользователя {user.DisplayName} за бездействие.", LoggingLevel.Info);
                     await user.KickAsync($"Вы находитесь на сервере РХБЗ дольше {DaysTimer} дней без роли");
                 }
             }

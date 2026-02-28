@@ -14,6 +14,7 @@
         ManageDocTypes = 10,
         Administrator = 11,
         ModerateNicknames = 12,
-        SteamIdView = 13
+        SteamIdView = 13,
+        AutoReprimandImmune = 14
     }
 }

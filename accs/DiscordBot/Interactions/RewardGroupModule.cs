@@ -5,6 +5,8 @@ using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
+using Discord.Rest;
+using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
@@ -15,11 +17,19 @@ namespace accs.DiscordBot.Interactions
     {
         private readonly AppDbContext _db;
         private readonly ILogService _logService;
+		private readonly IGuildProviderService _guildProvider;
 
-        public RewardGroupModule(AppDbContext db, ILogService logService)
+		public RewardGroupModule(AppDbContext db,  ILogService logService, IGuildProviderService guildProvider)
         {
             _db = db;
             _logService = logService;
+            _guildProvider = guildProvider;
+        }
+
+        public override Task BeforeExecuteAsync(ICommandInfo command)
+        {
+            _db.Rewards.Load();
+            return base.BeforeExecuteAsync(command);
         }
 
         [HasPermission(PermissionType.AssignRewards)]
@@ -36,22 +46,34 @@ namespace accs.DiscordBot.Interactions
 
             if (rewardId == null)
             {
-                var menuBuilder = new SelectMenuBuilder()
+                string customId = $"reward-menu-{unit.DiscordId}:1";
+
+				var menuBuilder = new SelectMenuBuilder()
                     .WithPlaceholder("Награда")
-                    .WithCustomId($"reward-menu-{unit.DiscordId}")
-                    .WithMinValues(1);
+                    .WithCustomId(customId)
+                    .WithMinValues(1)
+                    .WithMaxValues(1);
 
                 var rewards = await _db.Rewards.ToListAsync();
 
-                foreach (Reward reward in rewards)
+                for (int i = 0; i < rewards.Count; i++)
                 {
-                    menuBuilder.AddOption(reward.Name, reward.Id.ToString(), reward.Description);
-                }
+					string description = rewards[i].Description.Length > 95 ? rewards[i].Description.Substring(0, 95) : rewards[i].Description;
+					if (description.Length < 2)
+						description = "Нет описания";
+					menuBuilder.AddOption(rewards[i].Name, rewards[i].Id.ToString(),
+						description.Length == 95 ? description + "..." : description);
+                    if (i == 23)
+                    {
+                        menuBuilder.AddOption("Следующая страница", $"next-page");
+                        break;
+                    }
+				}
 
                 var builder = new ComponentBuilder()
                     .WithSelectMenu(menuBuilder);
 
-                await RespondAsync("Выберите награды, которые выдать " + unit.Nickname, components: builder.Build(), ephemeral: true);
+                await RespondAsync("(Страница 1) Выберите награду" + unit.Nickname, components: builder.Build(), ephemeral: true);
             }
             else
             {
@@ -64,6 +86,10 @@ namespace accs.DiscordBot.Interactions
                 }
 
                 unit.Rewards.Add(reward);
+
+                SocketGuildUser guildUser = _guildProvider.GetGuild().GetUser(user.Id);
+                await guildUser.AddRoleAsync(reward.DiscordRoleId);
+
                 await _db.SaveChangesAsync();
                 await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выдана награда: {reward.Name}", ephemeral: true);
             }
@@ -81,18 +107,21 @@ namespace accs.DiscordBot.Interactions
                     var http = new HttpClient();
                     var bytes = await http.GetByteArrayAsync(image.Url);
 
-                    if (!Directory.Exists("rewards"))
-                        Directory.CreateDirectory("rewards");
-                    string filePath = Path.Join("rewards", image.Filename);
+                    if (!Directory.Exists("newRewards"))
+                        Directory.CreateDirectory("newRewards");
+                    string filePath = Path.Join("newRewards", image.Filename);
 
                     await File.WriteAllBytesAsync(filePath, bytes);
                     savedImagePath = filePath;
                 }
 
+                RestRole role = await _guildProvider.GetGuild().CreateRoleAsync(name: name, color: Color.Gold);
+
                 Reward reward = new Reward()
                 {
                     Name = name,
                     Description = description,
+                    DiscordRoleId = role.Id,
                     ImagePath = savedImagePath
                 };
 
@@ -122,9 +151,44 @@ namespace accs.DiscordBot.Interactions
 
 
         [HasPermission(PermissionType.AssignRewards)]
-        [ComponentInteraction("menu-*", ignoreGroupNames: true)]
-        public async Task MenuHandler(string unitId, string[] selectedIds)
+        [ComponentInteraction("reward-menu-*:*", ignoreGroupNames: true)]
+        public async Task MenuHandler(string unitId, string pageString, string[] selectedIds)
         {
+            if (selectedIds[0] == "next-page")
+            {
+                int page = int.Parse(pageString);
+
+				string customId = $"reward-menu-{unitId}:{page + 1}";
+
+				var menuBuilder = new SelectMenuBuilder()
+					.WithPlaceholder("Награда")
+					.WithCustomId(customId)
+					.WithMinValues(1)
+					.WithMaxValues(1);
+
+				var newRewards = await _db.Rewards.ToListAsync();
+
+				for (int i = 24 * page; i < newRewards.Count; i++)
+				{
+					string description = newRewards[i].Description.Length > 95 ? newRewards[i].Description.Substring(0, 95) : newRewards[i].Description;
+					if (description.Length < 2)
+						description = "Нет описания";
+					menuBuilder.AddOption(newRewards[i].Name, newRewards[i].Id.ToString(),
+						description.Length == 95 ? description + "..." : description);
+					if (i == 24 * int.Parse(pageString) + 23)
+					{
+						menuBuilder.AddOption("Следующая страница", customId + $"next-page");
+						break;
+					}
+				}
+
+				var builder = new ComponentBuilder()
+					.WithSelectMenu(menuBuilder);
+
+                await RespondAsync($"(Страница {page + 1}) Выберите награду", components: builder.Build(), ephemeral: true);
+                return;
+			}
+
             Unit? unit = await _db.Units.FindAsync(ulong.Parse(unitId));
             if (unit == null)
             {
@@ -135,7 +199,9 @@ namespace accs.DiscordBot.Interactions
 
             List<Reward> rewards = new List<Reward>();
 
-            foreach (string selectedId in selectedIds)
+			SocketGuildUser guildUser = _guildProvider.GetGuild().GetUser(ulong.Parse(unitId));
+
+			foreach (string selectedId in selectedIds)
             {
                 if (!int.TryParse(selectedId, out int rewardId))
                 {
@@ -151,7 +217,8 @@ namespace accs.DiscordBot.Interactions
                     return;
                 }
                 rewards.Add(reward);
-            }
+				await guildUser.AddRoleAsync(reward.DiscordRoleId);
+			}
             unit.Rewards.AddRange(rewards);
             await _db.SaveChangesAsync();
             await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выданы награды: {String.Join(", ", rewards.Select(r => r.Name))}");
@@ -185,7 +252,11 @@ namespace accs.DiscordBot.Interactions
                 .WithFooter($"Страница {page}/{totalPages}");
 
             foreach (var reward in pageItems)
-                embed.AddField(reward.Name, $"ID: {reward.Id}\r\n" + reward.Description);
+                embed.AddField(reward.Name,
+                    $"ID: {reward.Id}\n"
+                    + reward.Description
+                    + "\nНаграждённые бойцы:\n"
+                    + String.Join("\n", reward.Units.Select(u => u.GetOnlyNickname())));
 
             ComponentBuilder components = new ComponentBuilder();
 
@@ -237,12 +308,12 @@ namespace accs.DiscordBot.Interactions
                         return;
                     }
 
-                    if (!Directory.Exists("rewards"))
+                    if (!Directory.Exists("newRewards"))
                     {
-                        Directory.CreateDirectory("rewards");
+                        Directory.CreateDirectory("newRewards");
                     }
 
-                    string filePath = Path.Combine("rewards", image.Filename);
+                    string filePath = Path.Combine("newRewards", image.Filename);
 
                     using (var http = new HttpClient())
                     {
@@ -308,12 +379,21 @@ namespace accs.DiscordBot.Interactions
                         .WithCustomId("reward-delete-select")
                         .WithPlaceholder("Выберите награду для удаления");
 
-                    foreach (var reward in rewards)
-                    {
-                        menu.AddOption(reward.Name, reward.Id.ToString(), reward.Description);
-                    }
+					for (int i = 0; i < rewards.Count; i++)
+					{
+						string description = rewards[i].Description.Length > 95 ? rewards[i].Description.Substring(0, 95) : rewards[i].Description;
+						if (description.Length < 2)
+							description = "Нет описания";
+						menu.AddOption(rewards[i].Name, rewards[i].Id.ToString(),
+							description.Length == 95 ? description + "..." : description);
+						if (i == 23)
+						{
+							menu.AddOption("Следующая страница", "next-page");
+							break;
+						}
+					}
 
-                    ComponentBuilder builder = new ComponentBuilder()
+					ComponentBuilder builder = new ComponentBuilder()
                         .WithSelectMenu(menu);
 
                     await RespondAsync("Выберите награду для удаления:", components: builder.Build(), ephemeral: true);
@@ -328,12 +408,50 @@ namespace accs.DiscordBot.Interactions
 
 
         [HasPermission(PermissionType.ManageRewards)]
-        [ComponentInteraction("reward-delete-select")]
-        public async Task RewardDeleteHandler(string selectedId)
+        [ComponentInteraction("reward-delete-select:*")]
+        public async Task RewardDeleteHandler(string pageString, string[] selectedIds)
         {
             try
             {
-                if (!int.TryParse(selectedId, out int id))
+				if (selectedIds[0] == "next-page")
+				{
+					int page = int.Parse(pageString);
+
+					string customId = $"reward-delete-select:{page + 1}";
+
+					var menuBuilder = new SelectMenuBuilder()
+						.WithPlaceholder("Награда")
+						.WithCustomId(customId)
+						.WithMinValues(1)
+						.WithMaxValues(1);
+
+					var newRewards = await _db.Rewards.ToListAsync();
+
+					for (int i = 24 * page; i < newRewards.Count; i++)
+					{
+						string description = newRewards[i].Description.Length > 95 ? newRewards[i].Description.Substring(0, 95) : newRewards[i].Description;
+						if (description.Length < 2)
+							description = "Нет описания";
+						menuBuilder.AddOption(newRewards[i].Name, newRewards[i].Id.ToString(),
+							description.Length == 95 ? description + "..." : description);
+						if (i == 24 * int.Parse(pageString) + 23)
+						{
+							menuBuilder.AddOption("Следующая страница", customId + $"next-page");
+							break;
+						}
+					}
+
+					var builder = new ComponentBuilder()
+						.WithSelectMenu(menuBuilder);
+
+					await ModifyOriginalResponseAsync(func: (opt) =>
+					{
+						opt.Components = builder.Build();
+					});
+					return;
+				}
+
+				if (!int.TryParse(selectedIds[0], out int id))
                 {
                     await RespondAsync("Ошибка: неверный ID награды.", ephemeral: true);
                     return;

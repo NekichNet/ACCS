@@ -43,7 +43,7 @@ namespace accs.DiscordBot.Interactions
             {
 				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
 				{
-					await ticket.AcceptAsync(_guildProvider, _db);
+					await ticket.AcceptAsync(_guildProvider, _db, unit.DiscordId);
 					return;
 				}
 			}
@@ -68,7 +68,7 @@ namespace accs.DiscordBot.Interactions
 			{
 				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
 				{
-					await ticket.RefuseAsync(_guildProvider, _db);
+					await ticket.RefuseAsync(_guildProvider, _db, unit.DiscordId);
 					return;
 				}
 			}
@@ -162,7 +162,7 @@ namespace accs.DiscordBot.Interactions
 				{
 					if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
 					{
-						await invite.AcceptanceHandler(selectedId, _guildProvider, _db, _logService);
+						await invite.AcceptanceHandler(selectedId, _guildProvider, _db, _logService, unit.DiscordId);
 					}
 				}
 
@@ -237,6 +237,7 @@ namespace accs.DiscordBot.Interactions
 					}
 
 					await _guildProvider.GetGuild().GetUser(ticket.AuthorDiscordId).AddRolesAsync(roles);
+					await post.NotifyOnAssignAsync(Context.Guild, _db, unit);
 				}
 				else
 					await _logService.WriteAsync($"ReturnFromRetirenmentHandler: Post с id {id} не найден", LoggingLevel.Error);

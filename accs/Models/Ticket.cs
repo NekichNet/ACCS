@@ -14,6 +14,7 @@ namespace accs.Models
         public ulong AuthorDiscordId { get; set; }
         public ulong ChannelDiscordId { get; set; }
         public TicketStatus Status { get; set; }
+        public ulong? ClosedUserId { get; set; }
 		public string? Discriminator { get; set; }
 
 		public Ticket(ulong authorId)
@@ -24,9 +25,10 @@ namespace accs.Models
 
         public Ticket() { }
 
-        public virtual async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db)
+        public virtual async Task AcceptAsync(IGuildProviderService guildProvider, AppDbContext db, ulong closedUserId)
         {
 			Status = TicketStatus.Accepted;
+			ClosedUserId = closedUserId;
 			await DeleteChannelAsync(guildProvider);
             await db.SaveChangesAsync();
         }
@@ -38,9 +40,10 @@ namespace accs.Models
 			await db.SaveChangesAsync();
 		}
 
-        public virtual async Task RefuseAsync(IGuildProviderService guildProvider, AppDbContext db)
+        public virtual async Task RefuseAsync(IGuildProviderService guildProvider, AppDbContext db, ulong closedUserId)
         {
 			Status = TicketStatus.Refused;
+			ClosedUserId = closedUserId;
 			await DeleteChannelAsync(guildProvider);
 			await db.SaveChangesAsync();
 		}

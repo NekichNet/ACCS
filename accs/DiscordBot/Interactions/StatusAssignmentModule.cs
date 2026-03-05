@@ -15,11 +15,13 @@ namespace accs.DiscordBot.Interactions
     {
         private readonly AppDbContext _db;
         private readonly ILogService _logService;
+        private readonly IGuildProviderService _guildProvider;
 
-        public StatusAssignmentModule(AppDbContext db, ILogService logService)
+        public StatusAssignmentModule(AppDbContext db, ILogService logService, IGuildProviderService guildProvider)
         {
             _db = db;
             _logService = logService;
+            _guildProvider = guildProvider;
         }
 
         [HasPermission(PermissionType.GiveReprimandGratitude)]
@@ -66,7 +68,10 @@ namespace accs.DiscordBot.Interactions
                     || us.Status.Type == StatusType.SevereReprimand)
                     && !us.IsCompleted());
                     if (prevUnitStatus != null)
-                        prevUnitStatus.EndDate = DateTime.UtcNow;
+                    {
+						prevUnitStatus.EndDate = DateTime.UtcNow;
+                        prevUnitStatus.RemoveRole(_guildProvider);
+					}
 
                     if (givenType != null)
                     {
@@ -77,6 +82,7 @@ namespace accs.DiscordBot.Interactions
 							UnitStatus unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.UtcNow, EndDate = endDate, Status = status };
 							await _db.UnitStatuses.AddAsync(unitStatus);
 							await _db.SaveChangesAsync();
+							unitStatus.SetRole(_guildProvider);
 							await RespondAsync(
 								$"Бойцу {unit.GetOnlyNickname()} установлен(а) {status.Name}"
 								+ (endDate == null ? " беcсрочно" : $" до {DateOnly.FromDateTime((DateTime)endDate).ToShortDateString()}"
@@ -140,6 +146,7 @@ namespace accs.DiscordBot.Interactions
 
                 await _db.UnitStatuses.AddAsync(unitStatus);
 				await _db.SaveChangesAsync();
+				unitStatus.SetRole(_guildProvider);
 
 				await RespondAsync($"Оформлен отпуск для {unit.GetOnlyNickname()} на {days} дней до {endDate:d}.");
             }
@@ -180,6 +187,7 @@ namespace accs.DiscordBot.Interactions
 
                 activeVacation.EndDate = DateTime.UtcNow;
 				await _db.SaveChangesAsync();
+				activeVacation.RemoveRole(_guildProvider);
 
 				await RespondAsync(
                     $"Отпуск {unit.GetOnlyNickname()} завершён досрочно."

@@ -214,6 +214,7 @@ namespace accs.DiscordBot.Interactions
 				);
 
 			activeRetirement.EndDate = DateTime.UtcNow;
+			activeRetirement.RemoveRole(_guildProvider);
 
 			unit.Posts.Clear();
 

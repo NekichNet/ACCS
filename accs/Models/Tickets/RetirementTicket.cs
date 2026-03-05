@@ -125,9 +125,8 @@ namespace accs.Models.Tickets
 
 				unit.Posts.Clear();
 				await db.UnitStatuses.AddAsync(unitStatus);
-                
-
-                await channel.SendMessageAsync(
+				
+				await channel.SendMessageAsync(
                     "Вы успешно отправлены в отставку. Все ваши должности сняты."
                 );
 
@@ -135,6 +134,7 @@ namespace accs.Models.Tickets
 				ClosedUserId = closedUserId;
                 await DeleteChannelAsync(guildProvider);
 				await db.SaveChangesAsync();
+				unitStatus.SetRole(guildProvider);
 			}
             else
             {

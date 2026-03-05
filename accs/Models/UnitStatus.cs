@@ -1,4 +1,7 @@
-﻿namespace accs.Models
+﻿using accs.Services.Interfaces;
+using Discord.WebSocket;
+
+namespace accs.Models
 {
     public class UnitStatus // Для любых временных статусов
     {
@@ -12,5 +15,31 @@
         {
             return EndDate == null ? false : EndDate < DateTime.UtcNow;
         }
+
+        public void SetRole(IGuildProviderService guildProvider)
+        {
+            if (Status.DiscordRoleId != null)
+            {
+				SocketGuild guild = guildProvider.GetGuild();
+                if (guild != null)
+                {
+                    SocketGuildUser user = guild.GetUser(Unit.DiscordId);
+                    user.AddRoleAsync((ulong)Status.DiscordRoleId);
+                }
+			}
+        }
+
+        public void RemoveRole(IGuildProviderService guildProvider)
+        {
+			if (Status.DiscordRoleId != null)
+			{
+				SocketGuild guild = guildProvider.GetGuild();
+				if (guild != null)
+				{
+					SocketGuildUser user = guild.GetUser(Unit.DiscordId);
+					user.RemoveRoleAsync((ulong)Status.DiscordRoleId);
+				}
+			}
+		}
     }
 }

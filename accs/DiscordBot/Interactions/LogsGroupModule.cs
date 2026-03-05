@@ -18,7 +18,6 @@ namespace accs.DiscordBot.Interactions
         }
 
         [SlashCommand("get", "Получить список логов")]
-        [DefaultMemberPermissions(GuildPermission.Administrator)]
         public async Task GetLogs()
         {
             if (!Directory.Exists(_logService.LogDirectoryPath))
@@ -29,7 +28,7 @@ namespace accs.DiscordBot.Interactions
 
             var files = Directory.GetFiles(_logService.LogDirectoryPath, "*.txt");
 
-            if (files.Length == 0)
+            if (!files.Any())
             {
                 await RespondAsync("Логи отсутствуют.", ephemeral: true);
                 return;

@@ -41,7 +41,7 @@ namespace accs.DiscordBot.Interactions
 			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
 			if (unit != null)
             {
-				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
+				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any() || unit.HasPermission(PermissionType.Administrator))
 				{
 					await ticket.AcceptAsync(_guildProvider, _db, unit.DiscordId);
 					return;
@@ -66,7 +66,7 @@ namespace accs.DiscordBot.Interactions
 			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
 			if (unit != null)
 			{
-				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
+				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any() || unit.HasPermission(PermissionType.Administrator))
 				{
 					await ticket.RefuseAsync(_guildProvider, _db, unit.DiscordId);
 					return;

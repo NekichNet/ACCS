@@ -662,8 +662,6 @@ namespace accs.DiscordBot.Interactions
                 }
             }
 
-
-
             [HasPermission(PermissionType.ManageStructure)]
             [SlashCommand("delete", "Удаляет должность по указанному Id")]
             public async Task PostDeleteCommand([Summary("posts_autocomplete"), Autocomplete] int Id) // Praise the code
@@ -683,8 +681,6 @@ namespace accs.DiscordBot.Interactions
                     await RespondAsync(err, ephemeral: true);
                 }
             }
-
-
 
             /// <summary>
             /// Recursive method to find wether unit is able to redact the post or not.
@@ -712,37 +708,50 @@ namespace accs.DiscordBot.Interactions
                 return hasPermission;
             }
 
-			[HasPermission(PermissionType.Administrator)]
 			[SlashCommand("notify", "Вызвать показ приветственного сообщения")]
 			public async Task NotificationShowCommand(int postId, IUser user, [ChannelTypes(ChannelType.Text)] IChannel? channel)
             {
+                Unit? authorUnit = await _db.Units.FindAsync(Context.User.Id);
+                if (authorUnit == null)
+                {
+					await RespondAsync($"Вы не найдены в системе", ephemeral: true);
+					await _logService.WriteAsync($"NotificationShowCommand: Пользователь {user.Username} не найден в системе", LoggingLevel.Info);
+					return;
+				}
+
                 Unit? unit = await _db.Units.FindAsync(user.Id);
                 if (unit == null)
                 {
-                    await RespondAsync($"Пользователь {user.Username} не найден в системе");
+                    await RespondAsync($"Пользователь {user.Username} не найден в системе", ephemeral: true);
                     await _logService.WriteAsync($"NotificationShowCommand: Пользователь {user.Username} не найден в системе", LoggingLevel.Info);
                     return;
                 }
 
-                Post? post = await _db.Posts.FindAsync(postId);
-                if (post == null)
+				Post? post = await _db.Posts.FindAsync(postId);
+				if (post == null)
 				{
-					await RespondAsync($"Должность с Id {postId} не найдена в системе");
+					await RespondAsync($"Должность с Id {postId} не найдена в системе", ephemeral: true);
 					await _logService.WriteAsync($"NotificationShowCommand: Должность с Id {postId} не найдена в системе", LoggingLevel.Info);
 					return;
 				}
 
-                if (post.DiscordNotification == null)
+				if (post.GetAllHeadsRecursive().Intersect(authorUnit.Posts).Any()
+                    || authorUnit.HasPermission(PermissionType.Administrator))
                 {
-					await RespondAsync($"Должность {post.GetFullName()} не имеет привязанных сообщений");
-					await _logService.WriteAsync($"NotificationShowCommand: Должность {post.GetFullName()} не имеет привязанных сообщений", LoggingLevel.Info);
+					if (post.DiscordNotification == null)
+					{
+						await RespondAsync($"Должность {post.GetFullName()} не имеет привязанных сообщений", ephemeral: true);
+						await _logService.WriteAsync($"NotificationShowCommand: Должность {post.GetFullName()} не имеет привязанных сообщений", LoggingLevel.Info);
+					}
+					else
+					{
+						await RespondAsync("Сообщение принудительно вызвано.", ephemeral: true);
+						await post.NotifyOnAssignAsync(_guildProvider.GetGuild(), _db, unit,
+							channel == null ? post.DiscordNotification.ChannelId : channel.Id);
+					}
 				}
                 else
-                {
-                    await RespondAsync("Сообщение принудительно вызвано.", ephemeral: true);
-					await post.NotifyOnAssignAsync(_guildProvider.GetGuild(), _db, unit,
-                        channel == null ? post.DiscordNotification.ChannelId : channel.Id);
-                }
+					await RespondAsync($"У вас нет прав вызывать уведомления этой должности.", ephemeral: true);
 			}
 		}
     }

@@ -81,7 +81,7 @@ namespace accs.DiscordBot.Interactions
                 }
 
                 /// Channel creation and block for everyone to connect
-                var newChannel = await guild.CreateVoiceChannelAsync($"【🔊】Пех {freeNumber}", (props) => { props.Bitrate = 64000; props.UserLimit = null; props.CategoryId = voiceCategoryId; props.RTCRegion = "rotterdam"; });
+                var newChannel = await guild.CreateVoiceChannelAsync($"【🔊】Пех {freeNumber}", (props) => { props.Bitrate = 64000; props.UserLimit = null; props.CategoryId = voiceCategoryId; props.RTCRegion = after.VoiceChannel.RTCRegion; });
 
                 /// Permission for needed users being granted
                 SocketGuildUser guildUser = guild.GetUser(user.Id);

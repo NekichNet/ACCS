@@ -29,7 +29,7 @@ namespace accs.DiscordBot.Interactions
             _logService = logService;
         }
 
-        [SlashCommand("voice", "Зафиксировать активность всех бойцов в голосовом канале")]
+        [SlashCommand("voice", "Зафиксировать активность всех бойцов в голосовом канале.")]
         public async Task FixVoiceCommand([ChannelTypes(ChannelType.Voice, ChannelType.Stage)] IChannel channel)
         {
             try
@@ -78,7 +78,7 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-        [SlashCommand("screenshot", "Зафиксировать активность всех бойцов на скриншоте")]
+        [SlashCommand("screenshot", "Зафиксировать активность всех бойцов на скриншоте.")]
         public async Task FixScreenshotCommand(IAttachment screenshot)
         {
             await DeferAsync(ephemeral: true);
@@ -139,7 +139,7 @@ namespace accs.DiscordBot.Interactions
 			}
         }
 
-        [SlashCommand("user", "Зафиксировать активность указанного бойца")]
+        [SlashCommand("user", "Зафиксировать активность указанного бойца.")]
         public async Task FixUserCommand(IUser? user = null)
         {
             try
@@ -258,6 +258,44 @@ namespace accs.DiscordBot.Interactions
                 await _logService.WriteAsync($"Error in ConfirmActivityHandler: {ex.StackTrace}", LoggingLevel.Error);
                 await RespondAsync("Ошибка при подтверждении списка бойцов", ephemeral: true);
             }
+        }
+
+        [SlashCommand("get", "Узнать, кто был на сборах в определённую дату.")]
+        public async Task GetActivityCommand(string? dateString = null)
+        {
+            DateOnly date;
+
+            if (dateString == null)
+            {
+                date = DateOnly.FromDateTime(DateTime.UtcNow);
+            }
+            else if (!DateOnly.TryParse(dateString, out date))
+            {
+                await RespondAsync("Не удалось распознать введённую дату.");
+                return;
+            }
+            else if (date > DateOnly.FromDateTime(DateTime.UtcNow))
+            {
+                await RespondAsync("Введённая дата ещё не наступила.");
+                return;
+            }
+
+            await DeferAsync();
+
+            List<Activity> activities = _db.Activities.Where(a => a.Date == date).ToList();
+
+            string unitsListString = "Никого не было на сборах.";
+            if (activities.Any())
+                unitsListString = string.Join("\r\n", activities.Select(a => a.Unit.Rank.Name + " " + a.Unit.GetOnlyNickname()));
+
+            EmbedBuilder embed = new EmbedBuilder()
+                .WithTitle("Отчёт об активности")
+                .AddField("Дата", date.ToShortDateString(), inline: true)
+				.AddField("Количество", activities.Count(), inline: true)
+				.AddField("Бойцы", unitsListString)
+                .WithColor(Color.DarkGreen);
+
+            await ModifyOriginalResponseAsync(r => { r.Embed = embed.Build(); r.Content = ""; });
         }
 
         private EmbedBuilder GetResultsEmbedBuilder(Dictionary<Unit, bool> units, DateOnly date)

@@ -105,10 +105,12 @@ namespace accs.Models.Tickets
                     Unit = unit,
                     Status = retirementStatus,
                     StartDate = DateTime.UtcNow
-                };
+				};
 
-                foreach (Post post in unit.Posts)
-                {
+				SocketGuildUser user = guildProvider.GetGuild().GetUser(AuthorDiscordId);
+
+				foreach (Post post in unit.Posts)
+				{
 					List<IRole> roles = new List<IRole>();
 					if (post.DiscordRoleId != null)
 						roles.Add(await guildProvider.GetGuild().GetRoleAsync((ulong)post.DiscordRoleId));
@@ -120,12 +122,15 @@ namespace accs.Models.Tickets
 						subdiv = subdiv.Head;
 					}
 
-					await guildProvider.GetGuild().GetUser(AuthorDiscordId).RemoveRolesAsync(roles);
+					await user.RemoveRolesAsync(roles);
 				}
 
 				unit.Posts.Clear();
 				await db.UnitStatuses.AddAsync(unitStatus);
-				
+
+				if (unit.Rank.DiscordRoleId != null)
+					await user.RemoveRoleAsync((ulong)unit.Rank.DiscordRoleId);
+
 				await channel.SendMessageAsync(
                     "Вы успешно отправлены в отставку. Все ваши должности сняты."
                 );

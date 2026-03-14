@@ -105,9 +105,12 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("steam-list", "Высылает csv файл со списком бойцов и их Steam Id.")]
         public async Task GetSteamIdCSVCommand()
         {
-            List<Unit> unitsWithSteamid = await _db.Units.Where(x=>x.SteamId != null).ToListAsync();
+            List<Unit> unitsWithSteamid = await _db.Units
+                .Where(u => u.Posts.Any())
+                .Where(u => u.SteamId != null)
+                .ToListAsync();
 
-            int allUsersAmount = _db.Units.Count();
+            int allUsersAmount = _db.Units.Where(u => u.Posts.Any()).Count();
             int usersWithIdAmount = unitsWithSteamid.Count();
 
 			await RespondAsync($"Steam Id привязали {usersWithIdAmount} из {allUsersAmount} бойцов. Высылаю файл...");

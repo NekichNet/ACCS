@@ -210,7 +210,11 @@ namespace accs.DiscordBot.Interactions
 		[SlashCommand("list", "Вывести очередь на повышение")]
 		public async Task RankListCommand()
 		{
-			List<Unit> units = _db.Units.Where(u => u.Rank.Next != null).Where(u => u.Rank.Next.CounterToReach <= u.RankUpCounter).ToList();
+			List<Unit> units = _db.Units
+				.Where(u => u.Posts.Any())
+				.Where(u => u.Rank.Next != null)
+				.Where(u => u.Rank.Next.CounterToReach <= u.RankUpCounter)
+				.ToList();
 
 			if (units.Any())
 			{

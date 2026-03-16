@@ -1,5 +1,6 @@
 ﻿using accs.Database;
 using accs.DiscordBot.Preconditions;
+using accs.Models;
 using accs.Models.Enums;
 using accs.Models.Tickets;
 using accs.Services.Interfaces;
@@ -99,10 +100,20 @@ namespace accs.DiscordBot.Interactions
 			await RespondAsync("Тикет на вступление создан. Пожалуйста, выполните дальнейшие инструкции", ephemeral: true);
 		}
 
-		[IsUnit(false)]
 		[ComponentInteraction("friend-button", ignoreGroupNames: true)]
 		public async Task FriendButtonHandler()
 		{
+			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
+
+			if (unit != null)
+			{
+				if (unit.Posts.Any())
+				{
+					await RespondAsync("Вы уже состоите в клане и не находитесь в отставке.", ephemeral: true);
+					return;
+				}
+			}
+
 			if (_db.FriendTickets.Any(t => t.AuthorDiscordId == Context.User.Id && t.Status == TicketStatus.Opened))
 			{
 				await RespondAsync("У Вас уже есть открытый тикет на сотрудничество", ephemeral: true);

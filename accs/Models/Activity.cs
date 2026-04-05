@@ -9,5 +9,10 @@ namespace accs.Models
 		public ulong UnitId { get; set; }
 		public virtual Unit Unit { get; set; }
 		public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+
+        public override string ToString()
+        {
+            return $"Activity (UnitId: {UnitId}, Date: {Date.ToShortDateString()})";
+        }
 	}
 }

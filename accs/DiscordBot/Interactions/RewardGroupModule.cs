@@ -16,13 +16,13 @@ namespace accs.DiscordBot.Interactions
     public class RewardGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
-        private readonly ILogService _logService;
+        private readonly ILogger<RewardGroupModule> _log;
 		private readonly IGuildProviderService _guildProvider;
 
-		public RewardGroupModule(AppDbContext db,  ILogService logService, IGuildProviderService guildProvider)
+		public RewardGroupModule(AppDbContext db, ILogger<RewardGroupModule> log, IGuildProviderService guildProvider)
         {
             _db = db;
-            _logService = logService;
+            _log = log;
             _guildProvider = guildProvider;
         }
 
@@ -40,7 +40,7 @@ namespace accs.DiscordBot.Interactions
             if (unit == null)
             {
                 await RespondAsync($"Пользователь {user.Username} не найден в системе", ephemeral: true);
-                await _logService.WriteAsync($"Пользователь {user.Username} не найден в системе", LoggingLevel.Debug);
+				_log.LogError($"Пользователь {user.Username} не найден в системе");
                 return;
             }
 
@@ -81,7 +81,7 @@ namespace accs.DiscordBot.Interactions
                 if (reward == null)
                 {
                     await RespondAsync($"Награда с Id {rewardId} не найдена в системе", ephemeral: true);
-                    await _logService.WriteAsync($"Награда с Id {rewardId} не найдена в системе", LoggingLevel.Debug);
+					_log.LogDebug($"Награда с Id {rewardId} не найдена в системе");
                     return;
                 }
 
@@ -144,7 +144,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Ошибка при создании награды: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Ошибка при создании награды: {ex.Message}");
                 await RespondAsync("Ошибка при создании награды.", ephemeral: true);
             }
         }
@@ -193,7 +193,7 @@ namespace accs.DiscordBot.Interactions
             if (unit == null)
             {
                 await RespondAsync($"Пользователь с Id {unitId} не найден в системе", ephemeral: true);
-                await _logService.WriteAsync($"Пользователь с Id {unitId} не найден в системе", LoggingLevel.Debug);
+				_log.LogDebug($"Пользователь с Id {unitId} не найден в системе");
                 return;
             }
 
@@ -213,7 +213,7 @@ namespace accs.DiscordBot.Interactions
                 if (reward == null)
                 {
                     await RespondAsync($"Награда с Id {selectedId} не найдена в системе", ephemeral: true);
-                    await _logService.WriteAsync($"Награда с Id {selectedId} не найдена в системе", LoggingLevel.Debug);
+					_log.LogDebug($"Награда с Id {selectedId} не найдена в системе");
                     return;
                 }
                 rewards.Add(reward);
@@ -337,7 +337,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in EditCommand: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Error in EditCommand: {ex.Message}");
                 await RespondAsync("Ошибка при редактировании награды.", ephemeral: true);
             }
         }
@@ -401,7 +401,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in DeleteCommand: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Error in DeleteCommand: {ex.Message}");
                 await RespondAsync("Ошибка при удалении награды.", ephemeral: true);
             }
         }
@@ -472,7 +472,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in RewardDeleteSelectHandler: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Error in RewardDeleteSelectHandler: {ex.Message}");
                 await RespondAsync("Ошибка при удалении награды.", ephemeral: true);
             }
         }

@@ -16,13 +16,13 @@ namespace accs.DiscordBot.Interactions
     public class StatusAssignmentModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
-        private readonly ILogService _logService;
+        private readonly ILogger<StatusAssignmentModule> _log;
         private readonly IGuildProviderService _guildProvider;
 
-        public StatusAssignmentModule(AppDbContext db, ILogService logService, IGuildProviderService guildProvider)
+        public StatusAssignmentModule(AppDbContext db, ILogger<StatusAssignmentModule> log, IGuildProviderService guildProvider)
         {
             _db = db;
-            _logService = logService;
+            _log = log;
             _guildProvider = guildProvider;
         }
 
@@ -105,7 +105,7 @@ namespace accs.DiscordBot.Interactions
             catch (Exception e)
             {
                 await RespondAsync("При присвоении статуса произошла необработанная ошибка!", ephemeral: true);
-                await _logService.WriteAsync(e.Message, LoggingLevel.Error);
+                _log.LogError(e, e.Message);
             }
         }
 
@@ -119,7 +119,7 @@ namespace accs.DiscordBot.Interactions
                 if (unit == null)
                 {
                     await RespondAsync("Вы не найдены в системе.", ephemeral: true);
-                    await _logService.WriteAsync($"VacationCommandAsync: Боец {Context.User.Username} с Id {Context.User.Id} не найден в базе", LoggingLevel.Error);
+					_log.LogError($"VacationCommandAsync: Боец {Context.User.Username} с Id {Context.User.Id} не найден в базе");
                     return;
                 }
 
@@ -127,7 +127,7 @@ namespace accs.DiscordBot.Interactions
                 if (vacationStatus == null)
                 {
                     await RespondAsync("Статус 'Отпуск' не найден в базе.", ephemeral: true);
-                    await _logService.WriteAsync($"VacationCommandAsync: Статус 'Отпуск' не найден в базе.", LoggingLevel.Error);
+					_log.LogError($"VacationCommandAsync: Статус 'Отпуск' не найден в базе.");
                     return;
                 }
 
@@ -155,7 +155,7 @@ namespace accs.DiscordBot.Interactions
             catch (Exception ex)
             {
                 await RespondAsync("Из-за необработанной ошибки не удалось оформить отпуск.", ephemeral: true);
-                await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
+				_log.LogError(ex, ex.Message);
             }
         }
 
@@ -169,10 +169,7 @@ namespace accs.DiscordBot.Interactions
                 if (unit == null)
                 {
                     await RespondAsync("Вы не найдены в базе.", ephemeral: true);
-                    await _logService.WriteAsync(
-                        $"EndVacationCommand: Боец {Context.User.Username} с Id {Context.User.Id} не найден в бд",
-                        LoggingLevel.Error
-                    );
+					_log.LogError($"EndVacationCommand: Боец {Context.User.Username} с Id {Context.User.Id} не найден в бд");
                     return;
                 }
 
@@ -198,7 +195,7 @@ namespace accs.DiscordBot.Interactions
             catch (Exception ex)
             {
                 await RespondAsync("Не удалось завершить отпуск из-за ошибки.", ephemeral: true);
-                await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
+				_log.LogError(ex.Message);
             }
         }
 

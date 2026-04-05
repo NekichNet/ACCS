@@ -16,11 +16,11 @@ namespace accs.Models.Tickets
         {
         }
 
-		public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
+		public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogger<Ticket> log, AppDbContext db)
 		{
 			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 			if (channel == null)
-				await logService.WriteAsync("RetirementTicket: channel is null", LoggingLevel.Error);
+				log.LogError("RetirementTicket: channel is null");
 			else
 			{
 				List<Post> adminPosts = GetAdmins(db);
@@ -32,7 +32,7 @@ namespace accs.Models.Tickets
 				}
 				else
 				{
-					await logService.WriteAsync($"Ticket: authorUser with Id {AuthorDiscordId} is null", LoggingLevel.Error);
+					log.LogError($"Ticket: authorUser with Id {AuthorDiscordId} is null");
 				}
 
 				foreach (Post post in adminPosts)
@@ -49,7 +49,7 @@ namespace accs.Models.Tickets
 
 				if (unit == null)
 				{
-					await logService.WriteAsync("RetirementTicket: unit is null", LoggingLevel.Error);
+					log.LogError("RetirementTicket: unit is null");
 					await channel.SendMessageAsync("Ошибка: автор тикета не найден в системе!");
 					return;
 				}

@@ -19,14 +19,14 @@ namespace accs.DiscordBot.Interactions
         private readonly AppDbContext _db;
         private readonly IGuildProviderService _guildProvider;
         private readonly IOCRService _ocr;
-        private readonly ILogService _logService;
+        private readonly ILogger<ActivityGroupModule> _log;
 
-        public ActivityGroupModule(AppDbContext db, IGuildProviderService guildProvider, IOCRService ocr, ILogService logService)
+        public ActivityGroupModule(AppDbContext db, IGuildProviderService guildProvider, IOCRService ocr, ILogger<ActivityGroupModule> log)
         {
             _db = db;
             _guildProvider = guildProvider;
             _ocr = ocr;
-            _logService = logService;
+            _log = log;
         }
 
         [SlashCommand("voice", "Зафиксировать активность всех бойцов в голосовом канале.")]
@@ -73,7 +73,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in FixVoiceCommand: {ex.Message}", LoggingLevel.Error);
+				_log.LogError(ex, $"Error in FixVoiceCommand: {ex.Message}");
                 await RespondAsync("Ошибка при фиксации активности по голосовому каналу");
             }
         }
@@ -134,7 +134,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in FixScreenshotCommand: {ex.Message}", LoggingLevel.Error);
+				_log.LogError(ex, $"Error in FixScreenshotCommand: {ex.Message}");
 				await ModifyOriginalResponseAsync((props) => { props.Content = "Произошла непредвиденная ошибка"; });
 			}
         }
@@ -184,7 +184,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in FixUserCommand: {ex.Message}", LoggingLevel.Error);
+				_log.LogError(ex, $"Error in FixUserCommand: {ex.Message}");
                 await RespondAsync("Ошибка при фиксации активности пользователя", ephemeral: true);
             }
         }
@@ -211,7 +211,7 @@ namespace accs.DiscordBot.Interactions
                 if (unconfirmedActivity == null)
                 {
                     await RespondAsync("Ошибка: не удалось прочитать файл запроса фиксации.", ephemeral: true);
-                    await _logService.WriteAsync("Ошибка: не удалось прочитать файл запроса фиксации.", LoggingLevel.Error);
+					_log.LogError("Ошибка: не удалось прочитать файл запроса фиксации.");
                     return;
                 }
 
@@ -255,7 +255,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in ConfirmActivityHandler: {ex.StackTrace}", LoggingLevel.Error);
+				_log.LogError(ex, $"Error in ConfirmActivityHandler: {ex.StackTrace}");
                 await RespondAsync("Ошибка при подтверждении списка бойцов", ephemeral: true);
             }
         }
@@ -332,7 +332,7 @@ namespace accs.DiscordBot.Interactions
                     if (ulong.TryParse(channelIdString, out ulong channelId))
 						await _guildProvider.GetGuild().GetTextChannel(channelId).SendMessageAsync($"Нужно повысить бойца {unit.Nickname}: {unit.RankUpCounter}/{unit.Rank.Next.CounterToReach}.");
                     else
-						await _logService.WriteAsync("Не удалось спарсить NOTIFICATION_CHANNEL_ID!", LoggingLevel.Error);
+						_log.LogError("Не удалось спарсить NOTIFICATION_CHANNEL_ID!");
 				}
             }
         }
@@ -364,15 +364,12 @@ namespace accs.DiscordBot.Interactions
 
                 await File.WriteAllTextAsync(filePath, json);
 
-                await _logService.WriteAsync(
-                    $"[Activity JSON] Создан файл {filePath} для customId '{customId}'",
-                    LoggingLevel.Info
-                );
+                _log.LogInformation($"[Activity JSON] Создан файл {filePath} для customId '{customId}'");
             }
             catch (Exception ex)
             {
                 await RespondAsync("Ошибка при создании JSON файла активности", ephemeral: true);
-                await _logService.WriteAsync($"Ошибка при создании JSON файла активности: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Ошибка при создании JSON файла активности: {ex.Message}");
             }
         }
     }

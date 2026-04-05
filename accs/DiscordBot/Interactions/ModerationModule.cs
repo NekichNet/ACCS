@@ -12,12 +12,12 @@ namespace accs.DiscordBot.Interactions
     [IsUnit()]
     public class ModerationModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private readonly ILogService _logService;
+        private readonly ILogger<ModerationModule> _log;
         private readonly AppDbContext _db;
 
-        public ModerationModule(ILogService logService, AppDbContext db)
+        public ModerationModule(ILogger<ModerationModule> log, AppDbContext db)
         {
-            _logService = logService;
+            _log = log;
             _db = db;
         }
 
@@ -144,13 +144,12 @@ namespace accs.DiscordBot.Interactions
 
                 await RespondAsync($"Пользователь '{target.Username}' был кикнут.\nПричина: {reason ?? "не указана"}");
 
-                await _logService.WriteAsync(
-                    $"Moderator {moderator.Username} kicked {target.Username}. Reason: {reason}",
-                    LoggingLevel.Info);
+				_log.LogInformation($"Moderator {moderator.Username} kicked {target.Username}. Reason: {reason}");
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"KickUserAsync error: {ex.Message}", LoggingLevel.Error); await RespondAsync("Ошибка при попытке кикнуть пользователя.", ephemeral: true);
+				_log.LogError(ex, $"KickUserAsync error: {ex.Message}");
+                await RespondAsync("Ошибка при попытке кикнуть пользователя.", ephemeral: true);
             }
         }
 
@@ -166,13 +165,11 @@ namespace accs.DiscordBot.Interactions
 
                 await RespondAsync($"Пользователь '{target.Username}' был забанен.\nПричина: {reason ?? "не указана"}");
 
-                await _logService.WriteAsync(
-                    $"Moderator {moderator.Username} banned {target.Username}. Reason: {reason}",
-                    LoggingLevel.Info);
+				_log.LogInformation($"Moderator {moderator.Username} banned {target.Username}. Reason: {reason}");
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"BanUserAsync error: {ex.Message}", LoggingLevel.Error); 
+				_log.LogError($"BanUserAsync error: {ex.Message}"); 
                 await RespondAsync("Ошибка при попытке забанить пользователя.", ephemeral: true);
             }
         }

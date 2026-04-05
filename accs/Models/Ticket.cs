@@ -49,20 +49,20 @@ namespace accs.Models
 			await db.SaveChangesAsync();
 		}
 
-        public virtual async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db) { }
+        public virtual async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogger<Ticket> log, AppDbContext db) { }
 
         /*
          * Метод, для финального удаления канала тикета с сохранением истории чата.
          */
 
-        public async Task CreateChannelAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
+        public async Task CreateChannelAsync(IGuildProviderService guildProvider, ILogger<Ticket> log, AppDbContext db)
         {
 			SocketGuild guild = guildProvider.GetGuild();
 
 			ulong categoryId;
             if (!ulong.TryParse(DotNetEnv.Env.GetString("TICKET_CATEGORY_ID", "TICKET_CATEGORY_ID not found"), out categoryId))
             {
-                await logService.WriteAsync("Ticket category id is null!", LoggingLevel.Error);
+				log.LogError("Ticket category id is null!");
                 return;
             };
 

@@ -15,14 +15,16 @@ namespace accs.DiscordBot.Interactions
 	{
 		private readonly DiscordSocketClient _client;
 		private readonly AppDbContext _db;
-		private readonly ILogService _logService;
+		private readonly ILogger<TicketMessageHandler> _log;
+		private readonly ILogger<Ticket> _logTicket;
 		private readonly IGuildProviderService _guildProvider;
 
-		public TicketMessageHandler(DiscordSocketClient client, AppDbContext db, ILogService logService, IGuildProviderService guildProvider)
+		public TicketMessageHandler(DiscordSocketClient client, AppDbContext db, ILogger<TicketMessageHandler> log, ILogger<Ticket> logTicket, IGuildProviderService guildProvider)
 		{
 			_client = client;
 			_db = db;
-			_logService = logService;
+			_log = log;
+			_logTicket = logTicket;
 			_guildProvider = guildProvider;
 		}
 
@@ -43,9 +45,9 @@ namespace accs.DiscordBot.Interactions
 
 			string channelIdString = DotNetEnv.Env.GetString("TICKET_CHANNEL_ID", "Ticket channel id not found");
 			ulong channelId;
-			if (!ulong.TryParse(channelIdString, out channelId)) { await _logService.WriteAsync("Cannot parse ticket channel id!", LoggingLevel.Error); return; }
+			if (!ulong.TryParse(channelIdString, out channelId)) { _log.LogError("Cannot parse ticket channel id!"); return; }
 			SocketTextChannel _channel = (SocketTextChannel)_client.GetChannel(channelId);
-			if (_channel == null) { await _logService.WriteAsync("Ticket channel is null!", LoggingLevel.Error); return; }
+			if (_channel == null) { _log.LogError("Ticket channel is null!"); return; }
 
 			await _channel.DeleteMessagesAsync(await _channel.GetMessagesAsync().FlattenAsync());
 
@@ -95,8 +97,8 @@ namespace accs.DiscordBot.Interactions
 			InviteTicket ticket = new InviteTicket(Context.User.Id);
 			await _db.InviteTickets.AddAsync(ticket);
 			await _db.SaveChangesAsync();
-			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
-			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
+			await ticket.CreateChannelAsync(_guildProvider, _logTicket, _db);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logTicket, _db);
 			await RespondAsync("Тикет на вступление создан. Пожалуйста, выполните дальнейшие инструкции", ephemeral: true);
 		}
 
@@ -123,8 +125,8 @@ namespace accs.DiscordBot.Interactions
 			FriendTicket ticket = new FriendTicket(Context.User.Id);
 			await _db.FriendTickets.AddAsync(ticket);
 			await _db.SaveChangesAsync();
-			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
-			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
+			await ticket.CreateChannelAsync(_guildProvider, _logTicket, _db);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logTicket, _db);
 			await RespondAsync("Тикет на сотрудничество создан. Пожалуйста, раскройте свой запрос письменно в канале тикета.", ephemeral: true);
 		}
 
@@ -140,8 +142,8 @@ namespace accs.DiscordBot.Interactions
 			LessonTicket ticket = new LessonTicket(Context.User.Id);
 			await _db.LessonTickets.AddAsync(ticket);
 			await _db.SaveChangesAsync();
-			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
-			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
+			await ticket.CreateChannelAsync(_guildProvider, _logTicket, _db);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logTicket, _db);
 			await RespondAsync("Тикет инструкторам создан. Пожалуйста, раскройте свой запрос письменно в канале тикета.", ephemeral: true);
 		}
 
@@ -157,8 +159,8 @@ namespace accs.DiscordBot.Interactions
 			TechTicket ticket = new TechTicket(Context.User.Id);
 			await _db.TechTickets.AddAsync(ticket);
 			await _db.SaveChangesAsync();
-			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
-			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
+			await ticket.CreateChannelAsync(_guildProvider, _logTicket, _db);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logTicket, _db);
 			await RespondAsync("Тикет техподдержке создан. Пожалуйста, опишите проблему или предложение в канале тикета.", ephemeral: true);
 		}
 
@@ -174,8 +176,8 @@ namespace accs.DiscordBot.Interactions
 			ReportTicket ticket = new ReportTicket(Context.User.Id);
 			await _db.ReportTickets.AddAsync(ticket);
 			await _db.SaveChangesAsync();
-			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
-			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
+			await ticket.CreateChannelAsync(_guildProvider, _logTicket, _db);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logTicket, _db);
 			await RespondAsync("Жалоба создана. Пожалуйста, опишите её в канале тикета.", ephemeral: true);
 		}
 
@@ -192,8 +194,8 @@ namespace accs.DiscordBot.Interactions
 			RetirementTicket ticket = new RetirementTicket(Context.User.Id);
 			await _db.RetirementTickets.AddAsync(ticket);
 			await _db.SaveChangesAsync();
-			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
-			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
+			await ticket.CreateChannelAsync(_guildProvider, _logTicket, _db);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logTicket, _db);
 			await RespondAsync("Запрос на отставку создан. Пожалуйста, опишите причину в канале тикета.", ephemeral: true);
 		}
 
@@ -209,8 +211,8 @@ namespace accs.DiscordBot.Interactions
 			DonationTicket ticket = new DonationTicket(Context.User.Id);
 			await _db.DonationTickets.AddAsync(ticket);
 			await _db.SaveChangesAsync();
-			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
-			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
+			await ticket.CreateChannelAsync(_guildProvider, _logTicket, _db);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logTicket, _db);
 			await RespondAsync("Спасибо, что решили финансово поддержать наш клан. Свяжитесь с руководством в канале тикета.", ephemeral: true);
 		}
 
@@ -226,8 +228,8 @@ namespace accs.DiscordBot.Interactions
 			VipTicket ticket = new VipTicket(Context.User.Id);
 			await _db.VipTickets.AddAsync(ticket);
 			await _db.SaveChangesAsync();
-			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
-			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
+			await ticket.CreateChannelAsync(_guildProvider, _logTicket, _db);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logTicket, _db);
 			await RespondAsync("Заявка на получение VIP статуса создана. Перейдите в чат тикета.", ephemeral: true);
 		}
 
@@ -243,8 +245,8 @@ namespace accs.DiscordBot.Interactions
 			RewardTicket ticket = new RewardTicket(Context.User.Id);
 			await _db.RewardTickets.AddAsync(ticket);
 			await _db.SaveChangesAsync();
-			await ticket.CreateChannelAsync(_guildProvider, _logService, _db);
-			await ticket.SendWelcomeMessageAsync(_guildProvider, _logService, _db);
+			await ticket.CreateChannelAsync(_guildProvider, _logTicket, _db);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logTicket, _db);
 			await RespondAsync("Тикет на представление к награде создан. Перейдите в чат тикета.", ephemeral: true);
 		}
 	}

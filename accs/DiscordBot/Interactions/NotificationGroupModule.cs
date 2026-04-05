@@ -2,10 +2,8 @@
 using accs.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Models.Enums;
-using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -14,12 +12,10 @@ namespace accs.DiscordBot.Interactions
 	public class NotificationGroupModule : InteractionModuleBase<SocketInteractionContext>
 	{
 		private readonly AppDbContext _db;
-		private readonly IGuildProviderService _guildProvider;
 
-        public NotificationGroupModule(AppDbContext db, IGuildProviderService guildProvider, ILogService logService)
+        public NotificationGroupModule(AppDbContext db)
         {
             _db = db;
-            _guildProvider = guildProvider;
         }
 
 		[ComponentInteraction("hide:*,*,*", ignoreGroupNames: true)]

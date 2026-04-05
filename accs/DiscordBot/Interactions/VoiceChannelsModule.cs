@@ -12,16 +12,16 @@ namespace accs.DiscordBot.Interactions
     [Group("voice", "Управление голосовыми каналами")]
     public class VoiceChannelsModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private readonly ILogService _logService;
+        private readonly ILogger<VoiceChannelsModule> _log;
 		private readonly DiscordSocketClient _client;
         private readonly IGuildProviderService _guildProvider;
         private readonly AppDbContext _db;
 
 		private ulong _voiceChannelId;
 
-        public VoiceChannelsModule(ILogService logService, DiscordSocketClient discordSocketClient, IGuildProviderService guildProvider, AppDbContext db) 
+        public VoiceChannelsModule(ILogger<VoiceChannelsModule> log, DiscordSocketClient discordSocketClient, IGuildProviderService guildProvider, AppDbContext db) 
         {
-            _logService = logService;
+            _log = log;
             _client = discordSocketClient;
             _guildProvider = guildProvider;
             _db = db;
@@ -32,7 +32,7 @@ namespace accs.DiscordBot.Interactions
             base.OnModuleBuilding(commandService, module);
 
 			string voiceChannelIdString = DotNetEnv.Env.GetString("VOICE_CHANNEL_ID", "null");
-			if (!ulong.TryParse(voiceChannelIdString, out _voiceChannelId)) { _logService.WriteAsync("Cannot parse voice channel id!", LoggingLevel.Error); }
+			if (!ulong.TryParse(voiceChannelIdString, out _voiceChannelId)) { _log.LogError("Cannot parse voice channel id!"); }
 
 			_client.UserVoiceStateUpdated += OnUserVoiceStateUpdated;
 		}
@@ -76,7 +76,7 @@ namespace accs.DiscordBot.Interactions
                 ulong voiceCategoryId;
                 if (!ulong.TryParse(DotNetEnv.Env.GetString("VOICE_CATEGORY_ID", "VOICE_CATEGORY_ID not found"), out voiceCategoryId))
                 {
-                    await _logService.WriteAsync("Cannot parse voice category id!", LoggingLevel.Error);
+                    _log.LogError("Cannot parse voice category id!");
                     return;
                 }
 

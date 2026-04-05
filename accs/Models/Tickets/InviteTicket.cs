@@ -16,11 +16,11 @@ namespace accs.Models.Tickets
         {
         }
 
-        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
+        public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogger<Ticket> log, AppDbContext db)
         {
 			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 			if (channel == null)
-				await logService.WriteAsync("InviteTicket: channel is null", LoggingLevel.Error);
+				log.LogError("InviteTicket: channel is null");
 			else
             {
 				List<Post> adminPosts = GetAdmins(db);
@@ -32,7 +32,7 @@ namespace accs.Models.Tickets
 				}
 				else
 				{
-					await logService.WriteAsync($"Ticket: authorUser with Id {AuthorDiscordId} is null", LoggingLevel.Error);
+					log.LogError($"Ticket: authorUser with Id {AuthorDiscordId} is null");
 				}
 
 				foreach (Post post in adminPosts)
@@ -99,7 +99,7 @@ namespace accs.Models.Tickets
         }
 
 
-        public async Task AcceptanceHandler(int selectedPostId, IGuildProviderService guildProvider, AppDbContext db, ILogService logService, ulong closedUserId)
+        public async Task AcceptanceHandler(int selectedPostId, IGuildProviderService guildProvider, AppDbContext db, ILogger log, ulong closedUserId)
         {
             var channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 			// назначаем должность стрелка
@@ -108,7 +108,7 @@ namespace accs.Models.Tickets
             if (post == null)
             {
                 await channel.SendMessageAsync($"Ошибка: выбранная должность стрелка с Id {selectedPostId} не найдена!");
-                await logService.WriteAsync($"Выбранная должность стрелка с Id {selectedPostId} не найдена!", LoggingLevel.Error);
+				log.LogError($"Выбранная должность стрелка с Id {selectedPostId} не найдена!");
                 return;
             }
 			// выдаём звание рекрута
@@ -117,7 +117,7 @@ namespace accs.Models.Tickets
 			if (recruitRank == null)
 			{
 				await channel.SendMessageAsync("Ошибка: звание рекрута не найдено!");
-				await logService.WriteAsync($"Звание рекрута не найдено!", LoggingLevel.Error);
+				log.LogError($"Звание рекрута не найдено!");
 				return;
 			}
 

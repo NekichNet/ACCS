@@ -12,13 +12,13 @@ namespace accs.DiscordBot.Interactions
     public class ProfileGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
-        private readonly ILogService _logService;
+        private readonly ILogger<ProfileGroupModule> _log;
         private readonly IGuildProviderService _guildProvider;
         
-        public ProfileGroupModule(AppDbContext db, ILogService logservice, IGuildProviderService guildProvider) 
+        public ProfileGroupModule(AppDbContext db, ILogger<ProfileGroupModule> log, IGuildProviderService guildProvider) 
         {
             _db = db;
-            _logService = logservice;
+            _log = log;
             _guildProvider = guildProvider;
         }
 
@@ -29,14 +29,14 @@ namespace accs.DiscordBot.Interactions
             await DeferAsync();
 
             Unit? unit;
-			await _logService.WriteAsync($"user: {user}", LoggingLevel.Debug);
+			_log.LogDebug($"user: {user}");
 			if (user == null) { unit = await _db.Units.FindAsync(Context.User.Id); }
             else
             {
-				await _logService.WriteAsync($"user id: {user.Id}", LoggingLevel.Debug);
+				_log.LogDebug($"user id: {user.Id}");
 				unit = await _db.Units.FindAsync(user.Id);
             }
-            await _logService.WriteAsync($"unit: {unit}", LoggingLevel.Debug);
+			_log.LogDebug($"unit: {unit}");
 
 			if (unit != null)
             {
@@ -175,7 +175,7 @@ namespace accs.DiscordBot.Interactions
 			catch (Exception ex)
 			{
 				await RespondAsync("Не удалось изменить никнейм.", ephemeral: true);
-				await _logService.WriteAsync($"Nickname change error: {ex.Message}", LoggingLevel.Error);
+				_log.LogError(ex, $"Nickname change error: {ex.Message}");
 			}
 
 
@@ -206,7 +206,7 @@ namespace accs.DiscordBot.Interactions
 			}
             catch(Exception ex) 
             {
-                await _logService.WriteAsync(ex.StackTrace);
+				_log.LogError(ex, ex.StackTrace);
             }
         }
 
@@ -274,7 +274,7 @@ namespace accs.DiscordBot.Interactions
             catch (Exception ex)
             {
                 await RespondAsync("Не удалось изменить цвет профиля.", ephemeral: true);
-                await _logService.WriteAsync($"Colour select error: {ex.Message}", LoggingLevel.Error);
+				_log.LogError(ex, $"Colour select error: {ex.Message}");
             }
         }
     }

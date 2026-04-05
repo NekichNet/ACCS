@@ -15,12 +15,12 @@ namespace accs.DiscordBot.Interactions
     public class AdminModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
-        private readonly ILogService _logService;
+        private readonly ILogger<AdminModule> _log;
 
-        public AdminModule(AppDbContext db, ILogService logService)
+        public AdminModule(AppDbContext db, ILogger<AdminModule> log)
         {
             _db = db;
-            _logService = logService;
+            _log = log;
         }
 
         [SlashCommand("register", "Добавить бойца в систему.")]
@@ -96,7 +96,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Ошибка при создании бойца: {ex.Message}", LoggingLevel.Error); 
+                _log.LogError(ex, $"Ошибка при создании бойца: {ex.Message}"); 
                 await RespondAsync("Произошла ошибка при создании бойца.", ephemeral: true);
             }
         }

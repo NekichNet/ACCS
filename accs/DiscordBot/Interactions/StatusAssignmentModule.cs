@@ -31,7 +31,6 @@ namespace accs.DiscordBot.Interactions
         public async Task GiveCommandAsync(IUser user,
             [Choice("Благодарность", "gratitude"),
             Choice("Без статуса", "nothing"),
-            Choice("Благодарность", "gratitude"),
             Choice("Выговор", "reprimand"),
             Choice("Строгий выговор", "severe-reprimand")] string statusType,
             int? amountOfDays = null)

@@ -711,8 +711,8 @@ namespace accs.DiscordBot.Interactions
 			[SlashCommand("notify", "Вызвать показ приветственного сообщения")]
 			public async Task NotificationShowCommand(int postId, IUser user, [ChannelTypes(ChannelType.Text)] IChannel? channel)
             {
-                Unit? authorUnit = await _db.Units.FindAsync(Context.User.Id);
-                if (authorUnit == null)
+                Unit? initiatorUnit = await _db.Units.FindAsync(Context.User.Id);
+                if (initiatorUnit == null)
                 {
 					await RespondAsync($"Вы не найдены в системе", ephemeral: true);
 					_log.LogError($"NotificationShowCommand: Пользователь {user.Username} не найден в системе");
@@ -735,8 +735,8 @@ namespace accs.DiscordBot.Interactions
 					return;
 				}
 
-				if (post.GetAllHeadsRecursive().Intersect(authorUnit.Posts).Any()
-                    || authorUnit.HasPermission(PermissionType.Administrator))
+				if (post.GetAllHeadsRecursive().Intersect(initiatorUnit.Posts).Any()
+                    || initiatorUnit.HasPermission(PermissionType.Administrator))
                 {
 					if (post.DiscordNotification == null)
 					{

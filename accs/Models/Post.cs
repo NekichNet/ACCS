@@ -4,7 +4,7 @@ using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
+using System.Text.RegularExpressions;
 
 namespace accs.Models
 {
@@ -96,42 +96,19 @@ namespace accs.Models
 					string text = "";
 
 					Dictionary<string, string> replaces = new Dictionary<string, string>();
-
-					if (DiscordNotification.AuthorId != null)
-					{
-						SocketGuildUser authorUser = guild.GetUser((ulong)DiscordNotification.AuthorId);
-						if (authorUser != null)
-						{
-							replaces.Add("<AuthorMention>", authorUser.Mention);
-						}
-
-						Unit? authorUnit = await db.Units.FindAsync(DiscordNotification.AuthorId);
-						if (authorUnit != null)
-						{
-							replaces.Add("<AuthorName>", authorUnit.GetOnlyNickname());
-							replaces.Add("<AuthorRank>", authorUnit.Rank.Name);
-							if (authorUnit.Posts.Any())
-								replaces.Add("<AuthorPost>", authorUnit.Posts.OrderByDescending(p => p.Permissions.Count).First().GetFullName());
-						}
-						else
-						{
-							if (authorUser != null)
-							{
-								replaces.Add("<AuthorName>", authorUser.DisplayName);
-							}
-						}
-					}
+					Regex regex = new Regex(@"<[^<>, ]+,[^<>, ]>", RegexOptions.Compiled);
 
 					SocketGuildUser user = guild.GetUser(unit.DiscordId);
 
+					replaces.Add("<UnitName>", unit.GetOnlyNickname());
+					replaces.Add("<UnitRank>", unit.Rank.Name);
+					
 					if (user != null)
 					{
 						text += user.Mention;
 						replaces.Add("<UnitMention>", user.Mention);
 					}
 
-					replaces.Add("<UnitName>", unit.GetOnlyNickname());
-					replaces.Add("<UnitRank>", unit.Rank.Name);
 					replaces.Add("<Post>", GetFullName());
 					replaces.Add("<PostDescription>", Description);
 
@@ -158,21 +135,35 @@ namespace accs.Models
 						}
 					}
 
+					MatchCollection matches = regex.Matches(DiscordNotification.Text);
+					matches.Concat(regex.Matches(DiscordNotification.Footer));
+					matches.Concat(regex.Matches(DiscordNotification.Shortened));
+
+					foreach (Match match in matches)
+					{
+						string[] matchString = match.Value.Split(',');
+						ulong unitId;
+						if (ulong.TryParse(matchString[0], out unitId))
+						{
+							Unit? matchedUnit = await db.Units.FindAsync(unitId);
+							SocketGuildUser matchedUser = guild.GetUser(unitId);
+							if (matchedUser != null)
+							{
+								replaces.Add($"<{unitId},Name>", matchedUnit.GetOnlyNickname());
+								replaces.Add($"<{unitId},Rank>", matchedUnit.Rank.Name);
+								replaces.Add($"<{unitId},Post>", matchedUnit.Posts.OrderByDescending(p );
+							}
+						}
+						else
+							continue;
+					}
+
 					DiscordNotification newNotification = DiscordNotification.ApplyReplace(replaces);
 
 					EmbedBuilder embed = new EmbedBuilder()
 						.WithDescription(newNotification.Text)
 						.WithFooter(newNotification.Footer)
 						.WithColor(DiscordNotification.GetEmbedColor());
-
-					//if (DiscordNotification.AuthorId != null)
-					//{
-					//	SocketGuildUser authorUser = guild.GetUser((ulong)DiscordNotification.AuthorId);
-					//	if (authorUser != null)
-					//	{
-					//		embed.WithAuthor(authorUser);
-					//	}
-					//}
 
 					if (user != null)
 					{

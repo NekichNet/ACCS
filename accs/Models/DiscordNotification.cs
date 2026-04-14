@@ -8,7 +8,6 @@
 		public string Text { get; set; } = string.Empty;
 		public string Footer { get; set; } = string.Empty;
         public string Images { get; set; } = string.Empty;
-		public ulong? AuthorId { get; set; }
         public string EmbedColor { get; set; } = string.Empty;
 
 		public DiscordNotification() { }
@@ -33,7 +32,6 @@
 			notification.Text = Text;
 			notification.Footer = Footer;
 			notification.Images = Images;
-			notification.AuthorId = AuthorId;
 			notification.EmbedColor = EmbedColor;
 
 			foreach (KeyValuePair<string, string> pair in replaces)

@@ -7,8 +7,6 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using System.Net.NetworkInformation;
-using System.Runtime.InteropServices.Marshalling;
 
 namespace accs.DiscordBot.Interactions
 {

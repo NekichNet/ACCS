@@ -30,6 +30,7 @@ namespace accs.Database
 		public DbSet<TechTicket> TechTickets { get; set; }
 		public DbSet<RewardTicket> RewardTickets { get; set; }
 		public DbSet<VipTicket> VipTickets { get; set; }
+		public DbSet<SuggestionTicket> SuggestionTickets { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
 			: base(options) { }

@@ -6,19 +6,19 @@ using Discord.WebSocket;
 
 namespace accs.Models.Tickets
 {
-    public class ReportTicket : Ticket
-    {
-        public ReportTicket()
-        {
-        }
+    public class SuggestionTicket : Ticket
+	{
+		public SuggestionTicket()
+		{
+		}
 
-        public ReportTicket(ulong authorId) : base(authorId) { }
+		public SuggestionTicket(ulong authorId) : base(authorId) { }
 
 		public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogger<Ticket> log, AppDbContext db)
 		{
 			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 			if (channel == null)
-				log.LogError("ReportTicket: channel is null");
+				log.LogError("SuggestionTicket: channel is null");
 			else
 			{
 				List<Post> adminPosts = GetAdmins(db);
@@ -30,7 +30,7 @@ namespace accs.Models.Tickets
 				}
 				else
 				{
-					log.LogError($"Ticket: authorUser with Id {AuthorDiscordId} is null");
+					log.LogError($"SuggestionTicket: authorUser with Id {AuthorDiscordId} is null");
 				}
 
 				foreach (Post post in adminPosts)
@@ -44,14 +44,15 @@ namespace accs.Models.Tickets
 				}
 
 				EmbedBuilder embed = new EmbedBuilder()
-					.WithTitle($"Жалоба №{Id}")
+					.WithTitle($"Предложение №{Id}")
 					.WithDescription("Автор: " + guildProvider.GetGuild().GetUser(AuthorDiscordId).DisplayName)
-					.WithColor(Color.DarkBlue)
-					.AddField("С чего начать?", "Изложите Вашу жалобу, не опускайте подробности.")
+					.WithColor(Color.Teal)
+					.AddField("С чего начать?",
+					"Изложите Ваше предложение, по улучшению жизни в клане не опускайте подробности.")
 					.AddField("Команды",
 					"***/ticket cancel*** — Отменить тикет, доступно автору." +
-					"\r\n***/ticket accept*** — Принять тикет, доступно ВП." +
-					"\r\n***/ticket refuse*** — Отказать в тикете, доступно ВП." +
+					"\r\n***/ticket accept*** — Принять тикет, доступно администраторам." +
+					"\r\n***/ticket refuse*** — Отказать в тикете, доступно администраторам." +
 					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.");
 				await channel.SendMessageAsync(embed: embed.Build(), text: text, allowedMentions: AllowedMentions.All);
 			}
@@ -60,7 +61,11 @@ namespace accs.Models.Tickets
 		public override List<Post> GetAdmins(AppDbContext db)
 		{
 			List<Post> admins = new List<Post>();
-			admins.AddRange(db.Posts.Where(p => p.Subdivision != null).Where(p => p.Subdivision.Id == 1));
+			admins.AddRange(db.Posts.Where(
+				p => p.Id < 7
+				|| (p.Id > 15 && p.Id < 22)
+				|| p.Id == 23
+				|| (p.Id > 27 && p.Id < 30)));
 			return admins;
 		}
 	}

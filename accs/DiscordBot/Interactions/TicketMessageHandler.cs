@@ -10,7 +10,6 @@ using Discord.WebSocket;
 
 namespace accs.DiscordBot.Interactions
 {
-	[InChannels("TICKET_CHANNEL_ID")]
 	public class TicketMessageHandler : InteractionModuleBase<SocketInteractionContext>
 	{
 		private readonly DiscordSocketClient _client;
@@ -43,13 +42,13 @@ namespace accs.DiscordBot.Interactions
 		{
 			await DeferAsync(ephemeral: true);
 
+			/*
 			string channelIdString = DotNetEnv.Env.GetString("TICKET_CHANNEL_ID", "Ticket channel id not found");
 			ulong channelId;
 			if (!ulong.TryParse(channelIdString, out channelId)) { _log.LogError("Cannot parse ticket channel id!"); return; }
 			SocketTextChannel _channel = (SocketTextChannel)_client.GetChannel(channelId);
 			if (_channel == null) { _log.LogError("Ticket channel is null!"); return; }
-
-			await _channel.DeleteMessagesAsync(await _channel.GetMessagesAsync().FlattenAsync());
+			*/
 
 			EmbedBuilder embed = new EmbedBuilder()
 				.WithTitle("Тикеты")
@@ -58,29 +57,33 @@ namespace accs.DiscordBot.Interactions
 
 				.AddField("*Вступить*", "Подать заявку на вступление в клан.")
 				.AddField("*Сотрудничать*", "Если хотите сотрудничать, получить роль «Друг клана» и доступ к голосовым каналам.")
+				.AddField("*Спонсировать*", "При намерении финансово поддержать наш клан.")
+				.AddField("*Награждение*", "Подать тикет на представление к заслуженной награде.")
 				.AddField("*Инструктор*", "Попросить инструкторский корпус об уроке, либо задать вопрос по игре.")
-				.AddField("*Техподдержка*", "Если обнаружили техническую неисправность, столкнулись с трудностями," +
-				" или же есть предложение по улучшению бота — нажимаем.")
+
 				.AddField("*Пожаловаться*", "Подать жалобу на находящегося на этом сервере пользователя(ей).")
 				.AddField("*Отставка*", "Уйти в отставку или выйти из неё.")
 				.AddField("*Получить VIP*", "Подать заявку на получение VIP статуса на игровых серверах, которые мы посещаем.")
-				.AddField("*Награждение*", "Подать тикет на представление к заслуженной награде.")
-				.AddField("*Спонсировать*", "При намерении финансово поддержать наш клан.")
+				.AddField("Предложка", "Если есть предложения по улучшению жизни клана, то вам сюда.")
+				.AddField("*Техподдержка*", "Если обнаружили техническую неисправность или испытываете с затруднение" +
+					"пользованием — нажимаем.")
 
 				.WithColor(Color.DarkGreen);
 
 			ComponentBuilder component = new ComponentBuilder()
 				.WithButton("Вступить", "invite-button", ButtonStyle.Success, row: 0)
 				.WithButton("Сотрудничать", "friend-button", ButtonStyle.Primary, row: 0)
-				.WithButton("Инструктор", "lesson-button", ButtonStyle.Primary, row: 1)
-				.WithButton("Техподдержка", "tech-button", ButtonStyle.Secondary, row: 1)
-				.WithButton("Пожаловаться", "report-button", ButtonStyle.Danger, row: 2)
-				.WithButton("Отставка", "retirement-button", ButtonStyle.Danger, row: 2)
-				.WithButton("Спонсировать", "donation-button", ButtonStyle.Primary, row: 3)
-				.WithButton("Награждение", "reward-button", ButtonStyle.Primary, row: 3)
-				.WithButton("Получить VIP", "vip-button", ButtonStyle.Primary, row: 4);
+				.WithButton("Спонсировать", "donation-button", ButtonStyle.Primary, row: 0)
+				.WithButton("Награждение", "reward-button", ButtonStyle.Primary, row: 0)
+				.WithButton("Инструктор", "lesson-button", ButtonStyle.Primary, row: 0)
 
-			await _channel.SendMessageAsync(embed: embed.Build(), components: component.Build());
+				.WithButton("Пожаловаться", "report-button", ButtonStyle.Danger, row: 1)
+				.WithButton("Отставка", "retirement-button", ButtonStyle.Danger, row: 1)
+				.WithButton("Получить VIP", "vip-button", ButtonStyle.Secondary, row: 1)
+				.WithButton("Предложка", "suggestion-button", ButtonStyle.Secondary, row: 1)
+				.WithButton("Техподдержка", "tech-button", ButtonStyle.Secondary, row: 1);
+
+			await Context.Channel.SendMessageAsync(embed: embed.Build(), components: component.Build());
 			await DeleteOriginalResponseAsync();
 		}
 
@@ -236,11 +239,13 @@ namespace accs.DiscordBot.Interactions
 		[ComponentInteraction("reward-button", ignoreGroupNames: true)]
 		public async Task RewardButtonHandler()
 		{
+			/*
 			if (_db.RewardTickets.Any(t => t.AuthorDiscordId == Context.User.Id && t.Status == TicketStatus.Opened))
 			{
 				await RespondAsync("У Вас уже есть открытый тикет на представление к награде", ephemeral: true);
 				return;
 			}
+			*/
 
 			RewardTicket ticket = new RewardTicket(Context.User.Id);
 			await _db.RewardTickets.AddAsync(ticket);
@@ -248,6 +253,25 @@ namespace accs.DiscordBot.Interactions
 			await ticket.CreateChannelAsync(_guildProvider, _logTicket, _db);
 			await ticket.SendWelcomeMessageAsync(_guildProvider, _logTicket, _db);
 			await RespondAsync("Тикет на представление к награде создан. Перейдите в чат тикета.", ephemeral: true);
+		}
+
+		[ComponentInteraction("suggestion-button", ignoreGroupNames: true)]
+		public async Task SuggestionButtonHandler()
+		{
+			/*
+			if (_db.SuggestionTickets.Any(t => t.AuthorDiscordId == Context.User.Id && t.Status == TicketStatus.Opened))
+			{
+				await RespondAsync("У Вас уже есть открытый тикет жалобы", ephemeral: true);
+				return;
+			}
+			*/
+
+			SuggestionTicket ticket = new SuggestionTicket(Context.User.Id);
+			await _db.SuggestionTickets.AddAsync(ticket);
+			await _db.SaveChangesAsync();
+			await ticket.CreateChannelAsync(_guildProvider, _logTicket, _db);
+			await ticket.SendWelcomeMessageAsync(_guildProvider, _logTicket, _db);
+			await RespondAsync("Предложение создано. Пожалуйста, опишите его в канале тикета.", ephemeral: true);
 		}
 	}
 }

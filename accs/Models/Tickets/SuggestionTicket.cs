@@ -33,22 +33,12 @@ namespace accs.Models.Tickets
 					log.LogError($"SuggestionTicket: authorUser with Id {AuthorDiscordId} is null");
 				}
 
-				foreach (Post post in adminPosts)
-				{
-					if (post.DiscordRoleId != null)
-					{
-						RestRole role = await guildProvider.GetGuild().GetRoleAsync((ulong)post.DiscordRoleId);
-						if (role != null)
-							text += role.Mention;
-					}
-				}
-
 				EmbedBuilder embed = new EmbedBuilder()
 					.WithTitle($"Предложение №{Id}")
 					.WithDescription("Автор: " + guildProvider.GetGuild().GetUser(AuthorDiscordId).DisplayName)
 					.WithColor(Color.Teal)
 					.AddField("С чего начать?",
-					"Изложите Ваше предложение, по улучшению жизни в клане не опускайте подробности.")
+					"Подробно изложите Вашу идею по улучшению жизни клана и пинганите руководителя соответствующего направления.")
 					.AddField("Команды",
 					"***/ticket cancel*** — Отменить тикет, доступно автору." +
 					"\r\n***/ticket accept*** — Принять тикет, доступно администраторам." +

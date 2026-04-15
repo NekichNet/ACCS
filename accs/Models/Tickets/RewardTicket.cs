@@ -62,7 +62,7 @@ namespace accs.Models.Tickets
 		public override List<Post> GetAdmins(AppDbContext db)
 		{
 			List<Post> admins = new List<Post>();
-			admins.AddRange(db.Posts.Where(p => p.Id == 23));
+			admins.AddRange(db.Posts.Where(p => p.Id == 28 && p.Id == 23));
 			return admins;
 		}
 	}

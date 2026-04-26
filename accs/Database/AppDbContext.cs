@@ -1,6 +1,6 @@
-﻿using accs.Models;
+﻿using accs.Models.Database;
+using accs.Models.Database.Tickets;
 using accs.Models.Enums;
-using accs.Models.Tickets;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Database
@@ -13,6 +13,7 @@ namespace accs.Database
 		public DbSet<Subdivision> Subdivisions { get; set; }
 		public DbSet<Permission> Permissions { get; set; }
 		public DbSet<Reward> Rewards { get; set; }
+		public DbSet<AssignedReward> AssignedRewards { get; set; }
 		public DbSet<DocType> DocTypes { get; set; }
 		public DbSet<Doc> Docs { get; set; }
 		public DbSet<Activity> Activities { get; set; }

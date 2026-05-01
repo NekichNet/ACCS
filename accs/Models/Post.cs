@@ -147,11 +147,14 @@ namespace accs.Models
 						{
 							Unit? matchedUnit = await db.Units.FindAsync(unitId);
 							SocketGuildUser matchedUser = guild.GetUser(unitId);
-							if (matchedUser != null)
+							if (matchedUnit != null)
 							{
 								replaces.Add($"<{unitId},Name>", matchedUnit.GetOnlyNickname());
-								replaces.Add($"<{unitId},Rank>", matchedUnit.Rank.Name);
-								replaces.Add($"<{unitId},Post>", matchedUnit.Posts.OrderByDescending(p );
+								replaces.Add($"<{unitId},SelectedRank>", matchedUnit.Rank.Name);
+							}
+							if (matchedUser != null)
+							{
+								replaces.Add($"<{unitId},Mention>", matchedUser.Mention);
 							}
 						}
 						else

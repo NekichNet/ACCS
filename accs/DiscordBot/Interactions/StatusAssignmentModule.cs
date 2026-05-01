@@ -106,7 +106,8 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-        [HasPermission(PermissionType.VacationAccess)]
+		[InChannels("ACTIVITY_CHANNEL_ID")]
+		[HasPermission(PermissionType.VacationAccess)]
         [SlashCommand("vacation", "Выход в отпуск")]
         public async Task VacationCommand([MinValue(1), MaxValue(7)] int days = 7)
         {
@@ -156,8 +157,8 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-
-        [SlashCommand("end-vacation", "Выход из отпуска")]
+		[InChannels("ACTIVITY_CHANNEL_ID")]
+		[SlashCommand("end-vacation", "Выход из отпуска")]
         public async Task EndVacationCommand()
         {
             try

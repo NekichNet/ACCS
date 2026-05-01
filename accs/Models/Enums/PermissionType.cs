@@ -15,6 +15,7 @@
         Administrator = 11,
         ModerateNicknames = 12,
         SteamIdView = 13,
-        AutoReprimandImmune = 14
+        AutoReprimandImmune = 14,
+        WritePetitions = 15
     }
 }

@@ -51,7 +51,7 @@ namespace accs.DiscordBot.Interactions
 				await ((IUserMessage)(await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString)))).ModifyAsync(m => { m.Embed = null; m.Content = text; });
 				await ((IComponentInteraction)Context.Interaction).UpdateAsync(m => m.Components = null);
 			}
-			else if (Context.User.Id == notification.AuthorId || Context.User.Id == unitId)
+			else if (Context.User.Id == unitId)
 			{
 				File.Delete(filePath);
 				await ((IUserMessage)(await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString)))).ModifyAsync(m => { m.Embed = null; m.Content = text; });

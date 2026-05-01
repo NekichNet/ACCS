@@ -9,6 +9,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
+//using Quartz;
 using System.Reflection;
 
 namespace accs
@@ -54,12 +55,26 @@ namespace accs
 			builder.Services.AddDbContext<AppDbContext>(options =>
 				options.UseNpgsql(connectionString));
 
-			builder.Services.AddScoped<IOCRService, OCRService>();
+			/*
+			builder.Services.AddQuartz(q =>
+			{
+				var autoStatusKey = new JobKey("AutoStatusJob");
+				q.AddJob<AutoStatusService>(opts => opts.WithIdentity(autoStatusKey));
+				q.AddTrigger(opts => opts
+					.ForJob(autoStatusKey)
+					.WithIdentity("AutoStatusJob-Trigger")
+					.WithCronSchedule("0 0 2 ? * SUN,THU *"));
+			});
+
+			builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+			*/
+
+			//builder.Services.AddScoped<IOCRService, OCRService>();
 
 			//builder.Services.AddTransient<IUsersCleanUpService, UsersCleanupService>();
 
 			//builder.Services.AddHostedService<DailyCleanupService>();
-			builder.Services.AddHostedService<AutoStatusService>();
+			//builder.Services.AddHostedService<AutoStatusService>();
 
 			_app = builder.Build();
 

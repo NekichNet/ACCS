@@ -89,8 +89,8 @@ namespace accs.DiscordBot.Interactions
 				{
 					/// На чёрный день
 					/*
-					var allowedRanks = new List<Rank>(); 
-					Rank CurrentTestRank = actorUnit.Rank;
+					var allowedRanks = new List<SelectedRank>(); 
+					SelectedRank CurrentTestRank = actorUnit.SelectedRank;
 					while (CurrentTestRank.Previous != null)
 					{
 						CurrentTestRank = CurrentTestRank.Previous;

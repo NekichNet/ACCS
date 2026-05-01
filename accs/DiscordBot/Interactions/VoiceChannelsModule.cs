@@ -15,7 +15,6 @@ namespace accs.DiscordBot.Interactions
         private readonly ILogger<VoiceChannelsModule> _log;
 		private readonly DiscordSocketClient _client;
         private readonly IGuildProviderService _guildProvider;
-        private readonly AppDbContext _db;
 
 		private ulong _voiceChannelId;
 
@@ -24,7 +23,6 @@ namespace accs.DiscordBot.Interactions
             _log = log;
             _client = discordSocketClient;
             _guildProvider = guildProvider;
-            _db = db;
 		}
 
         public override void OnModuleBuilding(InteractionService commandService, ModuleInfo module)

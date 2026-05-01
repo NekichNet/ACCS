@@ -78,6 +78,7 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
+        /*
         [SlashCommand("screenshot", "Зафиксировать активность всех бойцов на скриншоте.")]
         public async Task FixScreenshotCommand(IAttachment screenshot)
         {
@@ -93,7 +94,6 @@ namespace accs.DiscordBot.Interactions
 
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
-                /* OCR */
                 if (!Directory.Exists("temp"))
                     Directory.CreateDirectory("temp");
 
@@ -138,6 +138,7 @@ namespace accs.DiscordBot.Interactions
 				await ModifyOriginalResponseAsync((props) => { props.Content = "Произошла непредвиденная ошибка"; });
 			}
         }
+        */
 
         [SlashCommand("user", "Зафиксировать активность указанного бойца.")]
         public async Task FixUserCommand(IUser? user = null)

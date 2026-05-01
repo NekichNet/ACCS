@@ -57,6 +57,7 @@ namespace accs.Database
 			Permission moderateNicknames = new Permission { Type = PermissionType.ModerateNicknames, Name = "Изменение чужих никнеймов", Description = "Право изменять чужие никнеймы." };
 			Permission steamIdView = new Permission { Type = PermissionType.SteamIdView, Name = "Просмотр Steam ID", Description = "Право получать чужие Steam Id." };
 			Permission autoReprimandImmune = new Permission { Type = PermissionType.AutoReprimandImmune, Name = "Освобождение от сборов", Description = "Иммунитет к автоматической выдаче выговора за отстутствие на сборах." };
+			Permission writePetitions = new Permission { Type = PermissionType.WritePetitions, Name = "Написание ходатайств", Description = "Открывает доступ к командам для написания ходатайст по шаблону." };
 
 			modelBuilder.Entity<Permission>().HasData(
 				confirmActivity, vacationAccess, giveReprimandGratitude, forceVacation, changeRanks,

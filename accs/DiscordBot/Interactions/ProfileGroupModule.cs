@@ -24,7 +24,9 @@ namespace accs.DiscordBot.Interactions
 
 		[IsUnit()]
 		[SlashCommand("profile", "Показать профиль указанного пользователя")]
-        public async Task ShowProfileCommand(IUser? user = null)
+        public async Task ShowProfileCommand(
+            [Summary(description: "Боец, чей профиль Вы хотите посмотреть. По умолчанию: собственный")]
+            IUser? user = null)
         {
             await DeferAsync();
 
@@ -115,7 +117,11 @@ namespace accs.DiscordBot.Interactions
         }
 
 		[SlashCommand("nickname", "Изменить никнейм пользователя")]
-		public async Task ChangeNicknameCommand(string newNickname, IUser? targetUser = null)
+		public async Task ChangeNicknameCommand(
+            [Summary(description: "Никнейм в Steam без приписки")]
+            string newNickname,
+            [Summary(description: "Если меняете никнейм другому человеку")]
+            IUser? targetUser = null)
 		{
 			try
 			{
@@ -182,8 +188,10 @@ namespace accs.DiscordBot.Interactions
         }
 
 		[IsUnit()]
-		[SlashCommand("steam", "Привязать свой steam Id")]
-        public async Task SteamIdCommand(string steamId)
+		[SlashCommand("steam", "Привязать свой Steam ID")]
+        public async Task SteamIdCommand(
+            [Summary(description: "Steam ID, который Вы можете найти у себя в профиле")]
+            string steamId)
         {
             try {
                 Unit? unit = await _db.Units.FindAsync(Context.User.Id);

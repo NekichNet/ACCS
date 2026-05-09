@@ -27,7 +27,9 @@ namespace accs.DiscordBot.Interactions
 
 		[HasPermission(PermissionType.ChangeRanks)]
 		[SlashCommand("up", "Повысить бойца на одно звание")]
-        public async Task RankUpCommand(IUser targetedUser)
+        public async Task RankUpCommand(
+			[Summary(description: "Боец, которого Вы повышаете")]
+			IUser targetedUser)
         {
 			try
 			{
@@ -73,7 +75,11 @@ namespace accs.DiscordBot.Interactions
 
 		[HasPermission(PermissionType.ChangeRanks)]
 		[SlashCommand("set", "Установить бойцу выбранное звание")]
-		public async Task SetRankCommand(IUser targetedUser, int? rankId = null)
+		public async Task SetRankCommand(
+			[Summary(description: "Боец, которому Вы меняете звание")]
+			IUser targetedUser,
+			[Summary(description: "ID звания. Если не указывать, то выбираете из списка")]
+			int? rankId = null)
 		{
 			try
 			{

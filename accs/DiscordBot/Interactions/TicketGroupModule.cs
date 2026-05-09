@@ -8,6 +8,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -151,10 +152,10 @@ namespace accs.DiscordBot.Interactions
         
 
         [ComponentInteraction("invite-select-*", ignoreGroupNames: true)]
-        public async Task InviteSelectHandler(int ticketId, int[] postIds)
+        public async Task InviteSelectHandler(string ticketId, int[] postIds)
         {
 			int selectedId = postIds.First();
-			Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
+			Ticket? ticket = await _db.Tickets.FindAsync(Int32.Parse(ticketId));
 			if (ticket is InviteTicket invite)
 			{
 				Unit? unit = await _db.Units.FindAsync(Context.User.Id);
@@ -176,9 +177,9 @@ namespace accs.DiscordBot.Interactions
         }
 
 		[ComponentInteraction("retirement-select-*", ignoreGroupNames: true)]
-		public async Task ReturnFromRetirementHandler(int ticketId, int[] postIds)
+		public async Task ReturnFromRetirementHandler(string ticketId, int[] postIds)
 		{
-			RetirementTicket? ticket = await _db.RetirementTickets.FindAsync(ticketId);
+			RetirementTicket? ticket = await _db.RetirementTickets.FindAsync(Int32.Parse(ticketId));
 			if (ticket == null)
 			{
 				await RespondAsync($"Ошибка: тикет с Id {ticketId} не найден!", ephemeral: true);
@@ -210,7 +211,7 @@ namespace accs.DiscordBot.Interactions
 			UnitStatus activeRetirement = unit.UnitStatuses
 				.First(us =>
 					us.Status.Type == StatusType.Retirement &&
-					us.EndDate == null
+					!us.IsCompleted()
 				);
 
 			activeRetirement.EndDate = DateTime.UtcNow;
@@ -243,6 +244,9 @@ namespace accs.DiscordBot.Interactions
 				else
 					_log.LogError($"ReturnFromRetirenmentHandler: Post с id {id} не найден");
 			}
+
+			if (userUnit.Rank.DiscordRoleId != null)
+				await _guildProvider.GetGuild().GetUser(ticket.AuthorDiscordId).AddRoleAsync((ulong)userUnit.Rank.DiscordRoleId);
 
 			ticket.Status = TicketStatus.Accepted;
 			_db.RetirementTickets.Update(ticket);

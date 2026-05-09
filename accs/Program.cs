@@ -1,7 +1,6 @@
 using accs.Database;
 using accs.Logging.EventIds;
 using accs.Logging.Extensions;
-using accs.Models.Enums;
 using accs.Services;
 using accs.Services.Interfaces;
 using Discord;
@@ -54,12 +53,12 @@ namespace accs
 			builder.Services.AddDbContext<AppDbContext>(options =>
 				options.UseNpgsql(connectionString));
 
-			builder.Services.AddScoped<IOCRService, OCRService>();
+			//builder.Services.AddScoped<IOCRService, OCRService>();
 
 			//builder.Services.AddTransient<IUsersCleanUpService, UsersCleanupService>();
 
 			//builder.Services.AddHostedService<DailyCleanupService>();
-			builder.Services.AddHostedService<AutoStatusService>();
+			//builder.Services.AddHostedService<AutoStatusService>();
 
 			_app = builder.Build();
 

@@ -1,8 +1,6 @@
 ﻿using accs.Database;
 using accs.DiscordBot.Preconditions;
 using accs.Models;
-using accs.Models.Enums;
-using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -23,7 +21,9 @@ namespace accs.DiscordBot.Interactions
 
         [DefaultMemberPermissions(GuildPermission.KickMembers)]
         [SlashCommand("dismiss-user", "Уволить бойца.")]
-        public async Task DismissUnitCommand(IUser target)
+        public async Task DismissUnitCommand(
+			[Summary(description: "Боец, которого вы увольняете")]
+			IUser target)
         {
             Unit? unit = await _db.Units.FindAsync(target.Id);
 
@@ -69,21 +69,23 @@ namespace accs.DiscordBot.Interactions
 
         [DefaultMemberPermissions(GuildPermission.KickMembers)]
 		[SlashCommand("dismiss-id", "Уволить бойца по Discord ID.")]
-		public async Task DismissUnitCommand(string id)
+		public async Task DismissUnitCommand(
+			[Summary(description: "Discord ID. Получить его можно с режимом разработчика")]
+			string id)
 		{
-            ulong userId;
-            if (!ulong.TryParse(id, out userId))
-            {
-                await RespondAsync("Неверный Discord ID бойца.");
-            }
+			ulong userId;
+			if (!ulong.TryParse(id, out userId))
+			{
+				await RespondAsync("Неверный Discord ID бойца.");
+			}
 
 			Unit? unit = await _db.Units.FindAsync(userId);
 
 			if (unit != null)
 			{
 				SocketGuildUser user = Context.Guild.GetUser(userId);
-                if (user != null)
-                {
+				if (user != null)
+				{
 					foreach (Post post in unit.Posts)
 					{
 						List<IRole> roles = new List<IRole>();
@@ -105,9 +107,9 @@ namespace accs.DiscordBot.Interactions
 						await user.RemoveRoleAsync((ulong)unit.Rank.DiscordRoleId);
 					await RespondAsync($"{unit.GetOnlyNickname()} был уволен.");
 				}
-                else
-                {
-                    unit.Posts.Clear();
+				else
+				{
+					unit.Posts.Clear();
 					await RespondAsync($"{unit.GetOnlyNickname()} был уволен, но не удалось снять роли.");
 				}
 
@@ -121,7 +123,11 @@ namespace accs.DiscordBot.Interactions
 
 		[DefaultMemberPermissions(GuildPermission.KickMembers)]
         [SlashCommand("kick", "Выгнать участника с сервера.")]
-        public async Task KickUserCommand(IUser target, string? reason = null)
+        public async Task KickUserCommand(
+			[Summary(description: "Пользователь, которого вы выгоняете с сервера")]
+			IUser target,
+			[Summary(description: "Причина кика")]
+			string? reason = null)
         {
             try
             {
@@ -155,7 +161,11 @@ namespace accs.DiscordBot.Interactions
 
         [DefaultMemberPermissions(GuildPermission.BanMembers)]
         [SlashCommand("ban", "Забанить участника на сервере")]
-        public async Task BanUserCommand(IUser target, string? reason = null)
+        public async Task BanUserCommand(
+			[Summary(description: "Пользователь, которого вы баните с сервера")]
+			IUser target,
+			[Summary(description: "Причина бана")]
+			string? reason = null)
         {
             try
             {

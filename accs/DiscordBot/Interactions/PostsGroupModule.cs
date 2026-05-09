@@ -36,7 +36,11 @@ namespace accs.DiscordBot.Interactions
 
             [HasPermission(PermissionType.ChangePosts)]
             [SlashCommand("set", "Назначить должности бойцу")]
-            public async Task AssignPostCommand(IUser target, int? postId = null)
+            public async Task AssignPostCommand(
+                [Summary(description: "Боец, которого вы назначаете на должность")]
+                IUser target,
+                [Summary(description: "ID должности. Если не указывать, то выбираете из списка")]
+                int? postId = null)
             {
                 try
                 {

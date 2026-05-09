@@ -18,19 +18,22 @@ namespace accs.DiscordBot.Interactions
     {
         private readonly AppDbContext _db;
         private readonly IGuildProviderService _guildProvider;
-        private readonly IOCRService _ocr;
+        //private readonly IOCRService _ocr;
         private readonly ILogger<ActivityGroupModule> _log;
 
-        public ActivityGroupModule(AppDbContext db, IGuildProviderService guildProvider, IOCRService ocr, ILogger<ActivityGroupModule> log)
+        public ActivityGroupModule(AppDbContext db, IGuildProviderService guildProvider, ILogger<ActivityGroupModule> log)
         {
             _db = db;
             _guildProvider = guildProvider;
-            _ocr = ocr;
+            //_ocr = ocr;
             _log = log;
         }
 
         [SlashCommand("voice", "Зафиксировать активность всех бойцов в голосовом канале.")]
-        public async Task FixVoiceCommand([ChannelTypes(ChannelType.Voice, ChannelType.Stage)] IChannel channel)
+        public async Task FixVoiceCommand(
+            [Summary(description: "Голосовой канал")]
+            [ChannelTypes(ChannelType.Voice, ChannelType.Stage)]
+            IChannel channel)
         {
             try
             {
@@ -78,6 +81,7 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
+        /*
         [SlashCommand("screenshot", "Зафиксировать активность всех бойцов на скриншоте.")]
         public async Task FixScreenshotCommand(IAttachment screenshot)
         {
@@ -93,7 +97,7 @@ namespace accs.DiscordBot.Interactions
 
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
-                /* OCR */
+                // OCR
                 if (!Directory.Exists("temp"))
                     Directory.CreateDirectory("temp");
 
@@ -138,9 +142,12 @@ namespace accs.DiscordBot.Interactions
 				await ModifyOriginalResponseAsync((props) => { props.Content = "Произошла непредвиденная ошибка"; });
 			}
         }
+        */
 
         [SlashCommand("user", "Зафиксировать активность указанного бойца.")]
-        public async Task FixUserCommand(IUser? user = null)
+        public async Task FixUserCommand(
+            [Summary(description: "Боец клана. Если не указывать, зафиксируете собственную активность")]
+            IUser? user = null)
         {
             try
             {
@@ -261,7 +268,9 @@ namespace accs.DiscordBot.Interactions
         }
 
         [SlashCommand("get", "Узнать, кто был на сборах в определённую дату.")]
-        public async Task GetActivityCommand(string? dateString = null)
+        public async Task GetActivityCommand(
+            [Summary(name: "date", description: "Дата в формате: 'ММ/ДД/ГГГГ'. По умолчанию берётся текущая дата")]
+            string? dateString = null)
         {
             DateOnly date;
 

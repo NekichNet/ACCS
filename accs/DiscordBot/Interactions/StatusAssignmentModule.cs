@@ -7,8 +7,6 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using System.Net.NetworkInformation;
-using System.Runtime.InteropServices.Marshalling;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -28,11 +26,16 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.GiveReprimandGratitude)]
         [SlashCommand("give", "Установить благодарность, выговор, строгий выговор или завершить все")]
-        public async Task GiveCommandAsync(IUser user,
+        public async Task GiveCommandAsync(
+            [Summary(description: "Боец, которому Вы присваиваете статус")]
+            IUser user,
             [Choice("Благодарность", "gratitude"),
             Choice("Без статуса", "nothing"),
             Choice("Выговор", "reprimand"),
-            Choice("Строгий выговор", "severe-reprimand")] string statusType,
+            Choice("Строгий выговор", "severe-reprimand")]
+            [Summary(description: "Вид статуса")]
+            string statusType,
+            [Summary(description: "Количество дней")]
             int? amountOfDays = null)
         {
             try
@@ -110,7 +113,10 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.VacationAccess)]
         [SlashCommand("vacation", "Выход в отпуск")]
-        public async Task VacationCommand([MinValue(1), MaxValue(7)] int days = 7)
+        public async Task VacationCommand(
+            [MinValue(1), MaxValue(7)]
+            [Summary(description: "Длительность в днях. 7 максимально. По умолчанию 7")]
+            int days = 7)
         {
             try
             {
@@ -149,7 +155,7 @@ namespace accs.DiscordBot.Interactions
                 await _db.SaveChangesAsync();
                 unitStatus.SetRole(_guildProvider);
 
-                await RespondAsync($"Оформлен отпуск для {unit.GetOnlyNickname()} на {days} дней до {endDate:d}.");
+                await RespondAsync($"Оформлен отпуск для {unit.GetOnlyNickname()} на {days} дней до {endDate:g}.");
             }
             catch (Exception ex)
             {
@@ -200,7 +206,9 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.Administrator)]
         [SlashCommand("retirement-user", "Отправить человека в отставку")]
-        public async Task RetirementUserCommand(IUser user)
+        public async Task RetirementUserCommand(
+            [Summary(description: "Боец, которого Вы отправляете в отставку")]
+            IUser user)
         {
             await DeferAsync();
 
@@ -242,7 +250,9 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.Administrator)]
         [SlashCommand("retirement-id", "Отправить человека в отставку по ID пользователя.")]
-        public async Task RetirementIdCommand(string idString)
+        public async Task RetirementIdCommand(
+            [Summary(name: "user-id", description: "Discord ID бойца, которого Вы отправляете в отставку")]
+            string idString)
         {
             await DeferAsync();
 
@@ -262,25 +272,39 @@ namespace accs.DiscordBot.Interactions
                             return;
                         }
 
-                        unit.UnitStatuses.Add(new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = retirement });
-                        unit.Posts.Clear();
-
-                        _db.SaveChanges();
-
                         SocketGuildUser guildUser = _guildProvider.GetGuild().GetUser(id);
                         if (guildUser != null)
                         {
-                            await guildUser.RemoveRolesAsync(guildUser.Roles);
-                            if (retirement.DiscordRoleId != null)
-                                await guildUser.AddRoleAsync((ulong)retirement.DiscordRoleId);
-							await ModifyOriginalResponseAsync(r => r.Content = $"Отставка {unit.GetOnlyNickname()} оформлена.");
-						}
-						else
-							await ModifyOriginalResponseAsync(r => r.Content = $"Отставка {unit.GetOnlyNickname()} оформлена, но не удалось выдать роли.");
-					}
+                            foreach (Post post in unit.Posts)
+                            {
+                                List<IRole> roles = new List<IRole>();
+                                if (post.DiscordRoleId != null)
+                                    roles.Add(await Context.Guild.GetRoleAsync((ulong)post.DiscordRoleId));
+                                Subdivision? subdiv = post.Subdivision;
+                                while (subdiv != null)
+                                {
+                                    if (subdiv.DiscordRoleId != null)
+                                        roles.Add(await Context.Guild.GetRoleAsync((ulong)subdiv.DiscordRoleId));
+                                    subdiv = subdiv.Head;
+                                }
+
+                                await guildUser.RemoveRolesAsync(roles);
+                            }
+
+                            if (unit.Rank.DiscordRoleId != null)
+                                await guildUser.RemoveRoleAsync((ulong)unit.Rank.DiscordRoleId);
+                            await RespondAsync($"{unit.GetOnlyNickname()} был уволен.");
+
+                            unit.UnitStatuses.Add(new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = retirement });
+                            unit.Posts.Clear();
+
+                            _db.SaveChanges();
+                        }
+
+                    }
                     else
-						await ModifyOriginalResponseAsync(r => r.Content = "Пользователь уже в отставке.");
-				}
+                        await ModifyOriginalResponseAsync(r => r.Content = "Пользователь уже в отставке.");
+                }
                 else
                     await ModifyOriginalResponseAsync(r => r.Content = "Пользователя нет в системе.");
             }
@@ -288,7 +312,9 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.ChangePosts)]
         [SlashCommand("temp-post", "Выдать или завершить статус ВрИО.")]
-        public async Task TempPostCommand(IUser user)
+        public async Task TempPostCommand(
+            [Summary(description: "Боец, которому Вы выдаёте статус ВрИО")]
+            IUser user)
         {
             await DeferAsync();
 

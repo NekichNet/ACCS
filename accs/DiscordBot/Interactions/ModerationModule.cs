@@ -1,9 +1,11 @@
 ﻿using accs.Database;
 using accs.DiscordBot.Preconditions;
 using accs.Models;
+using accs.Models.Enums;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -183,5 +185,31 @@ namespace accs.DiscordBot.Interactions
                 await RespondAsync("Ошибка при попытке забанить пользователя.", ephemeral: true);
             }
         }
-    }
+
+		[HasPermission(PermissionType.SteamIdView)]
+		[SlashCommand("steam-list", "Высылает csv файл со списком бойцов и их Steam Id.")]
+		public async Task GetSteamIdCSVCommand()
+		{
+			List<Unit> unitsWithSteamid = await _db.Units
+				.Where(u => u.Posts.Any())
+				.Where(u => u.SteamId != null)
+				.ToListAsync();
+
+			int allUsersAmount = _db.Units.Where(u => u.Posts.Any()).Count();
+			int usersWithIdAmount = unitsWithSteamid.Count();
+
+			await RespondAsync($"Steam Id привязали {usersWithIdAmount} из {allUsersAmount} бойцов. Высылаю файл...");
+
+			if (!Directory.Exists("temp"))
+				Directory.CreateDirectory("temp");
+
+			string filePath = Path.Join("temp", "UnitsWithSteamId.csv");
+			File.Create(filePath).Close();
+			foreach (Unit unit in unitsWithSteamid)
+			{
+				await File.AppendAllTextAsync(filePath, $"{unit.Nickname.Replace(",", "")},{unit.SteamId}\n");
+			}
+			await Context.Channel.SendFileAsync(filePath);
+		}
+	}
 }

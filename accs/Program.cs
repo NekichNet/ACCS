@@ -95,12 +95,10 @@ namespace accs
 					clientLogger.LogCritical(EventIds.UnhandledError, ex, ex.Message);
 				}
 
-				/*
 				// Очищаем уже зарегистрированные команды
 				await client.Rest.BulkOverwriteGlobalCommands(new ApplicationCommandProperties[] { });
 				await client.Rest.BulkOverwriteGuildCommands(new ApplicationCommandProperties[] { }, guildProvider.GetGuildId());
 				clientLogger.LogInformation(EventIds.Deleted, "Commands vanished");
-				*/
 
 				// Регистрируем актуальные команды
 				await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), _app.Services);

@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace accs.DiscordBot.Interactions
 {
-    [DefaultMemberPermissions(GuildPermission.Administrator)]
-    public class AdminModule : InteractionModuleBase<SocketInteractionContext>
+	[DefaultMemberPermissions(GuildPermission.Administrator)]
+	public class AdminModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
         private readonly ILogger<AdminModule> _log;
@@ -23,7 +23,7 @@ namespace accs.DiscordBot.Interactions
             _log = log;
         }
 
-        [SlashCommand("register", "Добавить бойца в систему.")]
+		[SlashCommand("register", "Добавить бойца в систему.")]
         public async Task RegisterUnitCommand(SocketGuildUser user, int postId, int rankId, string? name = null, string? joinedString = null)
         {
             try
@@ -99,32 +99,6 @@ namespace accs.DiscordBot.Interactions
                 _log.LogError(ex, $"Ошибка при создании бойца: {ex.Message}"); 
                 await RespondAsync("Произошла ошибка при создании бойца.", ephemeral: true);
             }
-        }
-
-        [HasPermission(PermissionType.SteamIdView)]
-        [SlashCommand("steam-list", "Высылает csv файл со списком бойцов и их Steam Id.")]
-        public async Task GetSteamIdCSVCommand()
-        {
-            List<Unit> unitsWithSteamid = await _db.Units
-                .Where(u => u.Posts.Any())
-                .Where(u => u.SteamId != null)
-                .ToListAsync();
-
-            int allUsersAmount = _db.Units.Where(u => u.Posts.Any()).Count();
-            int usersWithIdAmount = unitsWithSteamid.Count();
-
-			await RespondAsync($"Steam Id привязали {usersWithIdAmount} из {allUsersAmount} бойцов. Высылаю файл...");
-
-			if (!Directory.Exists("temp"))
-                Directory.CreateDirectory("temp");
-            
-            string filePath = Path.Join("temp", "UnitsWithSteamId.csv");
-            File.Create(filePath).Close();
-            foreach (Unit unit in unitsWithSteamid) 
-            {
-                await File.AppendAllTextAsync(filePath, $"{unit.Nickname.Replace(",", "")},{unit.SteamId}\n");
-            }
-            await Context.Channel.SendFileAsync(filePath);
         }
     }
 }

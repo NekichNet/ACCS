@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace accs.Models.Database
 {
 	[EntityTypeConfiguration(typeof(RankConfiguration))]
-	public class Rank
+	public class Rank : PermissionCheckable
 	{
 		public int Id { get; set; }
 		public string Name { get; set; } = string.Empty;
@@ -14,7 +14,6 @@ namespace accs.Models.Database
 		public virtual Rank? Previous { get; set; }
 		public int? NextId { get; set; }
 		public virtual Rank? Next { get; set; }
-		public virtual HashSet<Permission> Permissions { get; set; } = new HashSet<Permission>();
 		public virtual List<Unit> Units { get; set; } = new List<Unit>();
 
         public Rank(int id, string name, ushort counterToReach = 5)
@@ -49,18 +48,29 @@ namespace accs.Models.Database
 			NextId = rank.Id;
 		}
 
-		public HashSet<Permission> GetPermissionsRecursive()
-		{
-			HashSet<Permission> permissions = [.. Permissions];
-			if (Previous != null)
-				foreach (Permission permission in Previous.GetPermissionsRecursive())
-					permissions.Add(permission);
-			return permissions;
-		}
-
         public override string ToString()
         {
             return Id.ToString() + " " + Name;
         }
-	}
+
+		public override HashSet<GivedPermission> GetGivedPermissionsRecursive()
+		{
+			HashSet<GivedPermission> givedPermissions = [.. GivedPermissions];
+			if (Previous != null)
+				foreach (GivedPermission givedPermission in
+					Previous.GetGivedPermissionsRecursive().Where(gp => gp.Inherit))
+					givedPermissions.Add(givedPermission);
+			return givedPermissions;
+		}
+
+		public override HashSet<Permission> GetPermissionsRecursive()
+        {
+			HashSet<Permission> permissions = [.. GetPermissions()];
+			if (Previous != null)
+				foreach (GivedPermission givedPermission in
+					Previous.GetGivedPermissionsRecursive().Where(gp => gp.Inherit))
+					permissions.Add(givedPermission.Permission);
+			return permissions;
+		}
+    }
 }

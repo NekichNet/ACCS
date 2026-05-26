@@ -35,7 +35,7 @@ namespace accs.Services
 				await Task.Delay(delay, stoppingToken);
 
 				AppDbContext db = _services.GetRequiredService<AppDbContext>();
-				ILogService logService = _services.GetRequiredService<ILogService>();
+				ILogger log = _services.GetRequiredService<ILogger>();
 
 				Status? severeReprimand = await db.Statuses.FindAsync(StatusType.SevereReprimand);
 				Status? reprimand = await db.Statuses.FindAsync(StatusType.Reprimand);
@@ -47,7 +47,7 @@ namespace accs.Services
 					return;
 				}
 
-				await logService.WriteAsync("Старт выдачи благодарностей и выговоров в обязательные сборы", LoggingLevel.Info);
+				log.LogInformation("Старт выдачи благодарностей и выговоров в обязательные сборы");
 
 				foreach (Unit unit in await db.Units.Where(u => !u.HasPermission(PermissionType.AutoReprimandImmune)).ToListAsync())
 				{
@@ -65,13 +65,13 @@ namespace accs.Services
 										unitStatus.EndDate = DateTime.UtcNow;
 										UnitStatus newStatus = new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = reprimand };
 										db.UnitStatuses.Add(newStatus);
-										await logService.WriteAsync($"Бойцу {unit.GetOnlyNickname()} автоматически выдан выговор");
+										log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически выдан выговор");
 										break;
 									}
 								case StatusType.Reprimand:
 									{
 										unitStatus.EndDate = DateTime.UtcNow;
-										await logService.WriteAsync($"Бойцу {unit.GetOnlyNickname()} закрыт выговор");
+										log.LogInformation($"Бойцу {unit.GetOnlyNickname()} закрыт выговор");
 										break;
 									}
 								case StatusType.Gratitude:
@@ -79,7 +79,7 @@ namespace accs.Services
 										unitStatus.EndDate = DateTime.UtcNow;
 										UnitStatus newStatus = new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = gratitude };
 										db.UnitStatuses.Add(newStatus);
-										await logService.WriteAsync($"Бойцу {unit.GetOnlyNickname()} автоматически выдана благодарность");
+										log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически выдана благодарность");
 										break;
 									}
 							}
@@ -88,7 +88,7 @@ namespace accs.Services
 						{
 							UnitStatus newStatus = new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = gratitude };
 							db.UnitStatuses.Add(newStatus);
-							await logService.WriteAsync($"Бойцу {unit.GetOnlyNickname()} автоматически выдана благодарность");
+							log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически выдана благодарность");
 						}
 
 						await db.SaveChangesAsync();
@@ -110,7 +110,7 @@ namespace accs.Services
 											unitStatus.EndDate = DateTime.UtcNow;
 											UnitStatus newStatus = new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = severeReprimand };
 											db.UnitStatuses.Add(newStatus);
-											await logService.WriteAsync($"Бойцу {unit.GetOnlyNickname()} автоматически выдан строгий выговор");
+											log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически выдан строгий выговор");
 											break;
 										}
 									case StatusType.Reprimand:
@@ -118,13 +118,13 @@ namespace accs.Services
 											unitStatus.EndDate = DateTime.UtcNow;
 											UnitStatus newStatus = new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = severeReprimand };
 											db.UnitStatuses.Add(newStatus);
-											await logService.WriteAsync($"Бойцу {unit.GetOnlyNickname()} автоматически выдана строгий выговор");
+											log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически выдана строгий выговор");
 											break;
 										}
 									case StatusType.Gratitude:
 										{
 											unitStatus.EndDate = DateTime.UtcNow;
-											await logService.WriteAsync($"Бойцу {unit.GetOnlyNickname()} автоматически закрыта благодарность");
+											log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически закрыта благодарность");
 											break;
 										}
 								}
@@ -133,7 +133,7 @@ namespace accs.Services
 							{
 								UnitStatus newStatus = new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = reprimand };
 								db.UnitStatuses.Add(newStatus);
-								await logService.WriteAsync($"Бойцу {unit.GetOnlyNickname()} автоматически выдан выговор");
+								log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически выдан выговор");
 							}
 
 							await db.SaveChangesAsync();
@@ -141,7 +141,7 @@ namespace accs.Services
 					}
 				}
 
-				await logService.WriteAsync("Конец выдачи благодарностей и выговоров в обязательные сборы", LoggingLevel.Info);
+				log.LogInformation("Конец выдачи благодарностей и выговоров в обязательные сборы");
 			}
 		}
     }

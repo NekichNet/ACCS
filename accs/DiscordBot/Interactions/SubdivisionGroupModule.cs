@@ -11,19 +11,19 @@ namespace accs.DiscordBot.Interactions
 {
     //[IsUnit()]
     //[Group("subdivision", "Команды для работы с подразделениями")]
-    public class SubdivisionGropModule : InteractionModuleBase<SocketInteractionContext>
+    public class SubdivisionGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
-        private readonly ILogService _logService;
+        private readonly ILogger<SubdivisionGroupModule> _log;
 
         private static readonly Dictionary<ulong, (string name, string? description, List<string> perms)> _tempData = new();\
 
         private static readonly Dictionary<ulong, (int id, List<string> perms)> _tempEditData = new();
 
-        public SubdivisionGropModule(AppDbContext db, ILogService logService)
+        public SubdivisionGroupModule(AppDbContext db, ILogger<SubdivisionGroupModule> log)
         {
             _db = db;
-            _logService = logService;
+            _log = log;
         }
 
 
@@ -85,7 +85,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Ошибка при создании подразделения: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Ошибка при создании подразделения: {ex.Message}");
                 await RespondAsync("Ошибка при создании подразделения.", ephemeral: true);
             }
         }
@@ -158,7 +158,7 @@ namespace accs.DiscordBot.Interactions
                     }
                     else
                     {
-                        await _logService.WriteAsync($"Permission '{perm}' не найдено в базе данных.", LoggingLevel.Error);
+						_log.LogError($"Permission '{perm}' не найдено в базе данных.");
                     }
                 }
 
@@ -170,7 +170,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Ошибка при создании подразделения: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Ошибка при создании подразделения: {ex.Message}");
                 await FollowupAsync("Ошибка при создании подразделения.", ephemeral: true);
             }
         }
@@ -239,7 +239,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Ошибка в DeleteCommand: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Ошибка в DeleteCommand: {ex.Message}");
                 await RespondAsync("Ошибка при удалении подразделения.", ephemeral: true);
             }
         }
@@ -286,7 +286,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Ошибка в SubdivisionDeleteSelectHandler: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Ошибка в SubdivisionDeleteSelectHandler: {ex.Message}");
                 await FollowupAsync("Ошибка при удалении подразделения.", ephemeral: true);
             }
         }
@@ -370,7 +370,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Ошибка в EditCommand: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Ошибка в EditCommand: {ex.Message}");
                 await RespondAsync("Ошибка при реадктировании подразделения.", ephemeral: true);
             }
         }

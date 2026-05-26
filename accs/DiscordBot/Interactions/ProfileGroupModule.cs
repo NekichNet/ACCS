@@ -12,31 +12,33 @@ namespace accs.DiscordBot.Interactions
     public class ProfileGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
-        private readonly ILogService _logService;
+        private readonly ILogger<ProfileGroupModule> _log;
         private readonly IGuildProviderService _guildProvider;
         
-        public ProfileGroupModule(AppDbContext db, ILogService logservice, IGuildProviderService guildProvider) 
+        public ProfileGroupModule(AppDbContext db, ILogger<ProfileGroupModule> log, IGuildProviderService guildProvider) 
         {
             _db = db;
-            _logService = logservice;
+            _log = log;
             _guildProvider = guildProvider;
         }
 
 		[IsUnit()]
 		[SlashCommand("profile", "Показать профиль указанного пользователя")]
-        public async Task ShowProfileCommand(IUser? user = null)
+        public async Task ShowProfileCommand(
+            [Summary(description: "Боец, чей профиль Вы хотите посмотреть. По умолчанию: собственный")]
+            IUser? user = null)
         {
             await DeferAsync();
 
             Unit? unit;
-			await _logService.WriteAsync($"user: {user}", LoggingLevel.Debug);
+			_log.LogDebug($"user: {user}");
 			if (user == null) { unit = await _db.Units.FindAsync(Context.User.Id); }
             else
             {
-				await _logService.WriteAsync($"user id: {user.Id}", LoggingLevel.Debug);
+				_log.LogDebug($"user id: {user.Id}");
 				unit = await _db.Units.FindAsync(user.Id);
             }
-            await _logService.WriteAsync($"unit: {unit}", LoggingLevel.Debug);
+			_log.LogDebug($"unit: {unit}");
 
 			if (unit != null)
             {
@@ -47,27 +49,57 @@ namespace accs.DiscordBot.Interactions
                 };
 
                 string inLineUnitActivities = string.Empty;
-                for (int i = -13; i <= 0; i++)
+                for (int i = -27; i <= 0; i++)
                 {
                     if(unit.Activities.Any(a => a.Date == DateOnly.FromDateTime(DateTime.Today).AddDays(i)))
                         inLineUnitActivities += ":green_square:";
                     else
                         inLineUnitActivities += ":black_medium_square:";
-                    if (i == -7)
+                    if (i == -14)
                         inLineUnitActivities += '\n';
                 }
                 
                 if (unit.UnitStatuses.Any(us => !us.IsCompleted()))
-                    embed.AddField(new EmbedFieldBuilder() { Name = "Статусы:", Value = String.Join(", ",
-                        unit.UnitStatuses.Where(us => !us.IsCompleted()).Select(us => us.Status.Name)) });
+                    embed.AddField(new EmbedFieldBuilder() {
+                        Name = "Статусы:", Value = "```ansi\r\n" + String.Join(", ",
+                        unit.UnitStatuses.Where(us => !us.IsCompleted()).Select(us => us.Status.Name)) + "\r\n```"
+					});
                 if (unit.Rewards.Any())
-                    embed.AddField(new EmbedFieldBuilder() { Name = "Награды:", Value = String.Join(", ", unit.Rewards.Select(r => r.Name)) });
-                embed.AddField(new EmbedFieldBuilder() { Name = "Благодарности:", Value = unit.UnitStatuses.Where(x => x.Status.Type == StatusType.Gratitude).Count() });
-                embed.AddField(new EmbedFieldBuilder() { Name = "Выговоров:", Value = unit.UnitStatuses.Where(
-                    x => x.Status.Type == StatusType.Reprimand || x.Status.Type == StatusType.SevereReprimand).Count() });
-                embed.AddField(new EmbedFieldBuilder() { Name = "Дней активности:", Value = unit.Activities.Count() });
-                embed.AddField(new EmbedFieldBuilder() { Name = "Из них последние 14:", Value = inLineUnitActivities });
-                embed.WithFooter(new EmbedFooterBuilder().WithText("Присоединился к клану: " + DateOnly.FromDateTime(unit.Joined).ToShortDateString()));
+                    embed.AddField(new EmbedFieldBuilder() {
+                        Name = "Награды:", Value = "```ansi\r\n\u001b[2;33m" + String.Join(", ",
+                        unit.Rewards.Select(r => r.Name)) + "\u001b[0m\r\n```"
+                    });
+                embed.AddField(new EmbedFieldBuilder() {
+                    Name = "Благодарности:", Value = unit.UnitStatuses.Where(
+                        x => x.Status.Type == StatusType.Gratitude).Count(),
+					IsInline = true
+				});
+                embed.AddField(new EmbedFieldBuilder() {
+                    Name = "Выговоров:", Value = unit.UnitStatuses.Where(
+                    x => x.Status.Type == StatusType.Reprimand || x.Status.Type == StatusType.SevereReprimand).Count(),
+                    IsInline = true
+                });
+				embed.AddField(new EmbedFieldBuilder()
+				{
+					Name = "Активность за четыре недели:",
+					Value = inLineUnitActivities
+				});
+				embed.AddField(new EmbedFieldBuilder() {
+                    Name = "Всего активности:", Value = unit.Activities.Count(), IsInline = true
+                });
+
+                if (unit.Rank.Next != null)
+                {
+					embed.AddField(new EmbedFieldBuilder()
+					{
+						Name = "Счётчик на повышение",
+						Value = unit.RankUpCounter.ToString() + "/" + unit.Rank.Next.CounterToReach.ToString(),
+                        IsInline = true
+					});
+				}
+				
+                embed.WithFooter(new EmbedFooterBuilder().WithText((unit.SteamId == null ? "Steam ID не прикреплён. " : "")
+                    + "Присоединился к клану: " + DateOnly.FromDateTime(unit.Joined).ToShortDateString()));
 				embed.ThumbnailUrl = _guildProvider.GetGuild().GetUser(unit.DiscordId).GetAvatarUrl()
                     ?? _guildProvider.GetGuild().GetUser(unit.DiscordId).GetDefaultAvatarUrl();
                 embed.WithColor(unit.Colour == null ? Color.DarkGreen : unit.GetProfileColor());
@@ -85,7 +117,11 @@ namespace accs.DiscordBot.Interactions
         }
 
 		[SlashCommand("nickname", "Изменить никнейм пользователя")]
-		public async Task ChangeNicknameCommand(string newNickname, IUser? targetUser = null)
+		public async Task ChangeNicknameCommand(
+            [Summary(description: "Никнейм в Steam без приписки")]
+            string newNickname,
+            [Summary(description: "Если меняете никнейм другому человеку")]
+            IUser? targetUser = null)
 		{
 			try
 			{
@@ -145,15 +181,17 @@ namespace accs.DiscordBot.Interactions
 			catch (Exception ex)
 			{
 				await RespondAsync("Не удалось изменить никнейм.", ephemeral: true);
-				await _logService.WriteAsync($"Nickname change error: {ex.Message}", LoggingLevel.Error);
+				_log.LogError(ex, $"Nickname change error: {ex.Message}");
 			}
 
 
         }
 
 		[IsUnit()]
-		[SlashCommand("steam", "Привязать свой steam Id")]
-        public async Task SteamIdCommand(string steamId)
+		[SlashCommand("steam", "Привязать свой Steam ID")]
+        public async Task SteamIdCommand(
+            [Summary(description: "Steam ID, который Вы можете найти у себя в профиле")]
+            string steamId)
         {
             try {
                 Unit? unit = await _db.Units.FindAsync(Context.User.Id);
@@ -176,7 +214,7 @@ namespace accs.DiscordBot.Interactions
 			}
             catch(Exception ex) 
             {
-                await _logService.WriteAsync(ex.StackTrace);
+				_log.LogError(ex, ex.StackTrace);
             }
         }
 
@@ -244,7 +282,7 @@ namespace accs.DiscordBot.Interactions
             catch (Exception ex)
             {
                 await RespondAsync("Не удалось изменить цвет профиля.", ephemeral: true);
-                await _logService.WriteAsync($"Colour select error: {ex.Message}", LoggingLevel.Error);
+				_log.LogError(ex, $"Colour select error: {ex.Message}");
             }
         }
     }

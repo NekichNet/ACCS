@@ -30,6 +30,7 @@ namespace accs.Database
 		public DbSet<TechTicket> TechTickets { get; set; }
 		public DbSet<RewardTicket> RewardTickets { get; set; }
 		public DbSet<VipTicket> VipTickets { get; set; }
+		public DbSet<SuggestionTicket> SuggestionTickets { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
 			: base(options) { }
@@ -64,7 +65,8 @@ namespace accs.Database
 				steamIdView, autoReprimandImmune
 			);
 
-			/* Звания */
+			/*
+			// Звания
 			List<Rank> ranks = new List<Rank>()
 			{
 				new Rank(1, "Рекрут"),
@@ -90,7 +92,7 @@ namespace accs.Database
 				ranks[i].InsertPrevious(ranks[i - 1]);
 
 
-			/* Подразделения */
+			// Подразделения
 			List<Subdivision> subdivisions = new List<Subdivision>();
 
 			Subdivision police = new Subdivision("Военная Полиция", "POLICE_ROLE_ID") { Id = subdivisions.Count + 1 };
@@ -120,7 +122,7 @@ namespace accs.Database
 			subdivisions.AddRange(platoons);
 
 
-			/* Должности */
+			// Должности
 			List<Post> posts = new List<Post>();
 
 
@@ -172,8 +174,7 @@ namespace accs.Database
 			Post instructor = new Post("INSTRUCTOR_ROLE_ID") { Id = posts.Count + 1, Name = "Инструктор", HeadId = headInstructor.Id, SubdivisionId = instructors.Id };
 			posts.Add(instructor);
 
-			/* Виды временных статусов */
-
+			// Виды временных статусов
 			modelBuilder.Entity<Status>().HasData(
 				new Status() { Type = StatusType.Vacation, Name = "Отпуск" },
 				new Status() { Type = StatusType.TemporaryPost, Name = "ВрИО" },
@@ -186,6 +187,7 @@ namespace accs.Database
 			modelBuilder.Entity<Rank>().HasData(ranks);
 			modelBuilder.Entity<Subdivision>().HasData(subdivisions);
 			modelBuilder.Entity<Post>().HasData(posts);
+			*/
 		}
 	}
 }

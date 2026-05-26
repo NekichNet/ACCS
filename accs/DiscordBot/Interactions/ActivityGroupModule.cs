@@ -18,19 +18,22 @@ namespace accs.DiscordBot.Interactions
     {
         private readonly AppDbContext _db;
         private readonly IGuildProviderService _guildProvider;
-        private readonly IOCRService _ocr;
-        private readonly ILogService _logService;
+        //private readonly IOCRService _ocr;
+        private readonly ILogger<ActivityGroupModule> _log;
 
-        public ActivityGroupModule(AppDbContext db, IGuildProviderService guildProvider, IOCRService ocr, ILogService logService)
+        public ActivityGroupModule(AppDbContext db, IGuildProviderService guildProvider, ILogger<ActivityGroupModule> log)
         {
             _db = db;
             _guildProvider = guildProvider;
-            _ocr = ocr;
-            _logService = logService;
+            //_ocr = ocr;
+            _log = log;
         }
 
-        [SlashCommand("voice", "Зафиксировать активность всех бойцов в голосовом канале")]
-        public async Task FixVoiceCommand([ChannelTypes(ChannelType.Voice, ChannelType.Stage)] IChannel channel)
+        [SlashCommand("voice", "Зафиксировать активность всех бойцов в голосовом канале.")]
+        public async Task FixVoiceCommand(
+            [Summary(description: "Голосовой канал")]
+            [ChannelTypes(ChannelType.Voice, ChannelType.Stage)]
+            IChannel channel)
         {
             try
             {
@@ -73,12 +76,13 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in FixVoiceCommand: {ex.Message}", LoggingLevel.Error);
+				_log.LogError(ex, $"Error in FixVoiceCommand: {ex.Message}");
                 await RespondAsync("Ошибка при фиксации активности по голосовому каналу");
             }
         }
 
-        [SlashCommand("screenshot", "Зафиксировать активность всех бойцов на скриншоте")]
+        /*
+        [SlashCommand("screenshot", "Зафиксировать активность всех бойцов на скриншоте.")]
         public async Task FixScreenshotCommand(IAttachment screenshot)
         {
             await DeferAsync(ephemeral: true);
@@ -93,7 +97,7 @@ namespace accs.DiscordBot.Interactions
 
                 DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
-                /* OCR */
+                // OCR
                 if (!Directory.Exists("temp"))
                     Directory.CreateDirectory("temp");
 
@@ -134,13 +138,16 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in FixScreenshotCommand: {ex.Message}", LoggingLevel.Error);
+				_log.LogError(ex, $"Error in FixScreenshotCommand: {ex.Message}");
 				await ModifyOriginalResponseAsync((props) => { props.Content = "Произошла непредвиденная ошибка"; });
 			}
         }
+        */
 
-        [SlashCommand("user", "Зафиксировать активность указанного бойца")]
-        public async Task FixUserCommand(IUser? user = null)
+        [SlashCommand("user", "Зафиксировать активность указанного бойца.")]
+        public async Task FixUserCommand(
+            [Summary(description: "Боец клана. Если не указывать, зафиксируете собственную активность")]
+            IUser? user = null)
         {
             try
             {
@@ -184,7 +191,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in FixUserCommand: {ex.Message}", LoggingLevel.Error);
+				_log.LogError(ex, $"Error in FixUserCommand: {ex.Message}");
                 await RespondAsync("Ошибка при фиксации активности пользователя", ephemeral: true);
             }
         }
@@ -211,7 +218,7 @@ namespace accs.DiscordBot.Interactions
                 if (unconfirmedActivity == null)
                 {
                     await RespondAsync("Ошибка: не удалось прочитать файл запроса фиксации.", ephemeral: true);
-                    await _logService.WriteAsync("Ошибка: не удалось прочитать файл запроса фиксации.", LoggingLevel.Error);
+					_log.LogError("Ошибка: не удалось прочитать файл запроса фиксации.");
                     return;
                 }
 
@@ -255,9 +262,49 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in ConfirmActivityHandler: {ex.StackTrace}", LoggingLevel.Error);
+				_log.LogError(ex, $"Error in ConfirmActivityHandler: {ex.StackTrace}");
                 await RespondAsync("Ошибка при подтверждении списка бойцов", ephemeral: true);
             }
+        }
+
+        [SlashCommand("get", "Узнать, кто был на сборах в определённую дату.")]
+        public async Task GetActivityCommand(
+            [Summary(name: "date", description: "Дата в формате: 'ММ/ДД/ГГГГ'. По умолчанию берётся текущая дата")]
+            string? dateString = null)
+        {
+            DateOnly date;
+
+            if (dateString == null)
+            {
+                date = DateOnly.FromDateTime(DateTime.UtcNow);
+            }
+            else if (!DateOnly.TryParse(dateString, out date))
+            {
+                await RespondAsync("Не удалось распознать введённую дату.");
+                return;
+            }
+            else if (date > DateOnly.FromDateTime(DateTime.UtcNow))
+            {
+                await RespondAsync("Введённая дата ещё не наступила.");
+                return;
+            }
+
+            await DeferAsync();
+
+            List<Activity> activities = _db.Activities.Where(a => a.Date == date).ToList();
+
+            string unitsListString = "Никого не было на сборах.";
+            if (activities.Any())
+                unitsListString = string.Join("\r\n", activities.Select(a => a.Unit.Rank.Name + " " + a.Unit.GetOnlyNickname()));
+
+            EmbedBuilder embed = new EmbedBuilder()
+                .WithTitle("Отчёт об активности")
+                .AddField("Дата", date.ToShortDateString(), inline: true)
+				.AddField("Количество", activities.Count(), inline: true)
+				.AddField("Бойцы", unitsListString)
+                .WithColor(Color.DarkGreen);
+
+            await ModifyOriginalResponseAsync(r => { r.Embed = embed.Build(); r.Content = ""; });
         }
 
         private EmbedBuilder GetResultsEmbedBuilder(Dictionary<Unit, bool> units, DateOnly date)
@@ -294,7 +341,7 @@ namespace accs.DiscordBot.Interactions
                     if (ulong.TryParse(channelIdString, out ulong channelId))
 						await _guildProvider.GetGuild().GetTextChannel(channelId).SendMessageAsync($"Нужно повысить бойца {unit.Nickname}: {unit.RankUpCounter}/{unit.Rank.Next.CounterToReach}.");
                     else
-						await _logService.WriteAsync("Не удалось спарсить NOTIFICATION_CHANNEL_ID!", LoggingLevel.Error);
+						_log.LogError("Не удалось спарсить NOTIFICATION_CHANNEL_ID!");
 				}
             }
         }
@@ -326,15 +373,12 @@ namespace accs.DiscordBot.Interactions
 
                 await File.WriteAllTextAsync(filePath, json);
 
-                await _logService.WriteAsync(
-                    $"[Activity JSON] Создан файл {filePath} для customId '{customId}'",
-                    LoggingLevel.Info
-                );
+                _log.LogInformation($"[Activity JSON] Создан файл {filePath} для customId '{customId}'");
             }
             catch (Exception ex)
             {
                 await RespondAsync("Ошибка при создании JSON файла активности", ephemeral: true);
-                await _logService.WriteAsync($"Ошибка при создании JSON файла активности: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Ошибка при создании JSON файла активности: {ex.Message}");
             }
         }
     }

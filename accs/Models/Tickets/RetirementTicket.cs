@@ -16,11 +16,11 @@ namespace accs.Models.Tickets
         {
         }
 
-		public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
+		public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogger<Ticket> log, AppDbContext db)
 		{
 			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 			if (channel == null)
-				await logService.WriteAsync("RetirementTicket: channel is null", LoggingLevel.Error);
+				log.LogError("RetirementTicket: channel is null");
 			else
 			{
 				List<Post> adminPosts = GetAdmins(db);
@@ -32,7 +32,7 @@ namespace accs.Models.Tickets
 				}
 				else
 				{
-					await logService.WriteAsync($"Ticket: authorUser with Id {AuthorDiscordId} is null", LoggingLevel.Error);
+					log.LogError($"Ticket: authorUser with Id {AuthorDiscordId} is null");
 				}
 
 				foreach (Post post in adminPosts)
@@ -44,13 +44,12 @@ namespace accs.Models.Tickets
 							text += role.Mention;
 					}
 				}
-				await channel.SendMessageAsync(text: text, allowedMentions: AllowedMentions.All);
 
 				Unit? unit = await db.Units.FindAsync(AuthorDiscordId);
 
 				if (unit == null)
 				{
-					await logService.WriteAsync("RetirementTicket: unit is null", LoggingLevel.Error);
+					log.LogError("RetirementTicket: unit is null");
 					await channel.SendMessageAsync("Ошибка: автор тикета не найден в системе!");
 					return;
 				}
@@ -69,7 +68,7 @@ namespace accs.Models.Tickets
 					"\r\n***/ticket accept*** — Помощь оказана, закрыть тикет, доступно администрации." +
 					"\r\n***/ticket refuse*** — Отказать в тикете, доступно администрации." +
 					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.");
-				await channel.SendMessageAsync(embed: embed.Build());
+				await channel.SendMessageAsync(embed: embed.Build(), text: text, allowedMentions: AllowedMentions.All);
 			}
 		}
 
@@ -106,10 +105,12 @@ namespace accs.Models.Tickets
                     Unit = unit,
                     Status = retirementStatus,
                     StartDate = DateTime.UtcNow
-                };
+				};
 
-                foreach (Post post in unit.Posts)
-                {
+				SocketGuildUser user = guildProvider.GetGuild().GetUser(AuthorDiscordId);
+
+				foreach (Post post in unit.Posts)
+				{
 					List<IRole> roles = new List<IRole>();
 					if (post.DiscordRoleId != null)
 						roles.Add(await guildProvider.GetGuild().GetRoleAsync((ulong)post.DiscordRoleId));
@@ -121,14 +122,16 @@ namespace accs.Models.Tickets
 						subdiv = subdiv.Head;
 					}
 
-					await guildProvider.GetGuild().GetUser(AuthorDiscordId).RemoveRolesAsync(roles);
+					await user.RemoveRolesAsync(roles);
 				}
 
 				unit.Posts.Clear();
 				await db.UnitStatuses.AddAsync(unitStatus);
-                
 
-                await channel.SendMessageAsync(
+				if (unit.Rank.DiscordRoleId != null)
+					await user.RemoveRoleAsync((ulong)unit.Rank.DiscordRoleId);
+
+				await channel.SendMessageAsync(
                     "Вы успешно отправлены в отставку. Все ваши должности сняты."
                 );
 
@@ -136,6 +139,7 @@ namespace accs.Models.Tickets
 				ClosedUserId = closedUserId;
                 await DeleteChannelAsync(guildProvider);
 				await db.SaveChangesAsync();
+				unitStatus.SetRole(guildProvider);
 			}
             else
             {

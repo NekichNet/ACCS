@@ -1,8 +1,7 @@
 ﻿using accs.Database;
+using accs.Logging.EventIds;
 using accs.Models;
-using accs.Models.Enums;
 using accs.Services.Interfaces;
-using Discord.WebSocket;
 using EasyOcrSharp.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,24 +11,21 @@ namespace accs.Services
     public class OCRService : IOCRService
     {
         private readonly AppDbContext _db;
-        private ILogService _logService;
+        private ILogger<OCRService> _log;
+        private ILogger<EasyOcrService> _detailLog;
 
 		public static int ChunkSize { get; private set; } = 3;
 
-        public OCRService(AppDbContext db, DiscordSocketClient discordSocketClient, ILogService logService) 
+        public OCRService(AppDbContext db, ILogger<OCRService> log, ILogger<EasyOcrService> detailLog) 
         {
             _db = db;
-            _logService = logService;
+            _log = log;
+            _detailLog = detailLog;
 		}
 
         public async Task<HashSet<Unit>> ReceiveNamesFromPhoto(string imagePath)
         {
-            var loggerFactory = LoggerFactory.Create(builder =>
-            {
-                builder.AddSimpleConsole();
-                builder.SetMinimumLevel(LogLevel.Information);
-            });
-            await using var ocr = new EasyOcrService(logger: loggerFactory.CreateLogger<EasyOcrService>());
+            await using var ocr = new EasyOcrService(logger: _detailLog);
             var result = await ocr.ExtractTextFromImage(imagePath, new[] { "en", "ru" });
 
             List<Unit> units = await _db.Units.ToListAsync();
@@ -49,7 +45,7 @@ namespace accs.Services
                 KeyValuePair<Unit, int> mostMatched = matches.MaxBy(m => m.Value);
                 if (mostMatched.Value / (mostMatched.Key.Nickname.Length - 2) >= 0.5)
                     exitMatches.Add(mostMatched.Key);
-                await _logService.WriteAsync($"line = {line.Text}; matched = {exitMatches.Last().Nickname}", LoggingLevel.Debug);
+                _log.LogTrace(EventIds.Details, $"line = {line.Text}; matched = {exitMatches.Last().Nickname}");
             }
 
             return exitMatches;

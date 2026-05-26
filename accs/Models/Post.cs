@@ -187,15 +187,19 @@ namespace accs.Models
 
 					SocketTextChannel channel = guild.GetTextChannel(channelId == null ? DiscordNotification.ChannelId : (ulong)channelId);
 
-					await channel.SendMessageAsync(
-						text: newNotification.Shortened,
-						allowedMentions: AllowedMentions.All
-					);
-
 					RestUserMessage message = await channel.SendMessageAsync(
 						embed: embed.Build(),
 						allowedMentions: AllowedMentions.All
 					);
+
+					if (!Directory.Exists("temp"))
+						Directory.CreateDirectory("temp");
+
+					string filePath = Path.Join("temp", $"notification-{message.Id}.txt");
+					using (StreamWriter writer = new StreamWriter(filePath, false, System.Text.Encoding.UTF8))
+					{
+						await writer.WriteAsync(newNotification.Shortened);
+					}
 
 					ButtonBuilder button = new ButtonBuilder()
 						.WithCustomId($"hide:{unit.DiscordId},{DiscordNotification.Id},{message.Id}")

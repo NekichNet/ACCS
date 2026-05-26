@@ -1,5 +1,6 @@
 using accs.Database;
-using accs.Models.Enums;
+using accs.Logging.EventIds;
+using accs.Logging.Extensions;
 using accs.Services;
 using accs.Services.Interfaces;
 using Discord;
@@ -13,6 +14,8 @@ namespace accs
 {
     public class Program
     {
+		private static WebApplication _app;
+
         public static void Main(string[] args)
         {
             Env.Load(".env");
@@ -39,89 +42,81 @@ namespace accs
 
 			var discordConfig = new DiscordSocketConfig() { };
 
-            builder.Services.AddSingleton(discordConfig);
+			builder.Logging.ClearProviders();
+			builder.Logging.AddCustomConsole();
+			builder.Logging.AddFile();
+
+			builder.Services.AddSingleton(discordConfig);
             builder.Services.AddSingleton<DiscordSocketClient>();
 			builder.Services.AddSingleton<IGuildProviderService, GuildProviderService>();
 
 			builder.Services.AddDbContext<AppDbContext>(options =>
 				options.UseNpgsql(connectionString));
 
-			builder.Services.AddScoped<IOCRService, OCRService>();
-			builder.Services.AddScoped<ILogService, LogService>();
-			builder.Services.AddTransient<IUsersCleanUpService, UsersCleanupService>();
+			//builder.Services.AddScoped<IOCRService, OCRService>();
 
-			builder.Services.AddHostedService<DailyCleanupService>();
-			builder.Services.AddHostedService<AutoStatusService>();
+			//builder.Services.AddTransient<IUsersCleanUpService, UsersCleanupService>();
 
-			builder.Services.AddAuthentication(options => { /* Authentication options */ })
-				.AddDiscord(options =>
-				{
-					options.ClientId = Env.GetString("CLIENT_ID");
-					options.ClientSecret = Env.GetString("CLIENT_SECRET");
-				});
-			builder.Services.AddAuthorization();
+			//builder.Services.AddHostedService<DailyCleanupService>();
+			//builder.Services.AddHostedService<AutoStatusService>();
 
-			var app = builder.Build();
+			_app = builder.Build();
 
 			string token = Env.GetString("TOKEN", "Token not found");
 			if (token == "Token not found") { Console.WriteLine("Token not found"); return; }
 
-			DiscordSocketClient client = app.Services.GetRequiredService<DiscordSocketClient>();
+			DiscordSocketClient client = _app.Services.GetRequiredService<DiscordSocketClient>();
 
-			ILogService logService = app.Services.GetRequiredService<ILogService>();
+			client.Log += DiscordLog<DiscordSocketClient>;
 
-			client.Log += async (msg) =>
-			{
-				await Task.CompletedTask;
-				Console.WriteLine(msg.Message, LoggingLevel.Info);
-			};
-			
 			client.LoginAsync(TokenType.Bot, token).Wait();
 			
 			InteractionService interaction = new InteractionService(client.Rest);
 
-			interaction.Log += async (msg) =>
-			{
-				await Task.CompletedTask;
-				Console.WriteLine(msg.Message, LoggingLevel.Info);
-			};
-			
+			interaction.Log += DiscordLog<InteractionService>;
+
 			client.InteractionCreated += async (msg) =>
 			{
 				var ctx = new SocketInteractionContext(client, msg);
-				await interaction.ExecuteCommandAsync(ctx, app.Services);
+				await interaction.ExecuteCommandAsync(ctx, _app.Services);
 			};
 
-			IGuildProviderService guildProvider = app.Services.GetRequiredService<IGuildProviderService>();
+			IGuildProviderService guildProvider = _app.Services.GetRequiredService<IGuildProviderService>();
+			ILogger<DiscordSocketClient> clientLogger = _app.Services.GetRequiredService<ILogger<DiscordSocketClient>>();
 
 			client.Ready += async Task () =>
             {
-				Console.WriteLine("Client is ready");
+				clientLogger.LogInformation(EventIds.Ok, "Client is ready");
 
 				SocketGuild guild = guildProvider.GetGuild();
 				if (!guild.IsConnected)
-					throw new Exception("Client is not connected to guild!");
+				{
+					Exception ex = new Exception("Client is not connected to guild!");
+					clientLogger.LogCritical(EventIds.UnhandledError, ex, ex.Message);
+				}
 
-				/*
 				// Очищаем уже зарегистрированные команды
 				await client.Rest.BulkOverwriteGlobalCommands(new ApplicationCommandProperties[] { });
 				await client.Rest.BulkOverwriteGuildCommands(new ApplicationCommandProperties[] { }, guildProvider.GetGuildId());
-				Console.WriteLine("Commands vanished", LoggingLevel.Info);
-				*/
+				clientLogger.LogInformation(EventIds.Deleted, "Commands vanished");
 
 				// Регистрируем актуальные команды
-				await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), app.Services);
+				await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), _app.Services);
 				await interaction.RegisterCommandsToGuildAsync(guildProvider.GetGuildId());
 
-				Console.WriteLine("Commands registered", LoggingLevel.Info);
+				clientLogger.LogInformation(EventIds.Created, "Commands registered");
 			};
 
 			client.StartAsync().Wait();
 
-			app.UseAuthentication();
-			app.UseAuthorization();
-
-			app.Run();
+			_app.Run();
 		}
-    }
+
+		private async static Task DiscordLog<TCategoryName>(LogMessage message)
+		{
+			LogLevel logLevel = (LogLevel)(5 - message.Severity);
+			_app.Services.GetRequiredService<ILogger<TCategoryName>>()
+				.Log(logLevel, message.Exception, message.Message);
+		}
+	}
 }

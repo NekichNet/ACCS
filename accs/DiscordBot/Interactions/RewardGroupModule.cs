@@ -16,13 +16,13 @@ namespace accs.DiscordBot.Interactions
     public class RewardGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
-        private readonly ILogService _logService;
+        private readonly ILogger<RewardGroupModule> _log;
 		private readonly IGuildProviderService _guildProvider;
 
-		public RewardGroupModule(AppDbContext db,  ILogService logService, IGuildProviderService guildProvider)
+		public RewardGroupModule(AppDbContext db, ILogger<RewardGroupModule> log, IGuildProviderService guildProvider)
         {
             _db = db;
-            _logService = logService;
+            _log = log;
             _guildProvider = guildProvider;
         }
 
@@ -34,13 +34,17 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.AssignRewards)]
         [SlashCommand("assign", "Присвоить награду бойцу")]
-        public async Task AssignCommand(IUser user, int? rewardId = null)
+        public async Task AssignCommand(
+            [Summary(description: "Боец, которому Вы присваиваете награду")]
+            IUser user,
+            [Summary(description: "ID награды. Если не указывать, выбираете из списка")]
+            int? rewardId = null)
         {
             Unit? unit = await _db.Units.FindAsync(user.Id);
             if (unit == null)
             {
                 await RespondAsync($"Пользователь {user.Username} не найден в системе", ephemeral: true);
-                await _logService.WriteAsync($"Пользователь {user.Username} не найден в системе", LoggingLevel.Debug);
+				_log.LogError($"Пользователь {user.Username} не найден в системе");
                 return;
             }
 
@@ -58,7 +62,7 @@ namespace accs.DiscordBot.Interactions
 
                 for (int i = 0; i < rewards.Count; i++)
                 {
-					string description = rewards[i].Description.Length > 95 ? rewards[i].Description.Substring(0, 95) : rewards[i].Description;
+					string description = rewards[i].Conditions.Length > 95 ? rewards[i].Conditions.Substring(0, 95) : rewards[i].Conditions;
 					if (description.Length < 2)
 						description = "Нет описания";
 					menuBuilder.AddOption(rewards[i].Name, rewards[i].Id.ToString(),
@@ -81,7 +85,7 @@ namespace accs.DiscordBot.Interactions
                 if (reward == null)
                 {
                     await RespondAsync($"Награда с Id {rewardId} не найдена в системе", ephemeral: true);
-                    await _logService.WriteAsync($"Награда с Id {rewardId} не найдена в системе", LoggingLevel.Debug);
+					_log.LogDebug($"Награда с Id {rewardId} не найдена в системе");
                     return;
                 }
 
@@ -97,7 +101,15 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.ManageRewards)]
         [SlashCommand("create", "Создать награду")]
-        public async Task CreateCommand(string name, string description, IAttachment? image = null)
+        public async Task CreateCommand(
+            [Summary(description: "Название")]
+            string name,
+            [Summary(description: "Условия получения")]
+            string conditions,
+            [Summary(description: "Привилегии")]
+            string privileges,
+            [Summary(description: "Изображение награды")]
+            IAttachment? image = null)
         {
             try
             {
@@ -120,7 +132,7 @@ namespace accs.DiscordBot.Interactions
                 Reward reward = new Reward()
                 {
                     Name = name,
-                    Description = description,
+                    Conditions = conditions,
                     DiscordRoleId = role.Id,
                     ImagePath = savedImagePath
                 };
@@ -131,7 +143,7 @@ namespace accs.DiscordBot.Interactions
                 EmbedBuilder embed = new EmbedBuilder()
                     .WithTitle($"Награда {reward.Name} создана")
                     .WithColor(Color.Gold)
-                    .WithDescription(reward.Description);
+                    .WithDescription(reward.Conditions + "\n" + reward.Privileges);
 
                 if (image != null)
                     await RespondWithFileAsync(
@@ -144,7 +156,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Ошибка при создании награды: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Ошибка при создании награды: {ex.Message}");
                 await RespondAsync("Ошибка при создании награды.", ephemeral: true);
             }
         }
@@ -170,7 +182,7 @@ namespace accs.DiscordBot.Interactions
 
 				for (int i = 24 * page; i < newRewards.Count; i++)
 				{
-					string description = newRewards[i].Description.Length > 95 ? newRewards[i].Description.Substring(0, 95) : newRewards[i].Description;
+					string description = newRewards[i].Conditions.Length > 95 ? newRewards[i].Conditions.Substring(0, 95) : newRewards[i].Conditions;
 					if (description.Length < 2)
 						description = "Нет описания";
 					menuBuilder.AddOption(newRewards[i].Name, newRewards[i].Id.ToString(),
@@ -193,7 +205,7 @@ namespace accs.DiscordBot.Interactions
             if (unit == null)
             {
                 await RespondAsync($"Пользователь с Id {unitId} не найден в системе", ephemeral: true);
-                await _logService.WriteAsync($"Пользователь с Id {unitId} не найден в системе", LoggingLevel.Debug);
+				_log.LogDebug($"Пользователь с Id {unitId} не найден в системе");
                 return;
             }
 
@@ -213,7 +225,7 @@ namespace accs.DiscordBot.Interactions
                 if (reward == null)
                 {
                     await RespondAsync($"Награда с Id {selectedId} не найдена в системе", ephemeral: true);
-                    await _logService.WriteAsync($"Награда с Id {selectedId} не найдена в системе", LoggingLevel.Debug);
+					_log.LogDebug($"Награда с Id {selectedId} не найдена в системе");
                     return;
                 }
                 rewards.Add(reward);
@@ -226,7 +238,9 @@ namespace accs.DiscordBot.Interactions
 
 
         [SlashCommand("list", "Список наград")]
-        public async Task RewardListCommand(int page = 1)
+        public async Task RewardListCommand(
+            [Summary(description: "Номер страницы")]
+            int page = 1)
         {
             const int pageSize = 5;
 
@@ -254,8 +268,9 @@ namespace accs.DiscordBot.Interactions
             foreach (var reward in pageItems)
                 embed.AddField(reward.Name,
                     $"ID: {reward.Id}\n"
-                    + reward.Description
-                    + "\nНаграждённые бойцы:\n"
+                    + $"Условия получения: {reward.Conditions}\n"
+                    + $"Привилегии: {reward.Privileges}\n"
+					+ "\nНаграждённые бойцы:\n"
                     + String.Join("\n", reward.Units.Select(u => u.GetOnlyNickname())));
 
             ComponentBuilder components = new ComponentBuilder();
@@ -276,27 +291,35 @@ namespace accs.DiscordBot.Interactions
             await RewardListCommand(page);
         }
 
-
         [HasPermission(PermissionType.ManageRewards)]
         [SlashCommand("edit", "Редактировать награду")]
-        public async Task EditCommand(string? name = null, string? description = null, IAttachment? image = null)
+        public async Task EditCommand(
+            [Summary(description: "ID награды. Его можно посмотреть в списке наград")]
+            int id,
+            [Summary(description: "Название награды")]
+            string? name = null,
+            [Summary(description: "Условия получения")]
+            string? conditions = null,
+            [Summary(description: "Привилегии")]
+            string? privileges = null,
+            [Summary(description: "Изображение награды")]
+            IAttachment? image = null)
         {
             try
             {
-                Reward? reward = await _db.Rewards
-                    .FirstOrDefaultAsync(r => r.Name.ToLower() == name.ToLower());
+                Reward? reward = await _db.Rewards.FindAsync(id);
 
                 if (reward == null)
                 {
-                    await RespondAsync("Награда с таким названием не найдена.", ephemeral: true);
+                    await RespondAsync("Награда с таким ID не найдена.", ephemeral: true);
                     return;
                 }
 
                 bool changed = false;
 
-                if (!string.IsNullOrWhiteSpace(description))
+                if (!string.IsNullOrWhiteSpace(name))
                 {
-                    reward.Description = description;
+                    reward.Name = name;
                     changed = true;
                 }
 
@@ -308,12 +331,12 @@ namespace accs.DiscordBot.Interactions
                         return;
                     }
 
-                    if (!Directory.Exists("newRewards"))
+                    if (!Directory.Exists("rewards"))
                     {
-                        Directory.CreateDirectory("newRewards");
+                        Directory.CreateDirectory("rewards");
                     }
 
-                    string filePath = Path.Combine("newRewards", image.Filename);
+                    string filePath = Path.Combine("rewards", reward.Id.ToString() + ".png");
 
                     using (var http = new HttpClient())
                     {
@@ -337,7 +360,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in EditCommand: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Error in EditCommand: {ex.Message}");
                 await RespondAsync("Ошибка при редактировании награды.", ephemeral: true);
             }
         }
@@ -345,7 +368,9 @@ namespace accs.DiscordBot.Interactions
 
         [HasPermission(PermissionType.ManageRewards)]
         [SlashCommand("delete", "Удалить награду")]
-        public async Task DeleteCommand(int? id = null)
+        public async Task DeleteCommand(
+            [Summary(description: "ID награды. Если не указывать, то можно выбрать из списка")]
+            int? id = null)
         {
             try
             {
@@ -381,7 +406,7 @@ namespace accs.DiscordBot.Interactions
 
 					for (int i = 0; i < rewards.Count; i++)
 					{
-						string description = rewards[i].Description.Length > 95 ? rewards[i].Description.Substring(0, 95) : rewards[i].Description;
+						string description = rewards[i].Conditions.Length > 95 ? rewards[i].Conditions.Substring(0, 95) : rewards[i].Conditions;
 						if (description.Length < 2)
 							description = "Нет описания";
 						menu.AddOption(rewards[i].Name, rewards[i].Id.ToString(),
@@ -401,7 +426,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in DeleteCommand: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Error in DeleteCommand: {ex.Message}");
                 await RespondAsync("Ошибка при удалении награды.", ephemeral: true);
             }
         }
@@ -429,7 +454,7 @@ namespace accs.DiscordBot.Interactions
 
 					for (int i = 24 * page; i < newRewards.Count; i++)
 					{
-						string description = newRewards[i].Description.Length > 95 ? newRewards[i].Description.Substring(0, 95) : newRewards[i].Description;
+						string description = newRewards[i].Conditions.Length > 95 ? newRewards[i].Conditions.Substring(0, 95) : newRewards[i].Conditions;
 						if (description.Length < 2)
 							description = "Нет описания";
 						menuBuilder.AddOption(newRewards[i].Name, newRewards[i].Id.ToString(),
@@ -472,7 +497,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Error in RewardDeleteSelectHandler: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Error in RewardDeleteSelectHandler: {ex.Message}");
                 await RespondAsync("Ошибка при удалении награды.", ephemeral: true);
             }
         }

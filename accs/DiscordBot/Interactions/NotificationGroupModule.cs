@@ -2,11 +2,8 @@
 using accs.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Models.Enums;
-using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
-using System.IO;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -15,12 +12,10 @@ namespace accs.DiscordBot.Interactions
 	public class NotificationGroupModule : InteractionModuleBase<SocketInteractionContext>
 	{
 		private readonly AppDbContext _db;
-		private readonly IGuildProviderService _guildProvider;
 
-        public NotificationGroupModule(AppDbContext db, IGuildProviderService guildProvider, ILogService logService)
+        public NotificationGroupModule(AppDbContext db)
         {
             _db = db;
-            _guildProvider = guildProvider;
         }
 
 		[ComponentInteraction("hide:*,*,*", ignoreGroupNames: true)]
@@ -30,13 +25,21 @@ namespace accs.DiscordBot.Interactions
 			int notificationId = int.Parse(notificationIdString);
 			DiscordNotification? notification = await _db.DiscordNotifications.FindAsync(notificationId);
 
+			string filePath = Path.Join("temp", $"notification-{messageIdString}.txt");
+			string text = "Сообщение не найдено";
+			using (StreamReader reader = new StreamReader(filePath, System.Text.Encoding.UTF8))
+			{
+				text = await reader.ReadToEndAsync();
+			}
+
 			Unit? actorUnit = await _db.Units.FindAsync(Context.User.Id);
 			if (actorUnit != null)
 			{
 				if (actorUnit.HasPermission(PermissionType.Administrator))
 				{
-					await ((IComponentInteraction)Context.Interaction).Message.DeleteAsync();
-					await (await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString))).DeleteAsync();
+					File.Delete(filePath);
+					await ((IUserMessage)(await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString)))).ModifyAsync(m => { m.Embed = null; m.Content = text; });
+					await ((IComponentInteraction)Context.Interaction).UpdateAsync(m => m.Components = null);
 					await RespondAsync();
 					return;
 				}
@@ -44,25 +47,23 @@ namespace accs.DiscordBot.Interactions
 
 			if (notification == null)
 			{
-				await HideMessage(messageIdString);
+				File.Delete(filePath);
+				await ((IUserMessage)(await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString)))).ModifyAsync(m => { m.Embed = null; m.Content = text; });
+				await ((IComponentInteraction)Context.Interaction).UpdateAsync(m => m.Components = null);
 			}
 			else if (Context.User.Id == notification.AuthorId || Context.User.Id == unitId)
 			{
-				await HideMessage(messageIdString);
+				File.Delete(filePath);
+				await ((IUserMessage)(await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString)))).ModifyAsync(m => { m.Embed = null; m.Content = text; });
+				await ((IComponentInteraction)Context.Interaction).UpdateAsync(m => m.Components = null);
 			}
 			else
 			{
 				await RespondAsync("Вы не можете скрыть это сообщение.", ephemeral: true);
 				return;
 			}
-			
-			await RespondAsync();
-		}
 
-		private async Task HideMessage(string messageIdString)
-		{
-			await (await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString))).DeleteAsync();
-			await ((IComponentInteraction)Context.Interaction).Message.DeleteAsync();
+			await RespondAsync();
 		}
     }
 }

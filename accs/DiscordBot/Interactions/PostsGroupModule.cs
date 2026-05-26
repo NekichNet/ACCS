@@ -18,13 +18,13 @@ namespace accs.DiscordBot.Interactions
         {
             private readonly AppDbContext _db;
             private readonly IGuildProviderService _guildProvider;
-            private readonly ILogService _logService;
+            private readonly ILogger<PostsGroupModule> _log;
 
-			public PostsGroupModule(AppDbContext db, IGuildProviderService guildProvider, ILogService logService)
+			public PostsGroupModule(AppDbContext db, IGuildProviderService guildProvider, ILogger<PostsGroupModule> log)
             {
                 _db = db;
                 _guildProvider = guildProvider;
-                _logService = logService;
+                _log = log;
             }
 
             public override Task BeforeExecuteAsync(ICommandInfo command)
@@ -36,7 +36,11 @@ namespace accs.DiscordBot.Interactions
 
             [HasPermission(PermissionType.ChangePosts)]
             [SlashCommand("set", "Назначить должности бойцу")]
-            public async Task AssignPostCommand(IUser target, int? postId = null)
+            public async Task AssignPostCommand(
+                [Summary(description: "Боец, которого вы назначаете на должность")]
+                IUser target,
+                [Summary(description: "ID должности. Если не указывать, то выбираете из списка")]
+                int? postId = null)
             {
                 try
                 {
@@ -68,7 +72,7 @@ namespace accs.DiscordBot.Interactions
 						if (post == null)
 						{
 							await RespondAsync($"Должность с ID {postId} не найдены.", ephemeral: true);
-							await _logService.WriteAsync($"Должность с ID {postId} не найдена.", LoggingLevel.Error);
+							_log.LogError($"Должность с ID {postId} не найдена.");
                             return;
 						}
 
@@ -159,7 +163,7 @@ namespace accs.DiscordBot.Interactions
                 }
                 catch (Exception ex)
                 {
-                    await _logService.WriteAsync($"Ошибка в AssignPostCommand: {ex.Message}", LoggingLevel.Error);
+					_log.LogError($"Ошибка в AssignPostCommand: {ex.Message}");
                     await RespondAsync("Ошибка при назначении должностей.", ephemeral: true);
                 }
             }
@@ -185,7 +189,7 @@ namespace accs.DiscordBot.Interactions
                     if (actorUnit == null)
                     {
                         await RespondAsync("Ошибка: вы не найдены в системе!", ephemeral: true);
-                        await _logService.WriteAsync($"Боец с ID {actorIdString} не найден в базе данных!", LoggingLevel.Error);
+						_log.LogError($"Боец с ID {actorIdString} не найден в базе данных!");
                         return;
                     }
 
@@ -232,7 +236,7 @@ namespace accs.DiscordBot.Interactions
                         if (post == null)
                         {
                             await RespondAsync($"должность {selectedIds[i]} не найдены.", ephemeral: true);
-                            await _logService.WriteAsync($"Должность с ID {selectedIds[i]} не найдена.", LoggingLevel.Error);
+							_log.LogError($"Должность с ID {selectedIds[i]} не найдена.");
                         }
                     }
 
@@ -241,7 +245,7 @@ namespace accs.DiscordBot.Interactions
                     if (targetUnit == null)
                     {
                         await RespondAsync($"Ошибка: пользователь с id {targetId} не найден в системе!", ephemeral: true);
-                        await _logService.WriteAsync($"Пользователь с id {targetId} не найден в системе!", LoggingLevel.Error);
+						_log.LogError($"Пользователь с id {targetId} не найден в системе!");
                         return;
                     }
 
@@ -286,7 +290,7 @@ namespace accs.DiscordBot.Interactions
 						}
                         else
                         {
-                            await _logService.WriteAsync($"Пост {postId} не найден.", LoggingLevel.Error);
+							_log.LogError($"Пост {postId} не найден.");
                         } 
                     }
 
@@ -296,7 +300,7 @@ namespace accs.DiscordBot.Interactions
                 }
                 catch (Exception ex)
                 {
-                    await _logService.WriteAsync($"Ошибка в RankMenuHandler: {ex.Message}", LoggingLevel.Error);
+					_log.LogError($"Ошибка в RankMenuHandler: {ex.Message}");
                     await RespondAsync("Ошибка при обновлении должностей.", ephemeral: true);
                 }
             }
@@ -475,7 +479,7 @@ namespace accs.DiscordBot.Interactions
                 else
                 {
                     var err = $"Пользователь с Id {Context.User.Id} вызвавший метод не найден в базе данных!";
-                    await _logService.WriteAsync(err, LoggingLevel.Error);
+					_log.LogError(err);
                     await RespondAsync(err, ephemeral:true);
                 }
             }
@@ -600,7 +604,7 @@ namespace accs.DiscordBot.Interactions
                 else
                 {
                     var err = $"Должность с Id {Id} вызвавший метод не найден в базе данных!";
-                    await _logService.WriteAsync(err, LoggingLevel.Warn);
+					_log.LogWarning(err);
                     await RespondAsync(err, ephemeral: true);
                 }
             }
@@ -627,7 +631,7 @@ namespace accs.DiscordBot.Interactions
                 else
                 {
                     var err = $"Должность с Id {Id} вызвавший метод не найден в базе данных!";
-                    await _logService.WriteAsync(err, LoggingLevel.Warn);
+					_log.LogWarning(err);
                     await RespondAsync(err, ephemeral: true);
                 }
             }
@@ -657,12 +661,10 @@ namespace accs.DiscordBot.Interactions
                 else
                 {
                     var err = $"Должность с Id {Id} вызвавший метод не найден в базе данных!";
-                    await _logService.WriteAsync(err, LoggingLevel.Warn);
+					_log.LogWarning(err);
                     await RespondAsync(err, ephemeral: true);
                 }
             }
-
-
 
             [HasPermission(PermissionType.ManageStructure)]
             [SlashCommand("delete", "Удаляет должность по указанному Id")]
@@ -679,12 +681,10 @@ namespace accs.DiscordBot.Interactions
                 else
                 {
                     var err = $"Должность с Id {Id} вызвавший метод не найден в базе данных!";
-                    await _logService.WriteAsync(err, LoggingLevel.Warn);
+					_log.LogWarning(err);
                     await RespondAsync(err, ephemeral: true);
                 }
             }
-
-
 
             /// <summary>
             /// Recursive method to find wether unit is able to redact the post or not.
@@ -712,37 +712,50 @@ namespace accs.DiscordBot.Interactions
                 return hasPermission;
             }
 
-			[HasPermission(PermissionType.Administrator)]
 			[SlashCommand("notify", "Вызвать показ приветственного сообщения")]
 			public async Task NotificationShowCommand(int postId, IUser user, [ChannelTypes(ChannelType.Text)] IChannel? channel)
             {
-                Unit? unit = await _db.Units.FindAsync(user.Id);
-                if (unit == null)
+                Unit? authorUnit = await _db.Units.FindAsync(Context.User.Id);
+                if (authorUnit == null)
                 {
-                    await RespondAsync($"Пользователь {user.Username} не найден в системе");
-                    await _logService.WriteAsync($"NotificationShowCommand: Пользователь {user.Username} не найден в системе", LoggingLevel.Info);
-                    return;
-                }
-
-                Post? post = await _db.Posts.FindAsync(postId);
-                if (post == null)
-				{
-					await RespondAsync($"Должность с Id {postId} не найдена в системе");
-					await _logService.WriteAsync($"NotificationShowCommand: Должность с Id {postId} не найдена в системе", LoggingLevel.Info);
+					await RespondAsync($"Вы не найдены в системе", ephemeral: true);
+					_log.LogError($"NotificationShowCommand: Пользователь {user.Username} не найден в системе");
 					return;
 				}
 
-                if (post.DiscordNotification == null)
+                Unit? unit = await _db.Units.FindAsync(user.Id);
+                if (unit == null)
                 {
-					await RespondAsync($"Должность {post.GetFullName()} не имеет привязанных сообщений");
-					await _logService.WriteAsync($"NotificationShowCommand: Должность {post.GetFullName()} не имеет привязанных сообщений", LoggingLevel.Info);
+                    await RespondAsync($"Пользователь {user.Username} не найден в системе", ephemeral: true);
+					_log.LogError($"NotificationShowCommand: Пользователь {user.Username} не найден в системе");
+                    return;
+                }
+
+				Post? post = await _db.Posts.FindAsync(postId);
+				if (post == null)
+				{
+					await RespondAsync($"Должность с Id {postId} не найдена в системе", ephemeral: true);
+					_log.LogError($"NotificationShowCommand: Должность с Id {postId} не найдена в системе");
+					return;
+				}
+
+				if (post.GetAllHeadsRecursive().Intersect(authorUnit.Posts).Any()
+                    || authorUnit.HasPermission(PermissionType.Administrator))
+                {
+					if (post.DiscordNotification == null)
+					{
+						await RespondAsync($"Должность {post.GetFullName()} не имеет привязанных сообщений", ephemeral: true);
+						_log.LogInformation($"NotificationShowCommand: Должность {post.GetFullName()} не имеет привязанных сообщений");
+					}
+					else
+					{
+						await RespondAsync("Сообщение принудительно вызвано.", ephemeral: true);
+						await post.NotifyOnAssignAsync(_guildProvider.GetGuild(), _db, unit,
+							channel == null ? post.DiscordNotification.ChannelId : channel.Id);
+					}
 				}
                 else
-                {
-                    await RespondAsync("Сообщение принудительно вызвано.", ephemeral: true);
-					await post.NotifyOnAssignAsync(_guildProvider.GetGuild(), _db, unit,
-                        channel == null ? post.DiscordNotification.ChannelId : channel.Id);
-                }
+					await RespondAsync($"У вас нет прав вызывать уведомления этой должности.", ephemeral: true);
 			}
 		}
     }

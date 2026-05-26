@@ -8,6 +8,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -15,13 +16,13 @@ namespace accs.DiscordBot.Interactions
     [Group("ticket", "Управление тикетами")]
     public class TicketGroupModule : InteractionModuleBase<SocketInteractionContext>
 	{
-		private readonly ILogService _logService;
+		private readonly ILogger<TicketGroupModule> _log;
 		private readonly AppDbContext _db;
 		private readonly IGuildProviderService _guildProvider;
 
-        public TicketGroupModule(ILogService logService, AppDbContext db, IGuildProviderService guildProvider)
+        public TicketGroupModule(ILogger<TicketGroupModule> log, AppDbContext db, IGuildProviderService guildProvider)
         { 
-            _logService = logService;
+            _log = log;
 			_db = db;
 			_guildProvider = guildProvider;
         }
@@ -34,14 +35,14 @@ namespace accs.DiscordBot.Interactions
 			if (ticket == null)
             {
                 await RespondAsync($"Тикет с id {ticketId} не найден!");
-                await _logService.WriteAsync($"Тикет с id {ticketId} не найден!", LoggingLevel.Error);
+				_log.LogError($"Тикет с id {ticketId} не найден!");
 				return;
             }
 
 			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
 			if (unit != null)
             {
-				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
+				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any() || unit.HasPermission(PermissionType.Administrator))
 				{
 					await ticket.AcceptAsync(_guildProvider, _db, unit.DiscordId);
 					return;
@@ -59,14 +60,14 @@ namespace accs.DiscordBot.Interactions
 			if (ticket == null)
 			{
 				await RespondAsync($"Тикет с id {ticketId} не найден!");
-				await _logService.WriteAsync($"Тикет с id {ticketId} не найден!", LoggingLevel.Error);
+				_log.LogError($"Тикет с id {ticketId} не найден!");
 				return;
 			}
 
 			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
 			if (unit != null)
 			{
-				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
+				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any() || unit.HasPermission(PermissionType.Administrator))
 				{
 					await ticket.RefuseAsync(_guildProvider, _db, unit.DiscordId);
 					return;
@@ -84,7 +85,7 @@ namespace accs.DiscordBot.Interactions
 			if (ticket == null)
 			{
 				await RespondAsync($"Тикет с id {ticketId} не найден!");
-				await _logService.WriteAsync($"Тикет с id {ticketId} не найден!", LoggingLevel.Error);
+				_log.LogError($"Тикет с id {ticketId} не найден!");
 				return;
 			}
 
@@ -110,7 +111,7 @@ namespace accs.DiscordBot.Interactions
 				if (ticket == null)
                 {
 					await ModifyOriginalResponseAsync((props) => { props.Content = $"Тикет с id {ticketId} не найден!"; });
-					await _logService.WriteAsync($"Ticket voice: Тикет {ticketId} не найден", LoggingLevel.Error);
+					_log.LogError($"Ticket voice: Тикет {ticketId} не найден");
                     return;
                 }
 
@@ -144,17 +145,17 @@ namespace accs.DiscordBot.Interactions
 			}
             catch (Exception ex)
 			{
-				await _logService.WriteAsync($"Ticket voice error: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Ticket voice error: {ex.Message}");
 				await ModifyOriginalResponseAsync((props) => { props.Content = "Произошла непредвиденная ошибка."; });
 			}
         }
         
 
         [ComponentInteraction("invite-select-*", ignoreGroupNames: true)]
-        public async Task InviteSelectHandler(int ticketId, int[] postIds)
+        public async Task InviteSelectHandler(string ticketId, int[] postIds)
         {
 			int selectedId = postIds.First();
-			Ticket? ticket = await _db.Tickets.FindAsync(ticketId);
+			Ticket? ticket = await _db.Tickets.FindAsync(Int32.Parse(ticketId));
 			if (ticket is InviteTicket invite)
 			{
 				Unit? unit = await _db.Units.FindAsync(Context.User.Id);
@@ -162,7 +163,7 @@ namespace accs.DiscordBot.Interactions
 				{
 					if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
 					{
-						await invite.AcceptanceHandler(selectedId, _guildProvider, _db, _logService, unit.DiscordId);
+						await invite.AcceptanceHandler(selectedId, _guildProvider, _db, _log, unit.DiscordId);
 					}
 				}
 
@@ -170,19 +171,19 @@ namespace accs.DiscordBot.Interactions
 			}
 			else
 			{
-				await _logService.WriteAsync($"Error: ticket {ticketId} is {ticket.GetType()}");
+				_log.LogError($"Error: ticket {ticketId} is {ticket.GetType()}");
 				await RespondAsync($"Ошибка: тикет с id {ticketId} не найден", ephemeral: true);
 			}
         }
 
 		[ComponentInteraction("retirement-select-*", ignoreGroupNames: true)]
-		public async Task ReturnFromRetirementHandler(int ticketId, int[] postIds)
+		public async Task ReturnFromRetirementHandler(string ticketId, int[] postIds)
 		{
-			RetirementTicket? ticket = await _db.RetirementTickets.FindAsync(ticketId);
+			RetirementTicket? ticket = await _db.RetirementTickets.FindAsync(Int32.Parse(ticketId));
 			if (ticket == null)
 			{
 				await RespondAsync($"Ошибка: тикет с Id {ticketId} не найден!", ephemeral: true);
-				await _logService.WriteAsync($"Тикет с Id {ticketId} не найден!", LoggingLevel.Error);
+				_log.LogError($"Тикет с Id {ticketId} не найден!");
 				return;
 			}
 
@@ -190,7 +191,7 @@ namespace accs.DiscordBot.Interactions
 			if (unit == null)
 			{
 				await RespondAsync($"Ошибка: боец c Id {ticket.AuthorDiscordId} не найден!", ephemeral: true);
-				await _logService.WriteAsync($"ReturnFromRetirenmentHandler: Боец c Id {ticket.AuthorDiscordId} не найден", LoggingLevel.Error);
+				_log.LogError($"ReturnFromRetirenmentHandler: Боец c Id {ticket.AuthorDiscordId} не найден");
 				return;
 			}
 
@@ -210,10 +211,11 @@ namespace accs.DiscordBot.Interactions
 			UnitStatus activeRetirement = unit.UnitStatuses
 				.First(us =>
 					us.Status.Type == StatusType.Retirement &&
-					us.EndDate == null
+					!us.IsCompleted()
 				);
 
 			activeRetirement.EndDate = DateTime.UtcNow;
+			activeRetirement.RemoveRole(_guildProvider);
 
 			unit.Posts.Clear();
 
@@ -240,8 +242,11 @@ namespace accs.DiscordBot.Interactions
 					await post.NotifyOnAssignAsync(Context.Guild, _db, unit);
 				}
 				else
-					await _logService.WriteAsync($"ReturnFromRetirenmentHandler: Post с id {id} не найден", LoggingLevel.Error);
+					_log.LogError($"ReturnFromRetirenmentHandler: Post с id {id} не найден");
 			}
+
+			if (userUnit.Rank.DiscordRoleId != null)
+				await _guildProvider.GetGuild().GetUser(ticket.AuthorDiscordId).AddRoleAsync((ulong)userUnit.Rank.DiscordRoleId);
 
 			ticket.Status = TicketStatus.Accepted;
 			_db.RetirementTickets.Update(ticket);

@@ -15,19 +15,21 @@ namespace accs.DiscordBot.Interactions
 	public class RanksGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly AppDbContext _db;
-        private readonly ILogService _logService;
+        private readonly ILogger<RanksGroupModule> _log;
 		private readonly IGuildProviderService _guildProvider;
 
-		public RanksGroupModule(AppDbContext db, IGuildProviderService guildProvider, ILogService logService)
+		public RanksGroupModule(AppDbContext db, IGuildProviderService guildProvider, ILogger<RanksGroupModule> log)
         {
 			_db = db;
 			_guildProvider = guildProvider;
-            _logService = logService;
+            _log = log;
         }
 
 		[HasPermission(PermissionType.ChangeRanks)]
 		[SlashCommand("up", "Повысить бойца на одно звание")]
-        public async Task RankUpCommand(IUser targetedUser)
+        public async Task RankUpCommand(
+			[Summary(description: "Боец, которого Вы повышаете")]
+			IUser targetedUser)
         {
 			try
 			{
@@ -44,7 +46,7 @@ namespace accs.DiscordBot.Interactions
 				if (rank == null)
 				{
 					await RespondAsync($"У бойца {targetUnit.Nickname} уже самое высокое на данный момент звание: {targetUnit.Rank.Name}.", ephemeral: true);
-					await _logService.WriteAsync($"У бойца {targetUnit.Nickname} уже самое высокое на данный момент звание: {targetUnit.Rank.Name}.", LoggingLevel.Debug);
+					_log.LogDebug($"У бойца {targetUnit.Nickname} уже самое высокое на данный момент звание: {targetUnit.Rank.Name}.");
 					return;
 				}
 
@@ -67,13 +69,17 @@ namespace accs.DiscordBot.Interactions
 			}
 			catch (Exception ex)
 			{
-				await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
+				_log.LogError(ex, ex.Message);
 			}
 		}
 
 		[HasPermission(PermissionType.ChangeRanks)]
 		[SlashCommand("set", "Установить бойцу выбранное звание")]
-		public async Task SetRankCommand(IUser targetedUser, int? rankId = null)
+		public async Task SetRankCommand(
+			[Summary(description: "Боец, которому Вы меняете звание")]
+			IUser targetedUser,
+			[Summary(description: "ID звания. Если не указывать, то выбираете из списка")]
+			int? rankId = null)
 		{
 			try
 			{
@@ -131,7 +137,7 @@ namespace accs.DiscordBot.Interactions
                     if (rank == null)
 					{
 						await RespondAsync($"Звание c Id {rankId} не найдено.", ephemeral: true);
-						await _logService.WriteAsync($"Звание c Id {rankId} не найдено.", LoggingLevel.Error);
+						_log.LogError($"Звание c Id {rankId} не найдено.");
 						return;
 					}
 					if (targetUnit.Rank.DiscordRoleId != null)
@@ -154,7 +160,7 @@ namespace accs.DiscordBot.Interactions
 			}
 			catch (Exception ex)
 			{
-				await _logService.WriteAsync(ex.Message, LoggingLevel.Error);
+				_log.LogError(ex, ex.Message);
 			}
 		}
 
@@ -174,14 +180,14 @@ namespace accs.DiscordBot.Interactions
                 if (targetUnit == null)
 				{
 					await RespondAsync($"Боец с Id {targetId} не найден в системе.", ephemeral: true);
-					await _logService.WriteAsync($"Боец с Id {targetId} не найден в системе.", LoggingLevel.Error);
+					_log.LogError($"Боец с Id {targetId} не найден в системе.");
 					return;
 				}
 
 				if (rank == null)
                 {
 					await RespondAsync($"Звание c Id {selectedRankIdRaw} не найдено.", ephemeral: true);
-                    await _logService.WriteAsync($"Звание c Id {selectedRankIdRaw} не найдено.", LoggingLevel.Error);
+					_log.LogError($"Звание c Id {selectedRankIdRaw} не найдено.");
                     return;
                 }
 
@@ -201,7 +207,7 @@ namespace accs.DiscordBot.Interactions
             }
             catch (Exception ex)
             {
-                await _logService.WriteAsync($"Ошибка в RankMenuHandler: {ex.Message}", LoggingLevel.Error);
+				_log.LogError($"Ошибка в RankMenuHandler: {ex.Message}");
 				await RespondAsync("Ошибка при обновлении должностей.", ephemeral: true);
             }
         }
@@ -210,7 +216,11 @@ namespace accs.DiscordBot.Interactions
 		[SlashCommand("list", "Вывести очередь на повышение")]
 		public async Task RankListCommand()
 		{
-			List<Unit> units = _db.Units.Where(u => u.Rank.Next != null).Where(u => u.Rank.Next.CounterToReach <= u.RankUpCounter).ToList();
+			List<Unit> units = _db.Units
+				.Where(u => u.Posts.Any())
+				.Where(u => u.Rank.Next != null)
+				.Where(u => u.Rank.Next.CounterToReach <= u.RankUpCounter)
+				.ToList();
 
 			if (units.Any())
 			{

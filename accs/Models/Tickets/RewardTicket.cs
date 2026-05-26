@@ -15,11 +15,11 @@ namespace accs.Models.Tickets
 
 		public RewardTicket(ulong authorId) : base(authorId) { }
 
-		public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogService logService, AppDbContext db)
+		public override async Task SendWelcomeMessageAsync(IGuildProviderService guildProvider, ILogger<Ticket> log, AppDbContext db)
 		{
 			SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 			if (channel == null)
-				await logService.WriteAsync("RewardTicket: channel is null", LoggingLevel.Error);
+				log.LogError("RewardTicket: channel is null");
 			else
 			{
 				List<Post> adminPosts = GetAdmins(db);
@@ -31,7 +31,7 @@ namespace accs.Models.Tickets
 				}
 				else
 				{
-					await logService.WriteAsync($"Ticket: authorUser with Id {AuthorDiscordId} is null", LoggingLevel.Error);
+					log.LogError($"Ticket: authorUser with Id {AuthorDiscordId} is null");
 				}
 
 				foreach (Post post in adminPosts)
@@ -43,7 +43,6 @@ namespace accs.Models.Tickets
 							text += role.Mention;
 					}
 				}
-				await channel.SendMessageAsync(text: text, allowedMentions: AllowedMentions.All);
 
 				EmbedBuilder embed = new EmbedBuilder()
 					.WithTitle($"Тикет на представление к награде №{Id}")
@@ -56,14 +55,14 @@ namespace accs.Models.Tickets
 					"\r\n***/ticket accept*** — Закрыть тикет как решённый, доступно администраторам." +
 					"\r\n***/ticket refuse*** — Закрыть тикет как не решённый, доступно администраторам." +
 					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.");
-				await channel.SendMessageAsync(embed: embed.Build());
+				await channel.SendMessageAsync(embed: embed.Build(), text: text, allowedMentions: AllowedMentions.All);
 			}
 		}
 
 		public override List<Post> GetAdmins(AppDbContext db)
 		{
 			List<Post> admins = new List<Post>();
-			admins.AddRange(db.Posts.Where(p => p.Id == 23));
+			admins.AddRange(db.Posts.Where(p => p.Id == 28 || p.Id == 23));
 			return admins;
 		}
 	}

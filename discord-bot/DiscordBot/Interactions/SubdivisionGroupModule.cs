@@ -1,8 +1,5 @@
 ﻿using accs.Database;
-using accs.Controllers.DiscordBot.Preconditions;
-using accs.Models;
 using accs.Models.Enums;
-using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;

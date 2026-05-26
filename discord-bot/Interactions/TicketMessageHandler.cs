@@ -8,7 +8,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
-namespace discord_bot.DiscordBot.Interactions
+namespace discord_bot.Interactions
 {
 	public class TicketMessageHandler : InteractionModuleBase<SocketInteractionContext>
 	{

@@ -4,7 +4,7 @@ using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace accs.Services
+namespace accs.Services.Scheduled
 {
     public class AutoStatusService : BackgroundService
     {

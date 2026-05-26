@@ -1,4 +1,4 @@
-﻿namespace discord_bot.DiscordBot.Interactions.Models
+﻿namespace discord_bot.Interactions.Models
 {
     public class UnconfirmedActivity
     {

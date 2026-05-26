@@ -9,7 +9,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 
-namespace discord_bot.DiscordBot.Interactions
+namespace discord_bot.Interactions
 {
     [IsTicketChannel()]
     [Group("ticket", "Управление тикетами")]

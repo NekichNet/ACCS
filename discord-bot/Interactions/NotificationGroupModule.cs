@@ -5,7 +5,7 @@ using accs.Models.Enums;
 using Discord;
 using Discord.Interactions;
 
-namespace discord_bot.DiscordBot.Interactions
+namespace discord_bot.Interactions
 {
 	[IsUnit()]
 	[Group("notification", "Команды для управления автоматическими сообщениями")]

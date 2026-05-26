@@ -3,7 +3,7 @@ using accs.Models.Database;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 
-namespace discord_bot.DiscordBot.Interactions
+namespace discord_bot.Interactions
 {
     public class BotModule : InteractionModuleBase<SocketInteractionContext>
 	{

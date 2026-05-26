@@ -5,7 +5,7 @@ using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 using accs.Models.Database;
 
-namespace discord_bot.DiscordBot.Interactions
+namespace discord_bot.Interactions
 {
     //[IsUnit()]
     //[Group("subdivision", "Команды для работы с подразделениями")]

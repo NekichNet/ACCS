@@ -7,7 +7,7 @@ using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.Options;
 
-namespace discord_bot.DiscordBot.Interactions
+namespace discord_bot.Interactions
 {
     [HasPermission(PermissionType.Administrator)]
     [Group("logs", "Команды для работы с логами")]

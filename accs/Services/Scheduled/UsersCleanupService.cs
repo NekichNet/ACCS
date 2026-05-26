@@ -4,7 +4,7 @@ using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord.WebSocket;
 
-namespace accs.Services
+namespace accs.Services.Scheduled
 {
     public class UsersCleanupService : IUsersCleanUpService
     {

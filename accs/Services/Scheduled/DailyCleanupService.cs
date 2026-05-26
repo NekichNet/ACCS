@@ -1,6 +1,4 @@
-﻿using accs.Services.Interfaces;
-
-namespace accs.Services
+﻿namespace accs.Services.Scheduled
 {
     public class DailyCleanupService : BackgroundService
     {

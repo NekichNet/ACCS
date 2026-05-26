@@ -9,7 +9,7 @@ using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 
-namespace discord_bot.DiscordBot.Interactions
+namespace discord_bot.Interactions
 {
     [IsUnit()]
     [Group("reward", "Команды для работы с наградами")]

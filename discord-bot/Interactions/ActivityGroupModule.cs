@@ -7,9 +7,9 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using discord_bot.DiscordBot.Interactions.Models;
+using discord_bot.Interactions.Models;
 
-namespace discord_bot.DiscordBot.Interactions
+namespace discord_bot.Interactions
 {
     [IsUnit()]
     [InChannels("ACTIVITY_CHANNEL_ID")]

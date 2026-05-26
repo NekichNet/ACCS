@@ -1,4 +1,4 @@
-﻿namespace accs.Services.Interfaces
+﻿namespace accs.Services.Scheduled
 {
     public interface IUsersCleanUpService
     {

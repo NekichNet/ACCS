@@ -8,7 +8,7 @@ using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 
-namespace discord_bot.DiscordBot.Interactions
+namespace discord_bot.Interactions
 {
     [IsUnit()]
 	[Group("rank", "Команды для управления званиями")]

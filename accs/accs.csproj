@@ -7,8 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net" Version="3.18.0" />
-    <PackageReference Include="DotNetEnv" Version="3.1.1" />
+    <Compile Remove="Models\DTO\**" />
+    <Content Remove="Models\DTO\**" />
+    <EmbeddedResource Remove="Models\DTO\**" />
+    <None Remove="Models\DTO\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="EasyOcrSharp" Version="1.0.2" />
     <PackageReference Include="EasyOcrSharp.Runtime" Version="1.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
@@ -27,7 +33,6 @@
   <ItemGroup>
     <Folder Include="Controllers\" />
     <Folder Include="Migrations\" />
-    <Folder Include="Models\DTO\" />
   </ItemGroup>
 
 </Project>

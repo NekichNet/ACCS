@@ -1,5 +1,5 @@
 ﻿using accs.Database;
-using accs.Logging.EventIds;
+using accs.Logging;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord.WebSocket;

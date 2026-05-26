@@ -1,3 +1,6 @@
+using accs.Logging;
+using accs.Logging.Extensions;
+
 namespace discord_bot
 {
     public class Program

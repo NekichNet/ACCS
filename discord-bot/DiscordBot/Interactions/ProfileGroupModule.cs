@@ -1,5 +1,5 @@
 ﻿using accs.Database;
-using accs.DiscordBot.Preconditions;
+using accs.Controllers.DiscordBot.Preconditions;
 using accs.Models.Database;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
@@ -7,7 +7,7 @@ using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 
-namespace accs.Controllers.DiscordBot.Interactions
+namespace discord_bot.DiscordBot.Interactions
 {
     public class ProfileGroupModule : InteractionModuleBase<SocketInteractionContext>
     {
@@ -43,7 +43,7 @@ namespace accs.Controllers.DiscordBot.Interactions
                 EmbedBuilder embed = new EmbedBuilder()
                 {
                     Title = $"{unit.Rank.Name} {unit.GetOnlyNickname()}",
-                    Description = String.Join("\n", unit.Posts.Select(p => p.GetFullName()))
+                    Description = string.Join("\n", unit.Posts.Select(p => p.GetFullName()))
                 };
 
                 string inLineUnitActivities = string.Empty;
@@ -59,12 +59,12 @@ namespace accs.Controllers.DiscordBot.Interactions
                 
                 if (unit.UnitStatuses.Any(us => !us.IsCompleted()))
                     embed.AddField(new EmbedFieldBuilder() {
-                        Name = "Статусы:", Value = "```ansi\r\n" + String.Join(", ",
+                        Name = "Статусы:", Value = "```ansi\r\n" + string.Join(", ",
                         unit.UnitStatuses.Where(us => !us.IsCompleted()).Select(us => us.Status.Name)) + "\r\n```"
 					});
                 if (unit.Rewards.Any())
                     embed.AddField(new EmbedFieldBuilder() {
-                        Name = "Награды:", Value = "```ansi\r\n\u001b[2;33m" + String.Join(", ",
+                        Name = "Награды:", Value = "```ansi\r\n\u001b[2;33m" + string.Join(", ",
                         unit.Rewards.Select(r => r.Name)) + "\u001b[0m\r\n```"
                     });
                 embed.AddField(new EmbedFieldBuilder() {

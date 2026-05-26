@@ -6,7 +6,7 @@ using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 
-namespace accs.Controllers.DiscordBot.Preconditions
+namespace discord_bot.DiscordBot.Preconditions
 {
     public class HasPermission : PreconditionAttribute
     {

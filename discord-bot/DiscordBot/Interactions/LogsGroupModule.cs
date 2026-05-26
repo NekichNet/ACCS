@@ -1,4 +1,4 @@
-﻿using accs.DiscordBot.Preconditions;
+﻿using accs.Controllers.DiscordBot.Preconditions;
 using accs.Logging.Configurations;
 using accs.Models.Enums;
 using accs.Services;
@@ -7,7 +7,7 @@ using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.Options;
 
-namespace accs.Controllers.DiscordBot.Interactions
+namespace discord_bot.DiscordBot.Interactions
 {
     [HasPermission(PermissionType.Administrator)]
     [Group("logs", "Команды для работы с логами")]

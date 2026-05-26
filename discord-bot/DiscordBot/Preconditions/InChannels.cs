@@ -1,7 +1,7 @@
 ﻿using Discord;
 using Discord.Interactions;
 
-namespace accs.Controllers.DiscordBot.Preconditions
+namespace discord_bot.DiscordBot.Preconditions
 {
     public class InChannels : PreconditionAttribute
 	{

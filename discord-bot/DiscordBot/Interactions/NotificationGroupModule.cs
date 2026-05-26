@@ -1,11 +1,11 @@
 ﻿using accs.Database;
-using accs.DiscordBot.Preconditions;
+using accs.Controllers.DiscordBot.Preconditions;
 using accs.Models.Database;
 using accs.Models.Enums;
 using Discord;
 using Discord.Interactions;
 
-namespace accs.Controllers.DiscordBot.Interactions
+namespace discord_bot.DiscordBot.Interactions
 {
 	[IsUnit()]
 	[Group("notification", "Команды для управления автоматическими сообщениями")]
@@ -38,7 +38,7 @@ namespace accs.Controllers.DiscordBot.Interactions
 				if (actorUnit.HasPermission(PermissionType.Administrator))
 				{
 					File.Delete(filePath);
-					await ((IUserMessage)(await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString)))).ModifyAsync(m => { m.Embed = null; m.Content = text; });
+					await ((IUserMessage)await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString))).ModifyAsync(m => { m.Embed = null; m.Content = text; });
 					await ((IComponentInteraction)Context.Interaction).UpdateAsync(m => m.Components = null);
 					await RespondAsync();
 					return;
@@ -48,13 +48,13 @@ namespace accs.Controllers.DiscordBot.Interactions
 			if (notification == null)
 			{
 				File.Delete(filePath);
-				await ((IUserMessage)(await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString)))).ModifyAsync(m => { m.Embed = null; m.Content = text; });
+				await ((IUserMessage)await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString))).ModifyAsync(m => { m.Embed = null; m.Content = text; });
 				await ((IComponentInteraction)Context.Interaction).UpdateAsync(m => m.Components = null);
 			}
 			else if (Context.User.Id == notification.AuthorId || Context.User.Id == unitId)
 			{
 				File.Delete(filePath);
-				await ((IUserMessage)(await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString)))).ModifyAsync(m => { m.Embed = null; m.Content = text; });
+				await ((IUserMessage)await Context.Channel.GetMessageAsync(ulong.Parse(messageIdString))).ModifyAsync(m => { m.Embed = null; m.Content = text; });
 				await ((IComponentInteraction)Context.Interaction).UpdateAsync(m => m.Components = null);
 			}
 			else

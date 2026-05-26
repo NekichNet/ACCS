@@ -1,5 +1,5 @@
 ﻿using accs.Database;
-using accs.DiscordBot.Preconditions;
+using accs.Controllers.DiscordBot.Preconditions;
 using accs.Models.Database;
 using accs.Models.Enums;
 using accs.Services;
@@ -9,7 +9,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 
-namespace accs.Controllers.DiscordBot.Interactions
+namespace discord_bot.DiscordBot.Interactions
 {
     [DefaultMemberPermissions(GuildPermission.Administrator)]
     public class AdminModule : InteractionModuleBase<SocketInteractionContext>

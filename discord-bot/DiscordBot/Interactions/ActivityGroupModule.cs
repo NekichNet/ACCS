@@ -1,6 +1,5 @@
-﻿using accs.Controllers.DiscordBot.Interactions.Models;
-using accs.Database;
-using accs.DiscordBot.Preconditions;
+﻿using accs.Database;
+using accs.Controllers.DiscordBot.Preconditions;
 using accs.Models.Database;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
@@ -8,8 +7,9 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
+using discord_bot.DiscordBot.Interactions.Models;
 
-namespace accs.Controllers.DiscordBot.Interactions
+namespace discord_bot.DiscordBot.Interactions
 {
     [IsUnit()]
     [InChannels("ACTIVITY_CHANNEL_ID")]

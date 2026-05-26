@@ -1,5 +1,5 @@
 ﻿using accs.Database;
-using accs.DiscordBot.Preconditions;
+using accs.Controllers.DiscordBot.Preconditions;
 using accs.Models.Database;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
@@ -8,7 +8,7 @@ using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 
-namespace accs.Controllers.DiscordBot.Interactions
+namespace discord_bot.DiscordBot.Interactions
 {
     [IsUnit()]
 	[Group("rank", "Команды для управления званиями")]

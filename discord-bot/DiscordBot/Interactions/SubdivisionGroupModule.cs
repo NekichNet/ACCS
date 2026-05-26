@@ -1,13 +1,14 @@
 ﻿using accs.Database;
-using accs.DiscordBot.Preconditions;
+using accs.Controllers.DiscordBot.Preconditions;
 using accs.Models;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
+using accs.Models.Database;
 
-namespace accs.Controllers.DiscordBot.Interactions
+namespace discord_bot.DiscordBot.Interactions
 {
     //[IsUnit()]
     //[Group("subdivision", "Команды для работы с подразделениями")]

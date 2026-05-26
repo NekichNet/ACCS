@@ -1,5 +1,5 @@
 ﻿using accs.Database;
-using accs.DiscordBot.Preconditions;
+using accs.Controllers.DiscordBot.Preconditions;
 using accs.Models.Database;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
@@ -7,7 +7,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
-namespace accs.Controllers.DiscordBot.Interactions
+namespace discord_bot.DiscordBot.Interactions
 {
     [IsUnit()]
     public class ModerationModule : InteractionModuleBase<SocketInteractionContext>

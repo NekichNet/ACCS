@@ -1,6 +1,6 @@
 ﻿using Discord.Interactions;
 
-namespace accs.Controllers.DiscordBot.Interactions.Enums
+namespace discord_bot.DiscordBot.Interactions.Enums
 {
     public enum AccessChoices
     {

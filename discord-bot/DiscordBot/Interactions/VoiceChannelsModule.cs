@@ -1,13 +1,13 @@
-﻿using accs.Controllers.DiscordBot.Interactions.Enums;
-using accs.Database;
+﻿using accs.Database;
 using accs.Models;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using discord_bot.DiscordBot.Interactions.Enums;
 
-namespace accs.Controllers.DiscordBot.Interactions
+namespace discord_bot.DiscordBot.Interactions
 {
     [Group("voice", "Управление голосовыми каналами")]
     public class VoiceChannelsModule : InteractionModuleBase<SocketInteractionContext>

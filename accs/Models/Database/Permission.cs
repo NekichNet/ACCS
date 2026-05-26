@@ -11,9 +11,7 @@ namespace accs.Models.Database
 		public PermissionType Type { get; set; }
 		public string Name { get; set; }
 		public string Description { get; set; } = string.Empty;
-		public virtual List<Rank> Ranks { get; set; } = new List<Rank>();
-		public virtual List<Post> Posts { get; set; } = new List<Post>();
-		public virtual List<Subdivision> Subdivisions { get; set; } = new List<Subdivision>();
+		public virtual List<GivedPermission> GivedPermissions { get; set; } = new List<GivedPermission>();
 
         public override string ToString()
         {

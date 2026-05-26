@@ -10,6 +10,6 @@ namespace accs.Models.Database
         [ForeignKey("PermissionType")]
         public virtual Permission Permission { get; set; }
         public virtual PermissionCheckable Entity { get; set; }
-        public bool Inherit { get; set; }
+        public bool Inherit { get; set; } = true;
     }
 }

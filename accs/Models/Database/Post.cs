@@ -4,12 +4,11 @@ using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 
 namespace accs.Models.Database
 {
 	[EntityTypeConfiguration(typeof(PostConfiguration))]
-	public class Post
+	public class Post : PermissionCheckable
 	{
 		public int Id { get; set; }
 		public string Name { get; set; } = string.Empty;
@@ -17,12 +16,11 @@ namespace accs.Models.Database
 		public int? SubdivisionId { get; set; }
 		public virtual Subdivision? Subdivision { get; set; }
 		public ulong? DiscordRoleId { get; set; }
-        public bool AppendSubdivisionName { get; set; } = false;
+		public bool AppendSubdivisionName { get; set; } = false;
 		public int? HeadId{ get; set; }
 		public virtual DiscordNotification? DiscordNotification { get; set; }
 		public virtual Post? Head { get; set; }
 		public virtual List<Post> Subordinates { get; set; } = new List<Post>();
-		public virtual List<Permission> Permissions { get; set; } = new List<Permission>();
 		public virtual List<Unit> Units { get; set; } = new List<Unit>();
 
 		public Post(string envRoleString)
@@ -37,30 +35,17 @@ namespace accs.Models.Database
 			return Subdivision != null && AppendSubdivisionName ? Name + " " + Subdivision.GetFullName() : Name;
 		}
 
-		public HashSet<Permission> GetPermissionsRecursive()
+		public List<Post> GetAllSubordinatesRecursive()
 		{
-			HashSet<Permission> permissions = [.. Permissions];
-			if (Subdivision != null)
-				foreach (Permission permission in Subdivision.Permissions)
-					permissions.Add(permission);
+			List<Post> result = [.. Subordinates];
+
 			foreach (Post sub in Subordinates)
-				foreach (Permission permission in sub.GetPermissionsRecursive())
-					permissions.Add(permission);
-			return permissions;
+			{
+				result.AddRange(sub.GetAllSubordinatesRecursive());
+			}
+
+			return result;
 		}
-
-
-        public List<Post> GetAllSubordinatesRecursive()
-        {
-            List<Post> result = [.. Subordinates];
-
-            foreach (Post sub in Subordinates)
-            {
-                result.AddRange(sub.GetAllSubordinatesRecursive());
-            }
-
-            return result;
-        }
 
 		public List<Post> GetAllHeadsRecursive()
 		{
@@ -87,10 +72,10 @@ namespace accs.Models.Database
 			return currentSubdivision;
 		}
 
-        public override string ToString()
-        {
-            return Id.ToString() + " " + Name;
-        }
+		public override string ToString()
+		{
+			return Id.ToString() + " " + Name;
+		}
 
 		public async Task NotifyOnAssignAsync(SocketGuild guild, AppDbContext db, Unit unit, ulong? channelId = null)
 		{
@@ -226,5 +211,23 @@ namespace accs.Models.Database
 				Console.WriteLine("Произошла ошибка в NotifyOnAssignAsync: " + e.StackTrace);
 			}
 		}
-    }
+
+		public override HashSet<Permission> GetPermissionsRecursive()
+		{
+			HashSet<Permission> permissions = [.. GetPermissions()];
+			if (Subdivision != null)
+				permissions.Concat(Subdivision.GetPermissionsRecursive());
+			permissions.Concat(Subordinates.SelectMany(
+				s => s.GetGivedPermissionsRecursive()
+					.Where(gp => gp.Inherit)
+					.Select(gp => gp.Permission)
+				));
+			return permissions;
+		}
+
+		public override HashSet<GivedPermission> GetGivedPermissionsRecursive()
+		{
+			throw new NotImplementedException();
+		}
+	}
 }

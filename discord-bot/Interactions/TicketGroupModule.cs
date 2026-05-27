@@ -8,6 +8,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
+using discord_bot.Preconditions;
 
 namespace discord_bot.Interactions
 {

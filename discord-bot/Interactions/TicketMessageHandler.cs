@@ -1,5 +1,5 @@
 ﻿using accs.Database;
-using accs.Controllers.DiscordBot.Preconditions;
+//using accs.Controllers.DiscordBot.Preconditions;
 using accs.Models.Database;
 using accs.Models.Database.Tickets;
 using accs.Models.Enums;
@@ -7,6 +7,7 @@ using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using discord_bot.Preconditions;
 
 namespace discord_bot.Interactions
 {

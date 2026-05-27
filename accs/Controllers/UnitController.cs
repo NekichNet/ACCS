@@ -7,7 +7,7 @@ namespace accs.Controllers
     [ApiController]
     public class UnitController : ControllerBase
     {
-        [HttpGet("unit")]
+        [HttpGet]
         public async Task<IActionResult> GetUnit(
             [FromQuery] int post,
             [FromQuery] int rank,
@@ -16,7 +16,7 @@ namespace accs.Controllers
             return await Task.FromResult(Ok());
         }
 
-        [HttpPost("unit")]
+        [HttpPost]
         public async Task<IActionResult> CreateUnit(
             [FromQuery] int post,
             [FromQuery] int rank,
@@ -25,16 +25,16 @@ namespace accs.Controllers
             return await Task.FromResult(Ok());
         }
 
-        [HttpGet("unit/{id}")]
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetUnitById(
-            [FromRoute] int id)
+            [FromRoute] ulong id)
         {
             return await Task.FromResult(Ok());
         }
 
-        [HttpPatch("unit/{id}")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateUnitById(
-            [FromRoute] int id,
+            [FromRoute] ulong discordId,
             [FromQuery] int post,
             [FromQuery] int rank,
             [FromQuery] int reward)

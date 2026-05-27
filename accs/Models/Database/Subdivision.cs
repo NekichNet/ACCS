@@ -1,20 +1,23 @@
 ﻿using accs.Models.Database.Configurations;
+using accs.Models.Database.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Models.Database
 {
 	[EntityTypeConfiguration(typeof(SubdivisionConfiguration))]
-	public class Subdivision : PermissionCheckable
+	public class Subdivision : IEntityWithPermissions, IEntityWithDiscordRole
 	{
 		public int Id { get; set; }
-		public string Name { get; set; }
 		public string Description { get; set; } = string.Empty;
-		public ulong? DiscordRoleId { get; set; }
 		public bool AppendHeadName { get; set; } = false;
 		public virtual List<Post> Posts { get; set; } = new List<Post>();
 		public int? HeadId { get; set; }
 		public virtual Subdivision? Head { get; set; }
 		public virtual List<Subdivision> Subordinates { get; set; } = new List<Subdivision>();
+        public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
+		public string Color { get; set; } = "#AAAAAA";
+		public string Name { get; set; } = string.Empty;
+		public ulong? DiscordRoleId { get; set; }
 
 		public Subdivision(string name, string? envRoleString = null)
 		{

@@ -1,17 +1,19 @@
-﻿using accs.Models.Enums;
+﻿using accs.Models.Database.Interfaces;
+using accs.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace accs.Models.Database
 {
-    public class Status
+    public class Status : IEntityWithDiscordRole
     {
 		[Key]
 		[DatabaseGenerated(DatabaseGeneratedOption.None)]
 		public StatusType Type { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public ulong? DiscordRoleId { get; set; }
 		public virtual List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
+		public string Color { get; set; } = "#FFFFFF";
+		public string Name { get; set; } = string.Empty;
+		public ulong? DiscordRoleId { get; set; }
 
 		public Status(string? envRoleString = null)
 		{

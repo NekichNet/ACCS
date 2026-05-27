@@ -1,22 +1,25 @@
 ﻿using accs.Models.Database.Configurations;
+using accs.Models.Database.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Models.Database
 {
 	[EntityTypeConfiguration(typeof(RankConfiguration))]
-	public class Rank : PermissionCheckable
+	public class Rank : IEntityWithPermissions, IEntityWithDiscordRole
 	{
 		public int Id { get; set; }
-		public string Name { get; set; } = string.Empty;
-		public ulong? DiscordRoleId { get; set; }
 		public ushort CounterToReach { get; set; }
 		public int? PreviousId { get; set; }
 		public virtual Rank? Previous { get; set; }
 		public int? NextId { get; set; }
 		public virtual Rank? Next { get; set; }
 		public virtual List<Unit> Units { get; set; } = new List<Unit>();
+		public string Color { get; set; } = "#00FF00";
+		public string Name { get; set; } = string.Empty;
+		public ulong? DiscordRoleId { get; set; }
+		public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
 
-        public Rank(int id, string name, ushort counterToReach = 5)
+		public Rank(int id, string name, ushort counterToReach = 5)
 		{
 			Id = id;
 			Name = name;

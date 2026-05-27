@@ -1,10 +1,10 @@
 ﻿using accs.Models.Enums;
 
-namespace accs.Models.Database
+namespace accs.Models.Database.Interfaces
 {
-    public abstract class PermissionCheckable
+    public interface IEntityWithPermissions
     {
-        public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
+        public abstract HashSet<GivedPermission> GivedPermissions { get; set; }
 
         public abstract HashSet<GivedPermission> GetGivedPermissionsRecursive();
         public abstract HashSet<Permission> GetPermissionsRecursive();

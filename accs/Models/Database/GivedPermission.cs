@@ -1,4 +1,5 @@
-﻿using accs.Models.Enums;
+﻿using accs.Models.Database.Interfaces;
+using accs.Models.Enums;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace accs.Models.Database
@@ -9,7 +10,7 @@ namespace accs.Models.Database
         public PermissionType PermissionType { get; set; }
         [ForeignKey("PermissionType")]
         public virtual Permission Permission { get; set; }
-        public virtual PermissionCheckable Entity { get; set; }
+        public virtual IEntityWithPermissions Entity { get; set; }
         public bool Inherit { get; set; } = true;
     }
 }

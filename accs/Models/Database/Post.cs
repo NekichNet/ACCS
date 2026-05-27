@@ -18,7 +18,6 @@ namespace accs.Models.Database
 		public ulong? DiscordRoleId { get; set; }
 		public bool AppendSubdivisionName { get; set; } = false;
 		public int? HeadId{ get; set; }
-		public virtual DiscordNotification? DiscordNotification { get; set; }
 		public virtual Post? Head { get; set; }
 		public virtual List<Post> Subordinates { get; set; } = new List<Post>();
 		public virtual List<Unit> Units { get; set; } = new List<Unit>();

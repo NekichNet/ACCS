@@ -1,15 +1,16 @@
 ﻿using Sprache;
+using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
     public class Result<T>
     {
         public T? Value { get; private set; }
-        public Exception? Exception { get; private set; }
+		[JsonIgnore] public Exception? Exception { get; private set; }
         public string Message { get; private set; } = "not stated";
         public bool IsSuccess { get; private set; } = false;
-        public DateTime Started { get; } = DateTime.Now;
-        public DateTime End { get; private set; }
+		[JsonIgnore] public DateTime Started { get; } = DateTime.Now;
+		[JsonIgnore] public DateTime End { get; private set; }
 
         public Result<T> FormSuccess(T value, string message, Exception? exception = null)
         {

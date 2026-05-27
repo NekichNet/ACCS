@@ -1,4 +1,4 @@
-﻿using accs.Controllers.DiscordBot.Preconditions;
+﻿using discord_bot.Preconditions;
 using accs.Logging.Configurations;
 using accs.Models.Enums;
 using accs.Services;

@@ -1,5 +1,5 @@
 ﻿using accs.Database;
-using accs.Controllers.DiscordBot.Preconditions;
+using discord_bot.Preconditions;
 using accs.Models.Database;
 using accs.Models.Enums;
 using Discord;

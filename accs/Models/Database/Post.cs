@@ -19,6 +19,7 @@ namespace accs.Models.Database
 		public int? HeadId{ get; set; }
 		public virtual Post? Head { get; set; }
 		public virtual List<Post> Subordinates { get; set; } = new List<Post>();
+		public virtual Rank MaxRank { get; set; }
 		public virtual List<Unit> Units { get; set; } = new List<Unit>();
         public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
         public string Color { get; set; }

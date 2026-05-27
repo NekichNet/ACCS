@@ -58,7 +58,7 @@ namespace discord_bot.Interactions
 
                 for (int i = 0; i < rewards.Count; i++)
                 {
-					string description = rewards[i].Description.Length > 95 ? rewards[i].Description.Substring(0, 95) : rewards[i].Description;
+					string description = rewards[i].Conditions.Length > 95 ? rewards[i].Conditions.Substring(0, 95) : rewards[i].Conditions;
 					if (description.Length < 2)
 						description = "Нет описания";
 					menuBuilder.AddOption(rewards[i].Name, rewards[i].Id.ToString(),
@@ -120,7 +120,7 @@ namespace discord_bot.Interactions
                 Reward reward = new Reward()
                 {
                     Name = name,
-                    Description = description,
+                    Conditions = description,
                     DiscordRoleId = role.Id,
                     ImagePath = savedImagePath
                 };
@@ -131,7 +131,7 @@ namespace discord_bot.Interactions
                 EmbedBuilder embed = new EmbedBuilder()
                     .WithTitle($"Награда {reward.Name} создана")
                     .WithColor(Color.Gold)
-                    .WithDescription(reward.Description);
+                    .WithDescription(reward.Conditions);
 
                 if (image != null)
                     await RespondWithFileAsync(
@@ -170,7 +170,7 @@ namespace discord_bot.Interactions
 
 				for (int i = 24 * page; i < newRewards.Count; i++)
 				{
-					string description = newRewards[i].Description.Length > 95 ? newRewards[i].Description.Substring(0, 95) : newRewards[i].Description;
+					string description = newRewards[i].Conditions.Length > 95 ? newRewards[i].Conditions.Substring(0, 95) : newRewards[i].Conditions;
 					if (description.Length < 2)
 						description = "Нет описания";
 					menuBuilder.AddOption(newRewards[i].Name, newRewards[i].Id.ToString(),
@@ -254,7 +254,7 @@ namespace discord_bot.Interactions
             foreach (var reward in pageItems)
                 embed.AddField(reward.Name,
                     $"ID: {reward.Id}\n"
-                    + reward.Description
+                    + reward.Conditions
                     + "\nНаграждённые бойцы:\n"
                     + string.Join("\n", reward.Units.Select(u => u.GetOnlyNickname())));
 
@@ -296,7 +296,7 @@ namespace discord_bot.Interactions
 
                 if (!string.IsNullOrWhiteSpace(description))
                 {
-                    reward.Description = description;
+                    reward.Conditions = description;
                     changed = true;
                 }
 
@@ -381,7 +381,7 @@ namespace discord_bot.Interactions
 
 					for (int i = 0; i < rewards.Count; i++)
 					{
-						string description = rewards[i].Description.Length > 95 ? rewards[i].Description.Substring(0, 95) : rewards[i].Description;
+						string description = rewards[i].Conditions.Length > 95 ? rewards[i].Conditions.Substring(0, 95) : rewards[i].Conditions;
 						if (description.Length < 2)
 							description = "Нет описания";
 						menu.AddOption(rewards[i].Name, rewards[i].Id.ToString(),
@@ -429,7 +429,7 @@ namespace discord_bot.Interactions
 
 					for (int i = 24 * page; i < newRewards.Count; i++)
 					{
-						string description = newRewards[i].Description.Length > 95 ? newRewards[i].Description.Substring(0, 95) : newRewards[i].Description;
+						string description = newRewards[i].Conditions.Length > 95 ? newRewards[i].Conditions.Substring(0, 95) : newRewards[i].Conditions;
 						if (description.Length < 2)
 							description = "Нет описания";
 						menuBuilder.AddOption(newRewards[i].Name, newRewards[i].Id.ToString(),

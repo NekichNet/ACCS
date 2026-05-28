@@ -1,11 +1,11 @@
 ﻿using accs.Database;
 using discord_bot.Preconditions;
-using accs.Models.Database;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using accs.Models;
 
 namespace discord_bot.Interactions
 {

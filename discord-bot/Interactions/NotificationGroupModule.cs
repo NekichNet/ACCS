@@ -4,6 +4,7 @@ using accs.Models.Database;
 using accs.Models.Enums;
 using Discord;
 using Discord.Interactions;
+using accs.Models;
 
 namespace discord_bot.Interactions
 {

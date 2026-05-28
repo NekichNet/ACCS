@@ -1,0 +1,61 @@
+﻿using accs.Models.Enums;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace accs.Models
+{
+	public class Unit
+	{
+		[Key]
+		[DatabaseGenerated(DatabaseGeneratedOption.None)]
+		public ulong DiscordId { get; set; }
+		public string Nickname { get; set; }
+		public ulong? SteamId { get; set; }
+		public ushort RankUpCounter { get; set; }
+		public DateTime Joined { get; set; }
+		public string? Colour { get; set; }
+		public virtual Rank Rank { get; set; }
+		public virtual List<Doc> OwnDocs { get; set; }
+		public virtual List<Doc> AssignedDocs { get; set; }
+		public virtual List<Post> Posts { get; set; } = new List<Post>();
+		public virtual List<AssignedReward> AssignedRewards { get; set; } = new List<AssignedReward>();
+		public virtual List<Activity> Activities { get; set; } = new List<Activity>();
+		public virtual List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
+
+		// ToDo: Добавить дату присоединения к клану
+
+        public HashSet<Permission> GetPermissions()
+		{
+			HashSet<Permission> permissions = Rank.GetPermissionsRecursive();
+			foreach (Post post in Posts)
+				foreach (Permission permission in post.GetPermissionsRecursive())
+					permissions.Add(permission);
+			return permissions;
+		}
+
+		public bool HasPermission(PermissionType permissionType)
+		{
+			return GetPermissions().Where(p => p.Type == permissionType || p.Type == PermissionType.Administrator).Any();
+		}
+
+		public string GetOnlyNickname()
+		{
+			return Nickname.Replace("[РХБЗ]", "").Replace("[Р]", "").Trim();
+		}
+
+		public void SetProfileColor(Discord.Color color)
+		{
+			Colour = color.ToString();
+		}
+
+		public Discord.Color GetProfileColor()
+		{
+			return Discord.Color.Parse(Colour);
+		}
+
+        public override string ToString()
+        {
+            return DiscordId.ToString() + " " + Nickname;
+        }
+	}
+}

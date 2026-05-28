@@ -1,17 +1,19 @@
 ﻿using System.Text.Json.Serialization;
+using accs.Models.Interfaces;
 
 namespace accs.Models
 {
-    public class Result<T>
+    public class Action<T> : IAction
     {
-        public T? Value { get; private set; }
-		[JsonIgnore] public Exception? Exception { get; private set; }
-        public string Message { get; private set; } = "not stated";
-        public bool IsSuccess { get; private set; } = false;
-		[JsonIgnore] public DateTime Start { get; set; } = DateTime.UtcNow;
-		[JsonIgnore] public DateTime End { get; private set; }
+		public Unit? Actor { get; set; }
+        public T? Value { get; set; }
+		public Exception? Exception { get; set; }
+        public string Message { get; set; } = "not stated";
+        public bool IsSuccess { get; set; } = false;
+		public DateTime Start { get; set; } = DateTime.UtcNow;
+		public DateTime End { get; set; }
 
-        public Result<T> FormSuccess(T value, string message, Exception? exception = null)
+        public Action<T> FormSuccess(T value, string message, Exception? exception = null)
         {
             End = DateTime.UtcNow;
             IsSuccess = true;
@@ -23,7 +25,7 @@ namespace accs.Models
             return this;
         }
 
-		public Result<T> FormException(Exception exception)
+		public Action<T> FormException(Exception exception)
         {
             End = DateTime.UtcNow;
             IsSuccess = false;
@@ -34,7 +36,7 @@ namespace accs.Models
             return this;
         }
 
-		public Result<T> FormFailure(string message, Exception? exception = null)
+		public Action<T> FormFailure(string message, Exception? exception = null)
         {
             End = DateTime.UtcNow;
             IsSuccess = false;

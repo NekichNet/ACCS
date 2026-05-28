@@ -1,5 +1,5 @@
 ﻿using accs.Database;
-using accs.Models.Database;
+using accs.Models;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -62,22 +62,22 @@ namespace accs.Services.Scheduled
 							{
 								case StatusType.SevereReprimand:
 									{
-										unitStatus.EndDate = DateTime.UtcNow;
-										UnitStatus newStatus = new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = reprimand };
+										unitStatus.End = DateTime.UtcNow;
+										UnitStatus newStatus = new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = reprimand };
 										db.UnitStatuses.Add(newStatus);
 										log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически выдан выговор");
 										break;
 									}
 								case StatusType.Reprimand:
 									{
-										unitStatus.EndDate = DateTime.UtcNow;
+										unitStatus.End = DateTime.UtcNow;
 										log.LogInformation($"Бойцу {unit.GetOnlyNickname()} закрыт выговор");
 										break;
 									}
 								case StatusType.Gratitude:
 									{
-										unitStatus.EndDate = DateTime.UtcNow;
-										UnitStatus newStatus = new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = gratitude };
+										unitStatus.End = DateTime.UtcNow;
+										UnitStatus newStatus = new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = gratitude };
 										db.UnitStatuses.Add(newStatus);
 										log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически выдана благодарность");
 										break;
@@ -86,7 +86,7 @@ namespace accs.Services.Scheduled
 						}
 						else
 						{
-							UnitStatus newStatus = new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = gratitude };
+							UnitStatus newStatus = new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = gratitude };
 							db.UnitStatuses.Add(newStatus);
 							log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически выдана благодарность");
 						}
@@ -107,23 +107,23 @@ namespace accs.Services.Scheduled
 								{
 									case StatusType.SevereReprimand:
 										{
-											unitStatus.EndDate = DateTime.UtcNow;
-											UnitStatus newStatus = new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = severeReprimand };
+											unitStatus.End = DateTime.UtcNow;
+											UnitStatus newStatus = new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = severeReprimand };
 											db.UnitStatuses.Add(newStatus);
 											log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически выдан строгий выговор");
 											break;
 										}
 									case StatusType.Reprimand:
 										{
-											unitStatus.EndDate = DateTime.UtcNow;
-											UnitStatus newStatus = new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = severeReprimand };
+											unitStatus.End = DateTime.UtcNow;
+											UnitStatus newStatus = new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = severeReprimand };
 											db.UnitStatuses.Add(newStatus);
 											log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически выдана строгий выговор");
 											break;
 										}
 									case StatusType.Gratitude:
 										{
-											unitStatus.EndDate = DateTime.UtcNow;
+											unitStatus.End = DateTime.UtcNow;
 											log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически закрыта благодарность");
 											break;
 										}
@@ -131,7 +131,7 @@ namespace accs.Services.Scheduled
 							}
 							else
 							{
-								UnitStatus newStatus = new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = reprimand };
+								UnitStatus newStatus = new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = reprimand };
 								db.UnitStatuses.Add(newStatus);
 								log.LogInformation($"Бойцу {unit.GetOnlyNickname()} автоматически выдан выговор");
 							}

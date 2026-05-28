@@ -1,6 +1,6 @@
 ﻿using accs.Database;
 using accs.Logging;
-using accs.Models.Database;
+using accs.Models;
 using accs.Services.Interfaces;
 using EasyOcrSharp.Services;
 using Microsoft.EntityFrameworkCore;

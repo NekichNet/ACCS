@@ -1,13 +1,13 @@
 ﻿using accs.Database;
 using discord_bot.Preconditions;
-using accs.Models.Database;
-using accs.Models.Database.Tickets;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
+using accs.Models;
+using accs.Models.Tickets;
 
 namespace discord_bot.Interactions
 {
@@ -210,10 +210,10 @@ namespace discord_bot.Interactions
 			UnitStatus activeRetirement = unit.UnitStatuses
 				.First(us =>
 					us.Status.Type == StatusType.Retirement &&
-					us.EndDate == null
+					us.End == null
 				);
 
-			activeRetirement.EndDate = DateTime.UtcNow;
+			activeRetirement.End = DateTime.UtcNow;
 			activeRetirement.RemoveRole(_guildProvider);
 
 			unit.Posts.Clear();

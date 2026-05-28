@@ -1,12 +1,12 @@
 ﻿using accs.Database;
 using discord_bot.Preconditions;
-using accs.Models.Database;
 using accs.Models.Enums;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
+using accs.Models;
 
 namespace discord_bot.Interactions
 {
@@ -68,7 +68,7 @@ namespace discord_bot.Interactions
                     && !us.IsCompleted());
                     if (prevUnitStatus != null)
                     {
-                        prevUnitStatus.EndDate = DateTime.UtcNow;
+                        prevUnitStatus.End = DateTime.UtcNow;
                         prevUnitStatus.RemoveRole(_guildProvider);
                     }
 
@@ -78,7 +78,7 @@ namespace discord_bot.Interactions
                         if (status != null)
                         {
                             DateTime? endDate = amountOfDays == null ? null : DateTime.UtcNow.AddDays((double)amountOfDays);
-                            UnitStatus unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.UtcNow, EndDate = endDate, Status = status };
+                            UnitStatus unitStatus = new UnitStatus() { Unit = unit, Start = DateTime.UtcNow, End = endDate, Status = status };
                             await _db.UnitStatuses.AddAsync(unitStatus);
                             await _db.SaveChangesAsync();
                             unitStatus.SetRole(_guildProvider);
@@ -139,8 +139,8 @@ namespace discord_bot.Interactions
                 {
                     Unit = unit,
                     Status = vacationStatus,
-                    StartDate = DateTime.UtcNow,
-                    EndDate = endDate
+                    Start = DateTime.UtcNow,
+                    End = endDate
                 };
 
                 await _db.UnitStatuses.AddAsync(unitStatus);
@@ -172,7 +172,7 @@ namespace discord_bot.Interactions
 
                 UnitStatus? activeVacation = unit.UnitStatuses.Where(
                         us => us.Status.Type == StatusType.Vacation
-                        && (us.EndDate == null || us.EndDate > DateTime.UtcNow)
+                        && (us.End == null || us.End > DateTime.UtcNow)
                     ).FirstOrDefault();
 
                 if (activeVacation == null)
@@ -181,7 +181,7 @@ namespace discord_bot.Interactions
                     return;
                 }
 
-                activeVacation.EndDate = DateTime.UtcNow;
+                activeVacation.End = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
                 activeVacation.RemoveRole(_guildProvider);
 
@@ -215,7 +215,7 @@ namespace discord_bot.Interactions
                         return;
                     }
 
-                    unit.UnitStatuses.Add(new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = retirement });
+                    unit.UnitStatuses.Add(new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = retirement });
                     unit.Posts.Clear();
 
                     _db.SaveChanges();
@@ -260,7 +260,7 @@ namespace discord_bot.Interactions
                             return;
                         }
 
-                        unit.UnitStatuses.Add(new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = retirement });
+                        unit.UnitStatuses.Add(new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = retirement });
                         unit.Posts.Clear();
 
                         _db.SaveChanges();
@@ -303,7 +303,7 @@ namespace discord_bot.Interactions
             {
                 if (!unit.UnitStatuses.Any(us => us.Status.Type == StatusType.TemporaryPost && !us.IsCompleted()))
                 {
-                    unit.UnitStatuses.Add(new UnitStatus { StartDate = DateTime.UtcNow, Unit = unit, Status = temporaryPost });
+                    unit.UnitStatuses.Add(new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = temporaryPost });
 
                     _db.SaveChanges();
 
@@ -322,7 +322,7 @@ namespace discord_bot.Interactions
                     UnitStatus? tempPost = unit.UnitStatuses.Find(us => us.Status.Type == StatusType.TemporaryPost && !us.IsCompleted());
                     if (tempPost != null)
                     {
-                        tempPost.EndDate = DateTime.UtcNow;
+                        tempPost.End = DateTime.UtcNow;
 
                         SocketGuildUser guildUser = _guildProvider.GetGuild().GetUser(user.Id);
 						if (guildUser != null)

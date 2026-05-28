@@ -1,6 +1,6 @@
-﻿using accs.Models.Database;
-using accs.Models.Database.Tickets;
+﻿using accs.Models;
 using accs.Models.Enums;
+using accs.Models.Tickets;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Database

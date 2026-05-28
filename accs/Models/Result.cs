@@ -1,5 +1,4 @@
-﻿using Sprache;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
@@ -9,12 +8,12 @@ namespace accs.Models
 		[JsonIgnore] public Exception? Exception { get; private set; }
         public string Message { get; private set; } = "not stated";
         public bool IsSuccess { get; private set; } = false;
-		[JsonIgnore] public DateTime Started { get; } = DateTime.Now;
+		[JsonIgnore] public DateTime Start { get; set; } = DateTime.UtcNow;
 		[JsonIgnore] public DateTime End { get; private set; }
 
         public Result<T> FormSuccess(T value, string message, Exception? exception = null)
         {
-            End = DateTime.Now;
+            End = DateTime.UtcNow;
             IsSuccess = true;
 
             Value = value;
@@ -26,7 +25,7 @@ namespace accs.Models
 
 		public Result<T> FormException(Exception exception)
         {
-            End = DateTime.Now;
+            End = DateTime.UtcNow;
             IsSuccess = false;
 
             Message = exception.Message;
@@ -37,7 +36,7 @@ namespace accs.Models
 
 		public Result<T> FormFailure(string message, Exception? exception = null)
         {
-            End = DateTime.Now;
+            End = DateTime.UtcNow;
             IsSuccess = false;
 
             Message = message;

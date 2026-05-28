@@ -64,7 +64,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in GetAllUnits: {ex.Message}");
+                _logger.LogError($"Error in GetUnits: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -106,7 +106,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in GetUnitById: {ex.Message}");
+                _logger.LogError($"Error in GetUnit: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -121,7 +121,7 @@ namespace accs.Controllers
 
 
         [HttpGet("{discordId}/status")]
-        public async Task<IActionResult> GetUnitStatuses(ulong discordId)
+        public async Task<IActionResult> GetUnitStatuses( [FromRoute] ulong discordId)
         {
             try
             {
@@ -146,7 +146,7 @@ namespace accs.Controllers
 
 
         [HttpGet("{discordId}/activity")]
-        public async Task<IActionResult> GetUnitActivity(ulong id)
+        public async Task<IActionResult> GetUnitActivity([FromRoute] ulong id)
         {
             try
             {
@@ -174,7 +174,7 @@ namespace accs.Controllers
 
 
         [HttpGet("{discordId}/permission")]
-        public async Task<IActionResult> GetUnitPermissions(ulong discordId)
+        public async Task<IActionResult> GetUnitPermissions([FromRoute] ulong discordId)
         {
             try
             {
@@ -199,7 +199,7 @@ namespace accs.Controllers
 
 
         [HttpGet("{discordId}/status/{statusId}")]
-        public async Task<IActionResult> GetUnitStatus(ulong discordId, int statusId)
+        public async Task<IActionResult> GetUnitStatus([FromRoute] ulong discordId, [FromRoute] int statusId)
         {
             try
             {
@@ -242,8 +242,7 @@ namespace accs.Controllers
 
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUnitStatus(
-            [FromRoute] ulong id)
+        public async Task<IActionResult> UpdateUnitStatus([FromRoute] ulong id)
         {
             return await Task.FromResult(Ok());
         }

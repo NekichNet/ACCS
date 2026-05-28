@@ -7,11 +7,7 @@ namespace accs.Controllers
     public class UnitController : ControllerBase
     {
         [HttpGet]
-        public async Task<IActionResult> GetUnits(
-            [FromQuery] int post,
-			[FromQuery] int subdivision,
-			[FromQuery] int rank,
-            [FromQuery] int reward)
+        public async Task<IActionResult> GetUnits()
         {
             return await Task.FromResult(Ok());
         }

@@ -22,7 +22,6 @@ namespace accs.Models
 		public virtual List<Activity> Activities { get; set; } = new List<Activity>();
 		public virtual List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
 
-		// ToDo: Добавить дату присоединения к клану
 
         public HashSet<Permission> GetPermissions()
 		{

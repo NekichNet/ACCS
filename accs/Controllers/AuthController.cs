@@ -1,5 +1,5 @@
 ﻿using accs.Database;
-using accs.Models.Database;
+using accs.Models;
 using accs.Services.Interfaces;
 using Discord;
 using Microsoft.AspNetCore.Authorization;

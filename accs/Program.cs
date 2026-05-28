@@ -1,5 +1,7 @@
 using accs.Database;
 using accs.Logging.Extensions;
+using accs.Services;
+using accs.Services.Interfaces;
 using AspNet.Security.OAuth.Discord;
 using DiscordOauth;
 using DotNetEnv;
@@ -74,7 +76,12 @@ namespace accs
             builder.Services.AddDbContext<AppDbContext>(options =>
 				options.UseNpgsql(connectionString));
 
-			_app = builder.Build();
+            builder.Services.AddHttpClient();
+            builder.Services.AddScoped<IDiscordOAuthService, DiscordOAuthService>();
+            builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+            builder.Services.AddControllers();
+
+            _app = builder.Build();
 
             _app.UseAuthentication();
             _app.UseAuthorization();

@@ -29,7 +29,7 @@ namespace accs.Services
                 ?? throw new InvalidOperationException("'DISCORD_REDIRECT_URI' not configured in .env");
         }
 
-        public async Task<DiscordUserData?> GetUserFromCodeAsync(string code)
+        public async Task<DiscordUserDTO?> GetUserFromCodeAsync(string code)
         {
             if (string.IsNullOrEmpty(code))
             {
@@ -109,7 +109,7 @@ namespace accs.Services
             }
         }
 
-        private async Task<DiscordUserData?> GetUserInfoAsync(string accessToken)
+        private async Task<DiscordUserDTO?> GetUserInfoAsync(string accessToken)
         {
             try
             {
@@ -131,10 +131,9 @@ namespace accs.Services
                 {
                     var root = doc.RootElement;
 
-                    var user = new DiscordUserData(
+                    var user = new DiscordUserDTO(
                         Id: root.GetProperty("id").GetString() ?? "",
                         Username: root.GetProperty("username").GetString() ?? "",
-                        Avatar: root.GetProperty("avatar").GetString() ?? "",
                         Email: root.TryGetProperty("email", out var email) ? email.GetString() : null,
                         Discriminator: root.TryGetProperty("discriminator", out var disc)
                             ? int.TryParse(disc.GetString(), out var d) ? d : 0

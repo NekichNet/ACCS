@@ -106,8 +106,7 @@ namespace accs.Controllers
                     user = new
                     {
                         discord_id = discordId,
-                        username = user.Nickname,
-                        avatar_url = discordUser.GetAvatarUrl()
+                        username = user.Nickname
                     }
                 };
 

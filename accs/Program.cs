@@ -5,9 +5,11 @@ using DiscordOauth;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
+using System.Text;
 
 
 namespace accs
@@ -29,72 +31,55 @@ namespace accs
 			builder.Logging.AddCustomConsole();
 			builder.Logging.AddFile();
 
-			/*
-			 * Дениска, разберись с этой discord oauth2.0 хунёй
-			 * 
-			builder.Services.AddAuthentication(options =>
-			{
-				options.DefaultChallengeScheme = DiscordAuthenticationDefaults.AuthenticationScheme;
-				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-			}).AddDiscord(options =>
-			{
-				var oauthProviders = builder.Configuration.GetSection("OAuthProviders").Get<OAuthProviders>();
-				if (oauthProviders is null) throw new InvalidOperationException("OAuthProviders is not configured");
+            var jwtSecret = Env.GetString("JWT_SECRET")
+               ?? throw new InvalidOperationException("'JWT_SECRET' not configured in .env file");
 
-				var discordOptions = oauthProviders.Providers["Discord"];
-				if (discordOptions is null) throw new InvalidOperationException("Discord OAuth provider is not configured");
+            var jwtIssuer = Env.GetString("JWT_ISSUER") ?? "https://localhost:6001";
+            var jwtAudience = Env.GetString("JWT_AUDIENCE") ?? "https://localhost:6001";
+            var jwtExpiryMinutes = int.Parse(Env.GetString("JWT_EXPIRY_MINUTES") ?? "60");
 
-				options.ClientId = discordOptions.ClientId;
-				options.ClientSecret = discordOptions.ClientSecret;
-				options.CallbackPath = discordOptions.CallBack;
-				options.SaveTokens = true;
+            var key = Encoding.ASCII.GetBytes(jwtSecret);
 
-				options.CorrelationCookie.SameSite = SameSiteMode.Lax;
-				options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = true,
+                    ValidIssuer = jwtIssuer,
+                    ValidateAudience = true,
+                    ValidAudience = jwtAudience,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero
+                };
 
-				options.ClaimActions.MapCustomJson("urn:discord:avatar:url", user =>
-					string.Format(
-						CultureInfo.InvariantCulture,
-						"https://cdn.discordapp.com/avatars/{0}/{1}.{2}",
-						user.GetString("id"),
-						user.GetString("avatar"),
-						user.GetString("avatar")!.StartsWith("a_") ? "gif" : "png"));
+                options.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        context.Response.StatusCode = 401;
+                        return Task.CompletedTask;
+                    }
+                };
+            });
 
-				options.Scope.Add("identify");
-				options.Scope.Add("email");
-			}).AddCookie(options =>
-			{
-				options.Cookie.Name = "DiscordAuth";
-				options.LoginPath = "/login";
-				options.LogoutPath = "/logout";
-				options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
-				options.Cookie.SameSite = SameSiteMode.Lax;
-				options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-			}).AddJwtBearer(options =>
-			{
-				var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>();
-				if (jwtOptions is null) throw new InvalidOperationException("JwtOptions is not configured");
+            builder.Services.AddAuthorization();
 
-				options.TokenValidationParameters = new TokenValidationParameters
-				{
-					ValidateIssuer = true,
-					ValidateAudience = true,
-					ValidateLifetime = true,
-					ValidateIssuerSigningKey = true,
-					ValidIssuer = jwtOptions.Issuer,
-					ValidAudience = jwtOptions.Audience,
-					IssuerSigningKey = new RsaSecurityKey(LoadRsaKey(jwtOptions.RsaPublicKeyLocation)),
-					RequireSignedTokens = true
-				};
-			});
-			*/
-
-			builder.Services.AddDbContext<AppDbContext>(options =>
+            builder.Services.AddDbContext<AppDbContext>(options =>
 				options.UseNpgsql(connectionString));
 
 			_app = builder.Build();
 
-			_app.Run();
+            _app.UseAuthentication();
+            _app.UseAuthorization();
+
+            _app.Run();
 		}
 	}
 }

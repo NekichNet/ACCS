@@ -43,7 +43,7 @@ namespace accs.Controllers
         }
 
         [HttpGet("{subdivisionId}")]
-        public async Task<IActionResult> GetSubdivisionById(int subdivisionId)
+        public async Task<IActionResult> GetSubdivisionById([FromRoute] int subdivisionId)
         {
             try
             {
@@ -75,7 +75,7 @@ namespace accs.Controllers
         }
 
         [HttpGet("{subdivisionId}/permission")]
-        public async Task<IActionResult> GetSubdivisionPermissions(int subdivisionId)
+        public async Task<IActionResult> GetSubdivisionPermissions([FromRoute] int subdivisionId)
         {
             try
             {
@@ -99,7 +99,7 @@ namespace accs.Controllers
         }
 
         [HttpGet("{subdivisionId}/discord-role")]
-        public async Task<IActionResult> GetSubdivisionDiscordRole(int subdivisionId)
+        public async Task<IActionResult> GetSubdivisionDiscordRole([FromRoute] int subdivisionId)
         {
             try
             {

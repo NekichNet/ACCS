@@ -41,7 +41,7 @@ namespace accs.Controllers
         }
 
         [HttpGet("{rankId}")]
-        public async Task<IActionResult> GetRankById(int rankId)
+        public async Task<IActionResult> GetRankById([FromRoute] int rankId)
         {
             try
             {
@@ -74,7 +74,7 @@ namespace accs.Controllers
         }
 
         [HttpGet("{rankId}/permission")]
-        public async Task<IActionResult> GetRankPermissions(int rankId)
+        public async Task<IActionResult> GetRankPermissions([FromRoute] int rankId)
         {
             try
             {
@@ -98,7 +98,7 @@ namespace accs.Controllers
         }
 
         [HttpGet("{rankId}/discord-role")]
-        public async Task<IActionResult> GetRankDiscordRole(int rankId)
+        public async Task<IActionResult> GetRankDiscordRole([FromRoute] int rankId)
         {
             try
             {

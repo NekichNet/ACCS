@@ -149,7 +149,7 @@ namespace accs.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdatePostRole([FromRoute] int id)
+        public async Task<IActionResult> UpdatePostRole(int id)
         {
             return await Task.FromResult(Ok());
         }

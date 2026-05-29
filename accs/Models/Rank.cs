@@ -75,5 +75,22 @@ namespace accs.Models
 					permissions.Add(givedPermission.Permission);
 			return permissions;
 		}
+
+
+        public void UpdateRole()
+        {
+            if (DiscordRoleId != null)
+            {
+                // TODO: Send request to discord-bot api
+            }
+        }
+
+        public void CheckRoleOnUser(ulong unitId)
+        {
+            if (DiscordRoleId != null)
+            {
+                // TODO: Send request to discord-bot api
+            }
+        }
     }
 }

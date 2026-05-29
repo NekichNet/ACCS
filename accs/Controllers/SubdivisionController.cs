@@ -16,9 +16,9 @@ namespace accs.Controllers
     public class SubdivisionController : ControllerBase
     {
         private readonly SubdivisionService _subdivisionService;
-        private readonly ILogger<UnitController> _logger;
+        private readonly ILogger<SubdivisionController> _logger;
 
-        public SubdivisionController(SubdivisionService subdivisionService, ILogger<UnitController> logger)
+        public SubdivisionController(SubdivisionService subdivisionService, ILogger<SubdivisionController> logger)
         {
             _subdivisionService = subdivisionService;
             _logger = logger;
@@ -128,11 +128,11 @@ namespace accs.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateNewSubdivision([FromBody] string name, string? envRoleString = null, int? headId = null)
+        public async Task<IActionResult> CreateNewSubdivision([FromBody] SubdivisionDto dto)
         {
             try
             {
-                var subdivision = await _subdivisionService.CreateAsync(name, envRoleString, headId);
+                var subdivision = await _subdivisionService.CreateAsync(dto.Name, dto.EnvRoleString, dto.HeadId);
                 if (!subdivision.IsSuccess)
                 {
                     return BadRequest(new { error = subdivision.Message });
@@ -152,14 +152,11 @@ namespace accs.Controllers
         }
 
         [HttpPatch("{subdivisionId}")]
-        public async Task<IActionResult> UpdateSubdivision([FromRoute] int id,
-            [FromBody] string name,
-            [FromBody] string? color = null,
-            [FromBody] int? headId = null)
+        public async Task<IActionResult> UpdateSubdivision([FromRoute] int subdivisionId, [FromBody]SubdivisionDto dto)
         {
             try
             {
-                var subdivision = await _subdivisionService.UpdateAsync(id, name, color, headId);
+                var subdivision = await _subdivisionService.UpdateAsync(subdivisionId, dto.Name, dto.Color, dto.HeadId);
                 if (!subdivision.IsSuccess)
                 {
                     return BadRequest(new { error = subdivision.Message });
@@ -191,5 +188,13 @@ namespace accs.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+    }
+
+    public class SubdivisionDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? EnvRoleString { get; set; } = null;
+        public int? HeadId { get; set; } = null;
+        public string? Color { get; set; } = null;
     }
 }

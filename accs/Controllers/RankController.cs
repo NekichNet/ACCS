@@ -145,11 +145,11 @@ namespace accs.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> CreateNewRank([FromBody] int id, [FromBody] string name)
+        public async Task<IActionResult> CreateNewRank([FromBody] RankDto dto)
         {
             try
             {
-                var newRank = await _rankService.CreateAsync(id, name);
+                var newRank = await _rankService.CreateAsync(dto.Id, dto.Name);
                 if (!newRank.IsSuccess)
                 {
                     return BadRequest(new { error = newRank.Message });
@@ -223,5 +223,11 @@ namespace accs.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+    }
+
+    public class RankDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
 }

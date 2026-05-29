@@ -10,9 +10,9 @@ namespace accs.Controllers
     public class StructureController : ControllerBase
     {
         private readonly StructureService _structureService;
-        private readonly ILogger<UnitController> _logger;
+        private readonly ILogger<StructureController> _logger;
 
-        public StructureController(StructureService structureService, ILogger<UnitController> logger)
+        public StructureController(StructureService structureService, ILogger<StructureController> logger)
         {
             _logger = logger;
             _structureService = structureService;

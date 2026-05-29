@@ -23,7 +23,7 @@ namespace accs.Services
                 var posts = await _db.Posts.ToListAsync();
                 var units = await _db.Units.ToListAsync();
 
-                var rootPost = posts.FirstOrDefault(p => p.Head == null);
+                var rootPost = posts.FirstOrDefault(p => p.HeadId == null);
 
                 if (rootPost == null)
                 {
@@ -65,7 +65,7 @@ namespace accs.Services
                 { "Id", post.Id },
                 { "Color", post.Color ?? "#FFFFFF" },
                 { "People", people },
-                { "Subdivision", post.Subdivision.Id },
+                { "Subdivision", post.SubdivisionId },
                 { "Subordinates", subordinates }
             };
         }

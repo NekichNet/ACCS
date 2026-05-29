@@ -1,5 +1,7 @@
 ﻿
 using accs.Database;
+using accs.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace accs.Services
 {
@@ -10,6 +12,62 @@ namespace accs.Services
         public StructureService(AppDbContext db, ILogger logger) : base(logger)
         {
             _db = db;
+        }
+
+        public async Task<ActionResult<Dictionary<string, object>>> GetStructureAsync()
+        {
+            ActionResult<Dictionary<string, object>> action = new ActionResult<Dictionary<string, object>>(_logger);
+
+            try
+            {
+                var posts = await _db.Posts.ToListAsync();
+                var units = await _db.Units.ToListAsync();
+
+                var rootPost = posts.FirstOrDefault(p => p.Head == null);
+
+                if (rootPost == null)
+                {
+                    action.FormFailure("Root post not found");
+                    return action;
+                }
+
+                action.Value = new Dictionary<string, object>
+                {
+                    { rootPost.Name, BuildPostStructure(rootPost, posts, units) }
+                };
+
+                action.FormSuccess("Structure formed");
+            }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
+        private Dictionary<string, object> BuildPostStructure(Post post, List<Post> allPosts, List<Unit> allUnits)
+        {
+            var people = allUnits
+                .Where(u => u.Posts.Any(p => p.Id == post.Id))
+                .Select(u => u.Nickname)
+                .ToList();
+
+            var subordinates = allPosts
+                .Where(p => p.Head != null && p.Head.Id == post.Id)
+                .ToDictionary(
+                    p => p.Name,
+                    p => BuildPostStructure(p, allPosts, allUnits)
+                );
+
+            return new Dictionary<string, object>
+            {
+                { "Id", post.Id },
+                { "Color", post.Color ?? "#FFFFFF" },
+                { "People", people },
+                { "Subdivision", post.Subdivision.Id },
+                { "Subordinates", subordinates }
+            };
         }
     }
 }

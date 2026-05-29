@@ -17,5 +17,21 @@ namespace accs.Models
         {
             return Id.ToString() + " " + Name;
         }
-	}
+
+        public void UpdateRole()
+        {
+            if (DiscordRoleId != null)
+            {
+                // TODO: Send request to discord-bot api
+            }
+        }
+
+        public void CheckRoleOnUser(ulong unitId)
+        {
+            if (DiscordRoleId != null)
+            {
+                // TODO: Send request to discord-bot api
+            }
+        }
+    }
 }

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace accs.Services
 {
-    public class OCRService : IOCRService
+    public class OCRService
     {
         private readonly AppDbContext _db;
         private ILogger<OCRService> _log;

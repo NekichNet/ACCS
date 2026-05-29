@@ -1,7 +1,10 @@
 ﻿using accs.Database;
+using accs.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using static System.Collections.Specialized.BitVector32;
 
 namespace accs.Controllers
 {
@@ -9,12 +12,12 @@ namespace accs.Controllers
     [ApiController]
     public class RankController : ControllerBase
     {
-        private readonly AppDbContext _dbContext;
+        private readonly RankService _rankService;
         private readonly ILogger<RankController> _logger;
 
-        public RankController(AppDbContext dbContext, ILogger<RankController> logger)
+        public RankController(RankService rankService, ILogger<RankController> logger)
         {
-            _dbContext = dbContext;
+            _rankService = rankService;
             _logger = logger;
         }
 
@@ -23,13 +26,23 @@ namespace accs.Controllers
         {
             try
             {
-                var ranks = await _dbContext.Ranks.Select(r => new
+                var action = await _rankService.GetAllAsync();
+                if (!action.IsSuccess)
+                {
+                    return BadRequest(new { error = action.Message });
+                }
+                if (action.Value == null)
+                {
+                    return StatusCode(500, new { error = "Internal server error" });
+                }
+
+                var ranks = action.Value.Select(r => new
                 {
                     r.Id,
                     r.Name,
                     r.DiscordRoleId,
                     UnitsCount = r.Units.Count
-                }).ToListAsync();
+                }).ToList();
 
                 return Ok(ranks);
             }
@@ -45,14 +58,17 @@ namespace accs.Controllers
         {
             try
             {
-                var rank = await _dbContext.Ranks.FirstOrDefaultAsync(r => r.Id == rankId);
-
-                if (rank == null)
+                var action = await _rankService.GetAsync(rankId);
+                if (!action.IsSuccess)
                 {
-                    _logger.LogWarning($"Rank not found: Rank ID {rankId}");
+                    return BadRequest(new { error = action.Message });
+                }
+                if (action.Value == null)
+                {
                     return NotFound(new { error = "Rank not found" });
                 }
 
+                var rank = action.Value;
                 var result = new
                 {
                     rank.Id,
@@ -78,16 +94,17 @@ namespace accs.Controllers
         {
             try
             {
-                var rank = await _dbContext.Ranks.FirstOrDefaultAsync(r => r.Id == rankId);
-
-                if (rank == null)
+                var action = await _rankService.GetAsync(rankId);
+                if (!action.IsSuccess)
                 {
-                    _logger.LogWarning($"Rank not found: Rank ID {rankId}");
+                    return BadRequest(new { error = action.Message });
+                }
+                if (action.Value == null)
+                {
                     return NotFound(new { error = "Rank not found" });
                 }
 
-                var permissionsIds = rank.GetPermissionsRecursive().Select(p => (int)p.Type).ToList();
-
+                var permissionsIds = action.Value.GetPermissionsRecursive().Select(p => (int)p.Type).ToList();
                 return Ok(permissionsIds);
             }
             catch (Exception ex)
@@ -102,20 +119,22 @@ namespace accs.Controllers
         {
             try
             {
-                var rank = await _dbContext.Ranks.FirstOrDefaultAsync(r => r.Id == rankId);
-
-                if (rank == null)
+                var action = await _rankService.GetAsync(rankId);
+                if (!action.IsSuccess)
                 {
-                    _logger.LogWarning($"Rank not found: Rank ID {rankId}");
+                    return BadRequest(new { error = action.Message });
+                }
+                if (action.Value == null)
+                {
                     return NotFound(new { error = "Rank not found" });
                 }
 
-                if (rank.DiscordRoleId == null)
+                if (action.Value.DiscordRoleId == null)
                 {
                     return Ok(new { discord_role_id = "" });
                 }
 
-                return Ok(new { discord_role_id = rank.DiscordRoleId.ToString() });
+                return Ok(new { discord_role_id = action.Value.DiscordRoleId.ToString() });
             }
             catch (Exception ex)
             {
@@ -126,27 +145,83 @@ namespace accs.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> CreateNewRank()
+        public async Task<IActionResult> CreateNewRank([FromBody] int id, [FromBody] string name)
         {
-            return await Task.FromResult(Ok());
+            try
+            {
+                var newRank = await _rankService.CreateAsync(id, name);
+                if (!newRank.IsSuccess)
+                {
+                    return BadRequest(new { error = newRank.Message });
+                }
+                return Ok(newRank);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in CreateNewRank: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+            
         }
 
-        [HttpDelete]
-        public async Task<IActionResult> DeleteRank()
+        [HttpDelete("{rankId}")]
+        public async Task<IActionResult> DeleteRank([FromRoute] int rankId)
         {
-            return await Task.FromResult(Ok());
+            try
+            {
+                var action = await _rankService.DeleteAsync(rankId);
+                if (!action.IsSuccess)
+                {
+                    return BadRequest(new { error = action.Message });
+                }
+
+                return Ok(new { message = action.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in DeleteRank: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
         }
 
-        [HttpPatch]
-        public async Task<IActionResult> UpdateRank()
+        [HttpPatch("{rankId}")]
+        public async Task<IActionResult> UpdateRank([FromRoute] int rankId, [FromBody] string name)
         {
-            return await Task.FromResult(Ok());
+            try
+            {
+                var action = await _rankService.UpdateAsync(rankId, name);
+                if (!action.IsSuccess)
+                {
+                    return BadRequest(new { error = action.Message });
+                }
+
+                return Ok(new { message = action.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in UpdateRank: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> UpdateDiscordRoleRank()
+        [HttpPost("{rankId}/discord-role")]
+        public async Task<IActionResult> UpdateDiscordRoleRank([FromRoute] int rankId)
         {
-            return await Task.FromResult(Ok());
+            try
+            {
+                var action = await _rankService.UpdateRoleAsync(rankId);
+                if (!action.IsSuccess)
+                {
+                    return BadRequest(new { error = action.Message });
+                }
+
+                return Ok(new { message = action.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in UpdateDiscordRoleRank: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
         }
     }
 }

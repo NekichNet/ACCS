@@ -1,4 +1,5 @@
 ﻿using accs.Database;
+using accs.Models;
 using accs.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,6 +25,10 @@ namespace accs.Controllers
             try
             {
                 var actionResult = await _structureService.GetStructureAsync();
+                if (!actionResult.IsSuccess)
+                {
+                    return BadRequest(new { error = actionResult.Message });
+                }
                 return Ok(actionResult.Value);
             }
             catch (Exception ex)

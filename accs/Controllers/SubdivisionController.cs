@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sprache;
+using System;
+using static System.Collections.Specialized.BitVector32;
 
 namespace accs.Controllers
 {
@@ -28,6 +30,10 @@ namespace accs.Controllers
             try
             {
                 var subdivisions = await _subdivisionService.GetAllAsync();
+                if (!subdivisions.IsSuccess)
+                {
+                    return BadRequest(new { error = subdivisions.Message });
+                }
                 if (subdivisions.Value == null)
                 {
                     return StatusCode(500, new { error = "Empry list of subdivisions" });
@@ -58,6 +64,10 @@ namespace accs.Controllers
             try
             {
                 var subdivision = await _subdivisionService.GetAsync(subdivisionId);
+                if (!subdivision.IsSuccess)
+                {
+                    return BadRequest(new { error = subdivision.Message });
+                }
                 return Ok(subdivision);
             }
             catch (Exception ex)
@@ -73,6 +83,10 @@ namespace accs.Controllers
             try
             {
                 var subdivisions = await _subdivisionService.GetAsync(subdivisionId);
+                if (!subdivisions.IsSuccess)
+                {
+                    return BadRequest(new { error = subdivisions.Message });
+                }
                 if (subdivisions.Value == null)
                 {
                     return NotFound(new { error = "Subdivision undefined" });
@@ -94,6 +108,10 @@ namespace accs.Controllers
             try
             {
                 var result = await _subdivisionService.GetAsync(subdivisionId);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
                 if (result.Value == null)
                 {
                     return NotFound(new { error = "Subdivision undefined" });
@@ -115,6 +133,10 @@ namespace accs.Controllers
             try
             {
                 var subdivision = await _subdivisionService.CreateAsync(name, envRoleString, headId);
+                if (!subdivision.IsSuccess)
+                {
+                    return BadRequest(new { error = subdivision.Message });
+                }
                 if (subdivision.Value == null)
                 {
                     return BadRequest(new { error = "Subdivision undefined. May be u haven't permission" });
@@ -138,6 +160,10 @@ namespace accs.Controllers
             try
             {
                 var subdivision = await _subdivisionService.UpdateAsync(id, name, color, headId);
+                if (!subdivision.IsSuccess)
+                {
+                    return BadRequest(new { error = subdivision.Message });
+                }
                 return Ok(subdivision);
             }
             catch (Exception ex)
@@ -153,6 +179,10 @@ namespace accs.Controllers
             try
             {
                 var subdivision = await _subdivisionService.UpdateRoleAsync(subdivisionId);
+                if (!subdivision.IsSuccess)
+                {
+                    return BadRequest(new { error = subdivision.Message });
+                }
                 return Ok(subdivision);
             }
             catch (Exception ex)

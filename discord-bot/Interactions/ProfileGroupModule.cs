@@ -57,10 +57,10 @@ namespace discord_bot.Interactions
                         inLineUnitActivities += '\n';
                 }
                 
-                if (unit.UnitStatuses.Any(us => !us.IsCompleted()))
+                if (unit.UnitStates.Any(us => !us.IsCompleted()))
                     embed.AddField(new EmbedFieldBuilder() {
                         Name = "Статусы:", Value = "```ansi\r\n" + string.Join(", ",
-                        unit.UnitStatuses.Where(us => !us.IsCompleted()).Select(us => us.Status.Name)) + "\r\n```"
+                        unit.UnitStates.Where(us => !us.IsCompleted()).Select(us => us.Status.Name)) + "\r\n```"
 					});
                 if (unit.Rewards.Any())
                     embed.AddField(new EmbedFieldBuilder() {
@@ -68,12 +68,12 @@ namespace discord_bot.Interactions
                         unit.Rewards.Select(r => r.Name)) + "\u001b[0m\r\n```"
                     });
                 embed.AddField(new EmbedFieldBuilder() {
-                    Name = "Благодарности:", Value = unit.UnitStatuses.Where(
+                    Name = "Благодарности:", Value = unit.UnitStates.Where(
                         x => x.Status.Type == StatusType.Gratitude).Count(),
 					IsInline = true
 				});
                 embed.AddField(new EmbedFieldBuilder() {
-                    Name = "Выговоров:", Value = unit.UnitStatuses.Where(
+                    Name = "Выговоров:", Value = unit.UnitStates.Where(
                     x => x.Status.Type == StatusType.Reprimand || x.Status.Type == StatusType.SevereReprimand).Count(),
                     IsInline = true
                 });

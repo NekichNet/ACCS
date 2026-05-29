@@ -5,9 +5,12 @@
         Administrator,
 		AutoReprimandImmune,
         RegisterNewUnits,
+        DismissUnits,
+        AssignRetirement,
 
 		ConfirmActivity,
         VacationAccess,
+        AccessRetirement,
 
         GiveReprimandGratitude,
         ForceVacation,

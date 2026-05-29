@@ -240,7 +240,7 @@ namespace discord_bot.Interactions
 		public async Task RewardButtonHandler()
 		{
 			/*
-			if (_db.RewardTickets.Any(t => t.AuthorDiscordId == Context.User.Id && t.Status == TicketStatus.Opened))
+			if (_db.RewardTickets.Any(t => t.AuthorDiscordId == Context.User.Id && t.UnitState == TicketStatus.Opened))
 			{
 				await RespondAsync("У Вас уже есть открытый тикет на представление к награде", ephemeral: true);
 				return;
@@ -259,7 +259,7 @@ namespace discord_bot.Interactions
 		public async Task SuggestionButtonHandler()
 		{
 			/*
-			if (_db.SuggestionTickets.Any(t => t.AuthorDiscordId == Context.User.Id && t.Status == TicketStatus.Opened))
+			if (_db.SuggestionTickets.Any(t => t.AuthorDiscordId == Context.User.Id && t.UnitState == TicketStatus.Opened))
 			{
 				await RespondAsync("У Вас уже есть открытый тикет жалобы", ephemeral: true);
 				return;

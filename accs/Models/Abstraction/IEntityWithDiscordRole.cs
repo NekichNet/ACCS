@@ -2,9 +2,9 @@
 {
     public interface IEntityWithDiscordRole
     {
-        public abstract string Color { get; set; }
-        public abstract string Name { get; set; }
-        public abstract ulong? DiscordRoleId { get; set; }
+        abstract string Color { get; set; }
+        abstract string Name { get; set; }
+        abstract ulong? DiscordRoleId { get; set; }
 
         void UpdateRole();
         void CheckRoleOnUser(ulong unitId);

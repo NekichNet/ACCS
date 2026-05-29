@@ -1,6 +1,8 @@
 ﻿using accs.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
@@ -13,22 +15,19 @@ namespace accs.Models
 		public ulong? SteamId { get; set; }
 		public ushort RankUpCounter { get; set; }
 		public DateTime Joined { get; set; }
-		public string? Colour { get; set; }
-		public virtual Rank Rank { get; set; }
-		public virtual List<Doc> OwnDocs { get; set; }
-		public virtual List<Doc> AssignedDocs { get; set; }
-		public virtual List<Post> Posts { get; set; } = new List<Post>();
-		public virtual List<AssignedReward> AssignedRewards { get; set; } = new List<AssignedReward>();
-		public virtual List<Activity> Activities { get; set; } = new List<Activity>();
-		public virtual List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
-
+		public int RankId { get; set; }
+		[JsonIgnore] public virtual Rank Rank { get; set; }
+		[JsonIgnore] public virtual List<Doc> OwnDocs { get; set; }
+		[JsonIgnore] public virtual List<Doc> AssignedDocs { get; set; }
+		[JsonIgnore] public virtual List<Post> Posts { get; set; } = new List<Post>();
+		[JsonIgnore] public virtual List<AssignedReward> AssignedRewards { get; set; } = new List<AssignedReward>();
+		[JsonIgnore] public virtual List<Activity> Activities { get; set; } = new List<Activity>();
+		[JsonIgnore] public virtual List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
 
         public HashSet<Permission> GetPermissions()
 		{
 			HashSet<Permission> permissions = Rank.GetPermissionsRecursive();
-			foreach (Post post in Posts)
-				foreach (Permission permission in post.GetPermissionsRecursive())
-					permissions.Add(permission);
+			permissions.Concat(Posts.SelectMany(p => p.GetPermissionsRecursive()));
 			return permissions;
 		}
 
@@ -37,24 +36,9 @@ namespace accs.Models
 			return GetPermissions().Where(p => p.Type == permissionType || p.Type == PermissionType.Administrator).Any();
 		}
 
-		public string GetOnlyNickname()
-		{
-			return Nickname.Replace("[РХБЗ]", "").Replace("[Р]", "").Trim();
-		}
-
-		public void SetProfileColor(Discord.Color color)
-		{
-			Colour = color.ToString();
-		}
-
-		public Discord.Color GetProfileColor()
-		{
-			return Discord.Color.Parse(Colour);
-		}
-
         public override string ToString()
         {
-            return DiscordId.ToString() + " " + Nickname;
+            return JsonSerializer.Serialize(this);
         }
 	}
 }

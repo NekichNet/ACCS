@@ -1,6 +1,7 @@
 ﻿using accs.Database;
 using accs.Models;
 using accs.Models.Enums;
+using accs.Models.Statuses.Abstraction;
 using accs.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,9 +38,9 @@ namespace accs.Services.Scheduled
 				AppDbContext db = _services.GetRequiredService<AppDbContext>();
 				ILogger log = _services.GetRequiredService<ILogger>();
 
-				Status? severeReprimand = await db.Statuses.FindAsync(StatusType.SevereReprimand);
-				Status? reprimand = await db.Statuses.FindAsync(StatusType.Reprimand);
-				Status? gratitude = await db.Statuses.FindAsync(StatusType.Gratitude);
+				UnitState? severeReprimand = await db.UnitStates.FindAsync(StatusType.SevereReprimand);
+				UnitState? reprimand = await db.UnitStates.FindAsync(StatusType.Reprimand);
+				UnitState? gratitude = await db.UnitStates.FindAsync(StatusType.Gratitude);
 
 				if (severeReprimand == null || reprimand == null || gratitude == null)
 				{
@@ -53,7 +54,7 @@ namespace accs.Services.Scheduled
 				{
 					if (unit.Activities.Any(a => a.Date == DateOnly.FromDateTime(nextGeneralSession.AddDays(-1)))) // был на обязательных сборах
 					{
-						UnitStatus? unitStatus = unit.UnitStatuses.FirstOrDefault(us => !us.IsCompleted()
+						UnitStatus? unitStatus = unit.UnitStates.FirstOrDefault(us => !us.IsCompleted()
 						&& (us.Status == severeReprimand || us.Status == reprimand || us.Status == gratitude));
 
 						if (unitStatus != null)
@@ -95,10 +96,10 @@ namespace accs.Services.Scheduled
 					}
 					else // не был на обязательных сборах
 					{
-						if (!unit.UnitStatuses.Any(us => us.Status.Type == StatusType.Vacation || us.Status.Type == StatusType.Retirement)
+						if (!unit.UnitStates.Any(us => us.Status.Type == StatusType.Vacation || us.Status.Type == StatusType.Retirement)
 							&& unit.Posts.Any())
 						{
-							UnitStatus? unitStatus = unit.UnitStatuses.FirstOrDefault(us => !us.IsCompleted()
+							UnitStatus? unitStatus = unit.UnitStates.FirstOrDefault(us => !us.IsCompleted()
 								&& (us.Status == severeReprimand || us.Status == reprimand || us.Status == gratitude));
 
 							if (unitStatus != null)

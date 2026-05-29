@@ -1,6 +1,11 @@
 ﻿using accs.Models.Enums;
+using accs.Models.SingleDayEvents;
+using accs.Models.Statuses;
+using accs.Models.Statuses.Abstraction;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
@@ -12,23 +17,35 @@ namespace accs.Models
 		public string Nickname { get; set; }
 		public ulong? SteamId { get; set; }
 		public ushort RankUpCounter { get; set; }
-		public DateTime Joined { get; set; }
-		public string? Colour { get; set; }
-		public virtual Rank Rank { get; set; }
-		public virtual List<Doc> OwnDocs { get; set; }
-		public virtual List<Doc> AssignedDocs { get; set; }
-		public virtual List<Post> Posts { get; set; } = new List<Post>();
-		public virtual List<AssignedReward> AssignedRewards { get; set; } = new List<AssignedReward>();
-		public virtual List<Activity> Activities { get; set; } = new List<Activity>();
-		public virtual List<UnitStatus> UnitStatuses { get; set; } = new List<UnitStatus>();
+		public int RegistrationEventId { get; set; }
+		[JsonIgnore] public virtual UnitRegistrationEvent RegistrationEvent { get; set; }
+		[JsonIgnore] public virtual List<Doc> OwnDocs { get; set; }
+		[JsonIgnore] public virtual List<Doc> AssignedDocs { get; set; }
+		[JsonIgnore] public virtual List<AssignedReward> AssignedRewards { get; set; } = new List<AssignedReward>();
+		[JsonIgnore] public virtual List<Activity> Activities { get; set; } = new List<Activity>();
+		[JsonIgnore] public virtual List<AssignedRank> AssignedRanks { get; set; } = new List<AssignedRank>();
+		[JsonIgnore] public virtual List<AssignedPost> AssignedPosts { get; set; } = new List<AssignedPost>();
+		[JsonIgnore] public virtual List<UnitState> UnitStates { get; set; } = new List<UnitState>();
 
-
-        public HashSet<Permission> GetPermissions()
+		public AssignedRank? GetAssignedRank()
 		{
-			HashSet<Permission> permissions = Rank.GetPermissionsRecursive();
-			foreach (Post post in Posts)
-				foreach (Permission permission in post.GetPermissionsRecursive())
-					permissions.Add(permission);
+			return AssignedRanks.FirstOrDefault(ar => ar.IsActive());
+		}
+
+		public List<AssignedPost> GetAssignedPosts()
+		{
+			return AssignedPosts.Where(ap => ap.IsActive()).ToList();
+		}
+
+		public HashSet<Permission> GetPermissions()
+		{
+			HashSet<Permission> permissions = new HashSet<Permission>();
+
+			AssignedRank? assignedRank = GetAssignedRank();
+			if (assignedRank != null)
+				permissions.Concat(assignedRank.Rank.GetPermissionsRecursive());
+
+			permissions.Concat(GetAssignedPosts().SelectMany(ap => ap.Post.GetPermissionsRecursive()));
 			return permissions;
 		}
 
@@ -37,24 +54,18 @@ namespace accs.Models
 			return GetPermissions().Where(p => p.Type == permissionType || p.Type == PermissionType.Administrator).Any();
 		}
 
-		public string GetOnlyNickname()
+		public void CheckRoles()
 		{
-			return Nickname.Replace("[РХБЗ]", "").Replace("[Р]", "").Trim();
-		}
-
-		public void SetProfileColor(Discord.Color color)
-		{
-			Colour = color.ToString();
-		}
-
-		public Discord.Color GetProfileColor()
-		{
-			return Discord.Color.Parse(Colour);
+			AssignedRank? assignedRank = GetAssignedRank();
+			if (assignedRank != null)
+				assignedRank.Rank.CheckRoleOnUser(DiscordId);
+			foreach (AssignedPost assignedPost in AssignedPosts)
+				assignedPost.Post.CheckRoleOnUser(DiscordId);
 		}
 
         public override string ToString()
         {
-            return DiscordId.ToString() + " " + Nickname;
+            return JsonSerializer.Serialize(this);
         }
 	}
 }

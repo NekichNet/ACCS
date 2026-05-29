@@ -1,17 +1,19 @@
-﻿namespace accs.Models
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace accs.Models
 {
     public class AssignedReward
     {
         public int RewardId { get; set; }
-        public virtual Reward Reward { get; set; }
+		[JsonIgnore] public virtual Reward Reward { get; set; }
         public int UnitId { get; set; }
-        public virtual Unit Unit { get; set; }
-        public DateOnly AssignedDate { get; set; }
+        [JsonIgnore] public virtual Unit Unit { get; set; }
         public bool Display { get; set; }
 
         public override string ToString()
         {
-            return RewardId.ToString() + " " + UnitId.ToString();
+            return JsonSerializer.Serialize(this);
         }
     }
 }

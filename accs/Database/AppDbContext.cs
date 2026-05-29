@@ -1,6 +1,9 @@
 ﻿using accs.Models;
 using accs.Models.Enums;
-using accs.Models.Tickets;
+using accs.Models.SingleDayEvents;
+using accs.Models.SingleDayEvents.Abstraction;
+using accs.Models.Statuses;
+using accs.Models.Statuses.Abstraction;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Database
@@ -11,27 +14,26 @@ namespace accs.Database
 		public DbSet<Post> Posts { get; set; }
 		public DbSet<Rank> Ranks { get; set; }
 		public DbSet<Subdivision> Subdivisions { get; set; }
+
 		public DbSet<Permission> Permissions { get; set; }
 		public DbSet<GivedPermission> GivedPermissions { get; set; }
+
 		public DbSet<Reward> Rewards { get; set; }
 		public DbSet<AssignedReward> AssignedRewards { get; set; }
-		public DbSet<DocType> DocTypes { get; set; }
+
 		public DbSet<Doc> Docs { get; set; }
 		public DbSet<Activity> Activities { get; set; }
-		public DbSet<UnitStatus> UnitStatuses { get; set; }
-		public DbSet<Status> Statuses { get; set; }
 
-		public DbSet<Ticket> Tickets { get; set; }
-		public DbSet<InviteTicket> InviteTickets { get; set; }
-		public DbSet<FriendTicket> FriendTickets { get; set; }
-		public DbSet<DonationTicket> DonationTickets { get; set; }
-		public DbSet<LessonTicket> LessonTickets { get; set; }
-		public DbSet<ReportTicket> ReportTickets { get; set; }
-		public DbSet<RetirementTicket> RetirementTickets { get; set; }
-		public DbSet<TechTicket> TechTickets { get; set; }
-		public DbSet<RewardTicket> RewardTickets { get; set; }
-		public DbSet<VipTicket> VipTickets { get; set; }
-		public DbSet<SuggestionTicket> SuggestionTickets { get; set; }
+		public DbSet<UnitState> UnitStates { get; set; }
+		public DbSet<AssignedPost> AssignedPosts { get; set; }
+		public DbSet<AssignedRank> AssignedRanks { get; set; }
+
+		public DbSet<SingleDayEvent> SingleDayEvents { get; set; }
+		public DbSet<EventWithDoc> EventsWithDoc { get; set; }
+		public DbSet<CustomEvent> CustomEvents { get; set; }
+		public DbSet<CustomEventWithDoc> CustomEventsWithDoc { get; set; }
+		public DbSet<RewardAssignmentEvent> RewardAssignmentEvents { get; set; }
+		public DbSet<UnitRegistrationEvent> UnitRegistrationEvents { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
 			: base(options) { }
@@ -91,13 +93,13 @@ namespace accs.Database
 			for (int i = 1; i < 18; i++)
 				ranks[i].InsertPrevious(ranks[i - 1]);
 
-			modelBuilder.Entity<Status>().HasData(
-				new Status() { Type = StatusType.Vacation, Name = "Отпуск" },
-				new Status() { Type = StatusType.TemporaryPost, Name = "ВрИО" },
-				new Status() { Type = StatusType.Gratitude, Name = "Благодарность" },
-				new Status() { Type = StatusType.Reprimand, Name = "Выговор" },
-				new Status() { Type = StatusType.SevereReprimand, Name = "Строгий выговор" },
-				new Status() { Type = StatusType.Retirement, Name = "Отставка" }
+			modelBuilder.Entity<UnitState>().HasData(
+				new UnitState() { Type = StatusType.Vacation, Name = "Отпуск" },
+				new UnitState() { Type = StatusType.TemporaryPost, Name = "ВрИО" },
+				new UnitState() { Type = StatusType.Gratitude, Name = "Благодарность" },
+				new UnitState() { Type = StatusType.Reprimand, Name = "Выговор" },
+				new UnitState() { Type = StatusType.SevereReprimand, Name = "Строгий выговор" },
+				new UnitState() { Type = StatusType.Retirement, Name = "Отставка" }
 			);
 		}
 	}

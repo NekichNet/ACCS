@@ -1,16 +1,15 @@
 ﻿using accs.Database;
 using accs.Models.Enums;
-using accs.Services.Interfaces;
 using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 using System.Text;
 
-namespace accs.Models
+namespace accs.Models.Tickets
 {
-    public class Ticket
+    public abstract class Ticket
     {
-		public int Id { get; set; } = 0;
+		public int Id { get; set; }
         public ulong AuthorDiscordId { get; set; }
         public ulong ChannelDiscordId { get; set; }
         public TicketStatus Status { get; set; }

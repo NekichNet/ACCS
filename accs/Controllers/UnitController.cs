@@ -1,4 +1,6 @@
 ﻿using accs.Database;
+using accs.Models;
+using accs.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -9,12 +11,12 @@ namespace accs.Controllers
     [ApiController]
     public class UnitController : ControllerBase
     {
-        private readonly AppDbContext _dbContext;
         private readonly ILogger<UnitController> _logger;
+        UnitService _unitService;
 
-        public UnitController(AppDbContext dbContext, ILogger<UnitController> logger)
+        public UnitController(UnitService unitService, ILogger<UnitController> logger)
         {
-            _dbContext = dbContext;
+            _unitService = unitService;
             _logger = logger;
         }
 
@@ -23,40 +25,13 @@ namespace accs.Controllers
         {
             try
             {
-                var query = _dbContext.Units.AsQueryable();
-
-                if (post.HasValue)
+                var result = await _unitService.GetFilteredUnitsAsync(post, subdivision, rank, reward);
+                if (!result.IsSuccess)
                 {
-                    query = query.Where(u => u.Posts.Any(p => p.Id == post.Value));
+                    return BadRequest(new { error = result.Message });
                 }
+                return Ok(result);
 
-                if (subdivision.HasValue)
-                {
-                    query = query.Where(u => u.Posts.Any(p => p.Subdivision.Id == subdivision.Value));
-                }
-
-                if (rank.HasValue)
-                {
-                    query = query.Where(u => u.Rank.Id == rank.Value);
-                }
-
-                if (reward.HasValue)
-                {
-                    query = query.Where(u => u.AssignedRewards.Any(ar => ar.Reward.Id == reward.Value));
-                }
-
-                var units = await query.Select(u => new
-                {
-                    u.Nickname,
-                    SteamId = u.SteamId.ToString() ?? "",
-                    RankUpCounter = $"{u.RankUpCounter}/15",
-                    Joined = u.Joined.ToString("dd.MM.yyyy HH:mm"),
-                    u.Rank.Id,
-                    PostsIds = u.Posts.Select(p => p.Id).ToList(),
-                    AssignedRewardsIds = u.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
-                }).ToListAsync();
-
-                return Ok(units);
             }
             catch (Exception ex)
             {

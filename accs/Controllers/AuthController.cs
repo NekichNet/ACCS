@@ -1,5 +1,6 @@
 ﻿using accs.Database;
 using accs.Models;
+using accs.Models.SingleDayEvents;
 using accs.Services.Interfaces;
 using Discord;
 using Microsoft.AspNetCore.Authorization;
@@ -82,13 +83,19 @@ namespace accs.Controllers
                     _logger.LogInformation(
                         $"Creating new user in database: {discordUser.Username}");
 
+                    var registrationEvent = new UnitRegistrationEvent
+                    {
+                        DateTime = DateTime.UtcNow
+                    };
+
                     user = new Unit
                     {
                         DiscordId = discordId,
                         Nickname = discordUser.Username,
-                        Joined = DateTime.UtcNow
+                        RegistrationEvent = registrationEvent
                     };
 
+                    registrationEvent.Initiator = user;
                     _dbContext.Units.Add(user);
                 }
 
@@ -175,7 +182,11 @@ namespace accs.Controllers
                     return Unauthorized(new { error = "Invalid token" });
                 }
 
-                var user = await _dbContext.Units.FirstOrDefaultAsync(u => u.DiscordId == discordId);
+                var user = await _dbContext.Units
+                    .Include(u => u.RegistrationEvent)
+                    .Include(u => u.AssignedRanks)
+                        .ThenInclude(ar => ar.Rank)
+                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
 
                 if (user == null)
                 {
@@ -183,12 +194,15 @@ namespace accs.Controllers
                     return NotFound(new { error = "User not found" });
                 }
 
+                var activeAssignedRank = user.GetAssignedRank();
+                var rankName = activeAssignedRank?.Rank?.Name ?? "Без ранга";
+
                 return Ok(new
                 {
                     discord_id = user.DiscordId,
                     username = user.Nickname,
-                    joined = user.Joined,
-                    rank = user.Rank?.Name,
+                    joined = user.RegistrationEvent.DateTime,
+                    rank = rankName,
                     steam_id = user.SteamId
                 });
             }

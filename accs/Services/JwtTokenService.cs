@@ -1,4 +1,4 @@
-﻿using accs.Models.Database;
+﻿using accs.Models;
 using accs.Services.Interfaces;
 using DotNetEnv;
 using Microsoft.IdentityModel.Tokens;

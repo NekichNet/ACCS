@@ -1,5 +1,6 @@
 ﻿using accs.Database;
 using accs.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -145,6 +146,7 @@ namespace accs.Controllers
 
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> CreateNewRank([FromBody] RankDto dto)
         {
             try
@@ -165,6 +167,7 @@ namespace accs.Controllers
         }
 
         [HttpDelete("{rankId}")]
+        [Authorize]
         public async Task<IActionResult> DeleteRank([FromRoute] int rankId)
         {
             try
@@ -185,6 +188,7 @@ namespace accs.Controllers
         }
 
         [HttpPatch("{rankId}")]
+        [Authorize]
         public async Task<IActionResult> UpdateRank([FromRoute] int rankId, [FromBody] string name)
         {
             try
@@ -205,6 +209,7 @@ namespace accs.Controllers
         }
 
         [HttpPost("{rankId}/discord-role")]
+        [Authorize]
         public async Task<IActionResult> UpdateDiscordRoleRank([FromRoute] int rankId)
         {
             try

@@ -1,6 +1,7 @@
 ﻿using accs.Database;
 using accs.Models;
 using accs.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -11,27 +12,40 @@ namespace accs.Controllers
     [ApiController]
     public class UnitController : ControllerBase
     {
+        AppDbContext _dbContext;
         private readonly ILogger<UnitController> _logger;
         UnitService _unitService;
 
-        public UnitController(UnitService unitService, ILogger<UnitController> logger)
+        public UnitController(UnitService unitService, ILogger<UnitController> logger, AppDbContext dbContext)
         {
             _unitService = unitService;
             _logger = logger;
+            _dbContext = dbContext;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetUnits()
+        public async Task<IActionResult> GetUnits([FromBody] UnitDto dto)
         {
             try
             {
-                var result = await _unitService.GetFilteredUnitsAsync(post, subdivision, rank, reward);
+                var result = await _unitService.GetList();
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
                 }
-                return Ok(result);
 
+                var units = result.Value?.Select(u => new
+                {
+                    u.Nickname,
+                    SteamId = u.SteamId.ToString() ?? "",
+                    RankUpCounter = $"{u.RankUpCounter}/15",
+                    Joined = u.RegistrationEvent.DateTime.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    RankId = u.AssignedRanks,
+                    PostsIds = u.AssignedPosts,
+                    AssignedRewardsIds = u.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
+                }).ToList();
+
+                return Ok(units);
             }
             catch (Exception ex)
             {
@@ -42,38 +56,56 @@ namespace accs.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> RegisterUnit()
+        [Authorize]
+        public async Task<IActionResult> RegisterUnit([FromBody] UnitDto dto)
         {
-            return await Task.FromResult(Ok());
+            try
+            {
+                var result = await _unitService.RegisterAsync(dto.DiscordId, dto.Nickname);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+
+                return Ok(new { message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in RegisterUnit: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
         }
 
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetUnit(
-            [FromRoute] ulong id)
+        public async Task<IActionResult> GetUnit([FromRoute] ulong id)
         {
             try
             {
-                var unit = await _dbContext.Units.FirstOrDefaultAsync(u => u.DiscordId == id);
+                var result = await _unitService.Get(id);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
 
-                if (unit == null)
+                if (result.Value == null)
                 {
                     _logger.LogWarning($"Unit not found: Discord ID {id}");
                     return NotFound(new { error = "Unit not found" });
                 }
 
-                var result = new
+                var unitResult = new
                 {
-                    unit.Nickname,
-                    SteamId = unit.SteamId.ToString() ?? "",
-                    RankUpCounter = $"{unit.RankUpCounter}/15",
-                    Joined = unit.Joined.ToString("dd.MM.yyyy HH:mm"),
-                    RankId = unit.Rank.Id,
-                    PostsIds = unit.Posts.Select(p => p.Id).ToList(),
-                    AssignedRewardsIds = unit.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
+                    result.Value.Nickname,
+                    SteamId = result.Value.SteamId.ToString() ?? "",
+                    RankUpCounter = $"{result.Value.RankUpCounter}/15",
+                    Joined = result.Value.Joined.ToString("dd.MM.yyyy HH:mm"),
+                    RankId = result.Value.Rank?.Id,
+                    PostsIds = result.Value.Posts.Select(p => p.Id).ToList(),
+                    AssignedRewardsIds = result.Value.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
                 };
 
-                return Ok(result);
+                return Ok(unitResult);
             }
             catch (Exception ex)
             {
@@ -84,10 +116,22 @@ namespace accs.Controllers
 
 
         [HttpPatch("{id}")]
-        public async Task<IActionResult> UpdateUnit(
-            [FromRoute] ulong discordId)
+        public async Task<IActionResult> UpdateUnit([FromRoute] ulong discordId)
         {
-            return await Task.FromResult(Ok());
+            try
+            {
+                var result = await _unitService.UpdateAsync(discordId);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+                return Ok(new { message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in UpdateUnit: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
         }
 
 
@@ -96,17 +140,18 @@ namespace accs.Controllers
         {
             try
             {
-                var unit = await _dbContext.Units.FirstOrDefaultAsync(u => u.DiscordId == discordId);
+                var result = await _unitService.GetStatusesAsync(discordId);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
 
-                if (unit == null)
+                if (result.Value == null)
                 {
                     _logger.LogWarning($"Unit not found: Discord ID {discordId}");
                     return NotFound(new { error = "Unit not found" });
                 }
-
-                var statusIds = unit.UnitStatuses.Select(us => us.Id).ToList();
-
-                return Ok(statusIds);
+                return Ok(result.Value);
             }
             catch (Exception ex)
             {
@@ -117,24 +162,22 @@ namespace accs.Controllers
 
 
         [HttpGet("{discordId}/activity")]
-        public async Task<IActionResult> GetUnitActivity([FromRoute] ulong id)
+        public async Task<IActionResult> GetUnitActivity([FromRoute] ulong discordId)
         {
             try
             {
-                var unit = await _dbContext.Units.FirstOrDefaultAsync(u => u.DiscordId == id);
-
-                if (unit == null)
+                var result = await _unitService.GetStatusesAsync(discordId);
+                if (!result.IsSuccess)
                 {
-                    _logger.LogWarning($"Unit not found: Discord ID {id}");
-                    return NotFound(new { error = "Unit not found" });
+                    return BadRequest(new { error = result.Message });
                 }
 
-                var activityDates = unit.Activities
-                    .Select(a => a.Date.ToString("dd.MM.yyyy"))
-                    .OrderByDescending(d => d)
-                    .ToList();
-
-                return Ok(activityDates);
+                if (result.Value == null)
+                {
+                    _logger.LogWarning($"Unit not found: Discord ID {discordId}");
+                    return NotFound(new { error = "Unit not found" });
+                }
+                return Ok(result.Value);
             }
             catch (Exception ex)
             {
@@ -182,7 +225,7 @@ namespace accs.Controllers
                     return NotFound(new { error = "Unit not found" });
                 }
 
-                var unitStatus = unit.UnitStatuses.FirstOrDefault(us => us.Id == statusId);
+                var unitStatus = unit.UnitStates.FirstOrDefault(us => us.Id == statusId);
 
                 if (unitStatus == null)
                 {
@@ -213,6 +256,7 @@ namespace accs.Controllers
 
 
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> UpdateUnitStatus([FromRoute] ulong id)
         {
             return await Task.FromResult(Ok());
@@ -220,15 +264,27 @@ namespace accs.Controllers
 
 
         [HttpPut]
+        [Authorize]
         public async Task<IActionResult> FixUnitActivity()
         {
-            return await Task.FromResult(Ok());
+            return await Task.FromResult(Ok()); // это можно в сервисе реализовать
         }
 
         [HttpDelete]
+        [Authorize]
         public async Task<IActionResult> DeleteStatus()
         {
             return await Task.FromResult(Ok());
         }
+    }
+
+    public class UnitDto
+    {
+        public ulong DiscordId { get; set; }
+        public string Nickname { get; set; }
+        public int? Post { get; set; } = null;
+        public int? Subdivision { get; set; } = null;
+        public int? Rank { get; set; } = null;
+        public int? Reward { get; set; } = null;
     }
 }

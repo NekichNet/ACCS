@@ -2,6 +2,7 @@
 using accs.Models;
 using accs.Services;
 using Discord.Net;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -128,6 +129,7 @@ namespace accs.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> CreateNewSubdivision([FromBody] SubdivisionDto dto)
         {
             try
@@ -152,6 +154,7 @@ namespace accs.Controllers
         }
 
         [HttpPatch("{subdivisionId}")]
+        [Authorize]
         public async Task<IActionResult> UpdateSubdivision([FromRoute] int subdivisionId, [FromBody]SubdivisionDto dto)
         {
             try
@@ -171,6 +174,7 @@ namespace accs.Controllers
         }
 
         [HttpPost("{subdivisionId}/discord-role")]
+        [Authorize]
         public async Task<IActionResult> UpdateRoleSubdivision([FromRoute] int subdivisionId)
         {
             try

@@ -1,4 +1,5 @@
 ﻿using accs.Database;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,9 +11,9 @@ namespace accs.Controllers
     public class RewardController : ControllerBase
     {
         private readonly AppDbContext _dbContext;
-        private readonly ILogger<UnitController> _logger;
+        private readonly ILogger<RewardController> _logger;
 
-        public RewardController(AppDbContext dbContext, ILogger<UnitController> logger)
+        public RewardController(AppDbContext dbContext, ILogger<RewardController> logger)
         {
             _dbContext = dbContext;
             _logger = logger;
@@ -58,19 +59,22 @@ namespace accs.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> CreateNewReward()
         {
             return await Task.FromResult(Ok());
         }
 
-        [HttpPost]
-        public async Task<IActionResult> UpdateReward()
+        [HttpPost("{rewardId}")]
+        [Authorize]
+        public async Task<IActionResult> UpdateReward([FromRoute] int rewardId)
         {
             return await Task.FromResult(Ok());
         }
 
-        [HttpPost]
-        public async Task<IActionResult> UpdateDiscordRoleReward()
+        [HttpPost("{rewardId}/discord-role")]
+        [Authorize]
+        public async Task<IActionResult> UpdateDiscordRoleReward([FromRoute] int rewardId)
         {
             return await Task.FromResult(Ok());
         }

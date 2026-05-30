@@ -1,4 +1,5 @@
 ﻿using accs.Database;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,9 +11,9 @@ namespace accs.Controllers
     public class PostController : ControllerBase
     {
         private readonly AppDbContext _dbContext;
-        private readonly ILogger<UnitController> _logger;
+        private readonly ILogger<PostController> _logger;
 
-        public PostController(AppDbContext dbContext, ILogger<UnitController> logger)
+        public PostController(AppDbContext dbContext, ILogger<PostController> logger)
         {
             _dbContext = dbContext;
             _logger = logger;
@@ -131,25 +132,29 @@ namespace accs.Controllers
 
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> CreateNewPost()
         {
             return await Task.FromResult(Ok());
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeletePost([FromRoute] int id)
         {
             return await Task.FromResult(Ok());
         }
 
         [HttpPatch("{id}")]
+        [Authorize]
         public async Task<IActionResult> UpdatePostPermission([FromRoute] int id)
         {
             return await Task.FromResult(Ok());
         }
 
-        [HttpPost]
-        public async Task<IActionResult> UpdatePostRole(int id)
+        [HttpPost("{id}/discord-role")]
+        [Authorize]
+        public async Task<IActionResult> UpdatePostRole([FromRoute] int id)
         {
             return await Task.FromResult(Ok());
         }

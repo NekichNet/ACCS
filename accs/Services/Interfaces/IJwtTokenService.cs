@@ -1,4 +1,4 @@
-﻿using accs.Models.Database;
+﻿using accs.Models;
 
 namespace accs.Services.Interfaces
 {

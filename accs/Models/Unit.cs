@@ -27,14 +27,29 @@ namespace accs.Models
 		[JsonIgnore] public virtual List<AssignedPost> AssignedPosts { get; set; } = new List<AssignedPost>();
 		[JsonIgnore] public virtual List<UnitState> UnitStates { get; set; } = new List<UnitState>();
 
-		public AssignedRank? GetAssignedRank()
+		public AssignedRank? GetAssignedRank(DateTime? dateTime = null)
 		{
-			return AssignedRanks.FirstOrDefault(ar => ar.IsActive());
+			dateTime = dateTime ?? DateTime.UtcNow;
+			return AssignedRanks.FirstOrDefault(ar => ar.IsActive(dateTime));
 		}
 
-		public List<AssignedPost> GetAssignedPosts()
+		public Rank? GetRank(DateTime? dateTime = null)
 		{
-			return AssignedPosts.Where(ap => ap.IsActive()).ToList();
+			dateTime = dateTime ?? DateTime.UtcNow;
+			AssignedRank? assignedRank = GetAssignedRank(dateTime);
+			return assignedRank == null ? null : assignedRank.Rank;
+		}
+
+		public List<AssignedPost> GetAssignedPosts(DateTime? dateTime = null)
+		{
+			dateTime = dateTime ?? DateTime.UtcNow;
+			return AssignedPosts.Where(ap => ap.IsActive(dateTime)).ToList();
+		}
+
+		public List<Post> GetPosts(DateTime? dateTime = null)
+		{
+			dateTime = dateTime ?? DateTime.UtcNow;
+			return AssignedPosts.Where(ap => ap.IsActive(dateTime)).Select(ap => ap.Post).ToList();
 		}
 
 		public HashSet<Permission> GetPermissions()
@@ -51,7 +66,12 @@ namespace accs.Models
 
 		public bool HasPermission(PermissionType permissionType)
 		{
-			return GetPermissions().Where(p => p.Type == permissionType || p.Type == PermissionType.Administrator).Any();
+			return GetPermissions().Any(p => p.Type == permissionType || p.Type == PermissionType.Administrator);
+		}
+
+		public bool IsAdmin()
+		{
+			return GetPermissions().Any(p => p.Type == PermissionType.Administrator);
 		}
 
 		public void CheckRoles()
@@ -61,6 +81,17 @@ namespace accs.Models
 				assignedRank.Rank.CheckRoleOnUser(DiscordId);
 			foreach (AssignedPost assignedPost in AssignedPosts)
 				assignedPost.Post.CheckRoleOnUser(DiscordId);
+		}
+
+		/// <summary>
+		/// Проверка, не уволен или не в отставке ли этот боец.
+		/// </summary>
+		/// <returns>
+		/// true, если всё ещё в клане. false, если в отставке или уволен
+		/// </returns>
+		public bool IsActive()
+		{
+			return AssignedRanks.Any(ar => ar.IsActive()) && AssignedPosts.Any(ap => ap.IsActive());
 		}
 
         public override string ToString()

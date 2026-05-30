@@ -1,6 +1,9 @@
 ﻿using accs.Database;
+using accs.Logging;
 using accs.Models;
 using accs.Models.Enums;
+using accs.Models.SingleDayEvents;
+using accs.Models.Statuses;
 using accs.Models.Util;
 using Microsoft.EntityFrameworkCore;
 
@@ -98,13 +101,87 @@ namespace accs.Services
 			try
 			{
 				action.Value = await _db.Posts.ToListAsync();
+				action.FormSuccess("Post list formed, length: " + action.Value.Count());
 			}
 			catch (Exception ex)
 			{
 				action.FormException(ex);
 			}
 
-            return action.FormSuccess("Post list formed, length: " + action.Value.Count());
+			return action;
         }
+
+		public async Task<ActionResult<AssignedPost>> AssignPost(ulong unitDiscordId, int postId)
+		{ // Это хороший пример того, как все проверки выглядят во вложенных if. Это нужно исправить
+			ActionResult<AssignedPost> action = new ActionResult<AssignedPost>(_logger);
+
+			try
+			{
+				if (Actor != null)
+				{
+					if (Actor.HasPermission(PermissionType.AssignPosts))
+					{
+						Unit? unit = await _db.Units.FindAsync(unitDiscordId);
+						if (unit != null)
+						{
+							if (!Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).Intersect(unit.GetPosts()).Any() || Actor.IsAdmin())
+							{
+								Post? post = await _db.Posts.FindAsync(postId);
+								if (post != null)
+								{
+									if (!Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).Contains(post) || Actor.IsAdmin())
+									{
+										AssignedPost assignedPost = new AssignedPost
+										{
+											Unit = unit,
+											Post = post
+										};
+										action.Value = assignedPost;
+
+										await _db.AssignedPosts.AddAsync(assignedPost);
+
+										await _db.SaveChangesAsync();
+
+										action.FormSuccess($"Unit {unit.Nickname} was assigned to post {post.GetFullName()}", eventId: EventIds.Created);
+									}
+									else
+									{
+										action.FormFailure($"Post assignment restricted. Can't assign heads' post", eventId: EventIds.Forbidden);
+									}
+								}
+								else
+								{
+									action.FormFailure($"Post with ID {postId} not found", eventId: EventIds.NotFound);
+								}
+							}
+							else
+							{
+								action.FormFailure($"Post assignment restricted. Can't change heads' posts", eventId: EventIds.Forbidden);
+							}
+						}
+						else
+						{
+							action.FormFailure($"Unit with ID {unitDiscordId} not found", eventId: EventIds.NotFound);
+						}
+					}
+					else
+					{
+						action.FormFailure("Post assignment restricted", eventId: EventIds.Forbidden);
+					}
+				}
+				else
+				{
+					action.FormFailure("Post assignment restricted. Unauthorized", eventId: EventIds.Unauthorized);
+				}
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<>
     }
 }

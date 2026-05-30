@@ -6,6 +6,8 @@
 
 		public const int Details = 100;
 		public const int NoData = 101;
+		public const int Processing = 102;
+		public const int Saving = 103;
 
 		// Successed
 

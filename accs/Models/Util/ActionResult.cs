@@ -11,38 +11,38 @@ namespace accs.Models.Util
             _logger = logger;
         }
 
-		public new ActionResult<T> FormSuccess(string message, Exception? exception = null)
+		public new ActionResult<T> FormSuccess(string message, Exception? exception = null, int eventId = 200)
 		{
 			End = DateTime.UtcNow;
 			IsSuccess = true;
 			Message = message;
 			Exception = exception;
 
-			Log();
+			Log(eventId: eventId);
 
 			return this;
 		}
 
-		public new ActionResult<T> FormException(Exception exception)
+		public new ActionResult<T> FormException(Exception exception, int eventId = 400)
 		{
 			End = DateTime.UtcNow;
 			IsSuccess = false;
 			Message = exception.Message;
 			Exception = exception;
 
-			Log(LogLevel.Error);
+			Log(LogLevel.Error, eventId);
 
 			return this;
 		}
 
-		public new ActionResult<T> FormFailure(string message, Exception? exception = null)
+		public new ActionResult<T> FormFailure(string message, Exception? exception = null, int eventId = 400)
 		{
 			End = DateTime.UtcNow;
 			IsSuccess = false;
 			Message = message;
 			Exception = exception;
 
-			Log(LogLevel.Debug);
+			Log(LogLevel.Debug, eventId);
 
 			return this;
 		}

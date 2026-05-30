@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using accs.Logging;
+using System.Text.Json;
 
 namespace accs.Models.Util
 {
@@ -18,44 +19,44 @@ namespace accs.Models.Util
 			Start = DateTime.UtcNow;
 		}
 
-		public void Log(LogLevel logLevel = LogLevel.Trace)
+		public void Log(LogLevel logLevel = LogLevel.Trace, int eventId = 100)
 		{
 			if (_logger != null)
-				_logger.Log(logLevel, this.ToString());
+				_logger.Log(logLevel, ToString());
 		}
 
-		public EmptyAction FormSuccess(string message, Exception? exception = null)
+		public EmptyAction FormSuccess(string message, Exception? exception = null, int eventId = 200)
 		{
 			End = DateTime.UtcNow;
 			IsSuccess = true;
 			Message = message;
 			Exception = exception;
 
-			Log();
+			Log(eventId: eventId);
 
 			return this;
 		}
 
-		public EmptyAction FormException(Exception exception)
+		public EmptyAction FormException(Exception exception, int eventId = 400)
 		{
 			End = DateTime.UtcNow;
 			IsSuccess = false;
 			Message = exception.Message;
 			Exception = exception;
 
-			Log(LogLevel.Error);
+			Log(LogLevel.Error, eventId);
 
 			return this;
 		}
 
-		public EmptyAction FormFailure(string message, Exception? exception = null)
+		public EmptyAction FormFailure(string message, Exception? exception = null, int eventId = 400)
 		{
 			End = DateTime.UtcNow;
 			IsSuccess = false;
 			Message = message;
 			Exception = exception;
 
-			Log(LogLevel.Debug);
+			Log(LogLevel.Debug, eventId);
 
 			return this;
 		}

@@ -34,7 +34,7 @@ namespace accs.DiscordBot.Interactions
 				return base.BeforeExecuteAsync(command);
             }
 
-            [HasPermission(PermissionType.ChangePosts)]
+            [HasPermission(PermissionType.AssignPosts)]
             [SlashCommand("set", "Назначить должности бойцу")]
             public async Task AssignPostCommand(IUser target, int? postId = null)
             {
@@ -164,7 +164,7 @@ namespace accs.DiscordBot.Interactions
                 }
             }
 
-			[HasPermission(PermissionType.ChangePosts)]
+			[HasPermission(PermissionType.AssignPosts)]
 			[ComponentInteraction("post-menu-*-*:*", ignoreGroupNames: true)]
             public async Task PostMenuHandler(string targetIdString, string actorIdString, string pageString, string[] selectedValues)
             {

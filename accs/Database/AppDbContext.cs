@@ -2,6 +2,7 @@
 using accs.Models.Enums;
 using accs.Models.SingleDayEvents;
 using accs.Models.SingleDayEvents.Abstraction;
+using accs.Models.States;
 using accs.Models.Statuses;
 using accs.Models.Statuses.Abstraction;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,7 @@ namespace accs.Database
 		public DbSet<UnitState> UnitStates { get; set; }
 		public DbSet<AssignedPost> AssignedPosts { get; set; }
 		public DbSet<AssignedRank> AssignedRanks { get; set; }
+		public DbSet<Retirement> Retirements { get; set; }
 
 		public DbSet<SingleDayEvent> SingleDayEvents { get; set; }
 		public DbSet<EventWithDoc> EventsWithDoc { get; set; }
@@ -34,6 +36,7 @@ namespace accs.Database
 		public DbSet<CustomEventWithDoc> CustomEventsWithDoc { get; set; }
 		public DbSet<RewardAssignmentEvent> RewardAssignmentEvents { get; set; }
 		public DbSet<UnitRegistrationEvent> UnitRegistrationEvents { get; set; }
+		public DbSet<UnitDismissingEvent> UnitDismissingEvents { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
 			: base(options) { }
@@ -51,21 +54,20 @@ namespace accs.Database
 			Permission vacationAccess = new Permission { Type = PermissionType.VacationAccess, Name = "Выход в отпуск", Description = "Разрешение на выход в отпуск." };
 			Permission giveReprimandGratitude = new Permission { Type = PermissionType.GiveReprimandGratitude, Name = "Выдача выговоров/благодарностей", Description = "Возможность выдавать выговора и благодарности нижестоящим бойцам." };
 			Permission forceVacation = new Permission { Type = PermissionType.ForceVacation, Name = "Отправка других в отпуск", Description = "Возможность отправлять в отпуск нижестоящих бойцов." };
-			Permission changeRanks = new Permission { Type = PermissionType.ChangeRanks, Name = "Присваивание званий", Description = "Возможность повышать и понижать в звании нижестоящих бойцов." };
-			Permission changePosts = new Permission { Type = PermissionType.ChangePosts, Name = "Назначение на должности", Description = "Возможность менять должность нижестоящих бойцов." };
+			Permission changeRanks = new Permission { Type = PermissionType.AssignRanks, Name = "Присваивание званий", Description = "Возможность повышать и понижать в звании нижестоящих бойцов." };
+			Permission changePosts = new Permission { Type = PermissionType.AssignPosts, Name = "Назначение на должности", Description = "Возможность менять должность нижестоящих бойцов." };
 			Permission assignRewards = new Permission { Type = PermissionType.AssignRewards, Name = "Присваивание наград", Description = "Возможность присваивать награды у нижестоящим бойцам." };
 			Permission manageStructure = new Permission { Type = PermissionType.ManageStructure, Name = "Управление структурой", Description = "Возможность управлять нижестоящей структурой клана." };
 			Permission manageRewards = new Permission { Type = PermissionType.ManageRewards, Name = "Управление наградами", Description = "Создание и редактирование существующих наград." };
 			Permission manageDocTypes = new Permission { Type = PermissionType.ManageDocTypes, Name = "Управление шаблонами документов", Description = "Создание и редактирование шаблонов документов." };
 			Permission administrator = new Permission { Type = PermissionType.Administrator, Name = "Администратор", Description = "Все права без ограничений." };
 			Permission moderateNicknames = new Permission { Type = PermissionType.ModerateNicknames, Name = "Изменение чужих никнеймов", Description = "Право изменять чужие никнеймы." };
-			Permission steamIdView = new Permission { Type = PermissionType.SteamIdView, Name = "Просмотр Steam ID", Description = "Право получать чужие Steam Id." };
 			Permission autoReprimandImmune = new Permission { Type = PermissionType.AutoReprimandImmune, Name = "Освобождение от сборов", Description = "Иммунитет к автоматической выдаче выговора за отстутствие на сборах." };
 
 			modelBuilder.Entity<Permission>().HasData(
 				confirmActivity, vacationAccess, giveReprimandGratitude, forceVacation, changeRanks,
 				changePosts, assignRewards, manageStructure, manageRewards, manageDocTypes, administrator,
-				steamIdView, autoReprimandImmune
+				autoReprimandImmune
 			);
 
 			/* Звания */

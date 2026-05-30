@@ -15,8 +15,8 @@
         GiveReprimandGratitude,
         ForceVacation,
 
-        ChangeRanks,
-        ChangePosts,
+        AssignRanks,
+        AssignPosts,
 		AssignRewards,
 
 		ManageStructure,

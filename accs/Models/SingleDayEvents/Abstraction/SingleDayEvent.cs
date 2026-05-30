@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace accs.Models.SingleDayEvents.Abstraction
 {
@@ -7,9 +9,21 @@ namespace accs.Models.SingleDayEvents.Abstraction
     {
         public int Id { get; set; }
         public DateTime DateTime { get; set; } = DateTime.UtcNow;
-        public virtual List<Unit> Units { get; set; }
+        public ulong UnitId { get; set; }
+        [JsonIgnore] public virtual Unit Unit { get; set; }
 
-        public abstract string GetText();
-        public abstract string GetHexColor();
+        public virtual string GetText()
+        {
+            return string.Empty;
+        }
+        public virtual string? GetHexColor()
+        {
+            return null;
+        }
+
+        public override string ToString()
+        {
+            return JsonSerializer.Serialize(this);
+        }
     }
 }

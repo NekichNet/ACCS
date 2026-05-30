@@ -285,7 +285,7 @@ namespace discord_bot.Interactions
             }
         }
 
-        [HasPermission(PermissionType.ChangePosts)]
+        [HasPermission(PermissionType.AssignPosts)]
         [SlashCommand("temp-post", "Выдать или завершить статус ВрИО.")]
         public async Task TempPostCommand(IUser user)
         {

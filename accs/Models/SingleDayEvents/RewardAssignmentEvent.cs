@@ -1,5 +1,6 @@
 ﻿using accs.Models.SingleDayEvents.Abstraction;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace accs.Models.SingleDayEvents
 {
@@ -7,7 +8,7 @@ namespace accs.Models.SingleDayEvents
     public class RewardAssignmentEvent : EventWithDoc
     {
         public int AssignedRewardId { get; set; }
-        public virtual AssignedReward AssignedReward { get; set; }
+        [JsonIgnore] public virtual AssignedReward AssignedReward { get; set; }
 
         public override string GetHexColor()
         {

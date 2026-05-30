@@ -25,7 +25,7 @@ namespace discord_bot.Interactions
             _log = log;
         }
 
-		[HasPermission(PermissionType.ChangeRanks)]
+		[HasPermission(PermissionType.AssignRanks)]
 		[SlashCommand("up", "Повысить бойца на одно звание")]
         public async Task RankUpCommand(IUser targetedUser)
         {
@@ -71,7 +71,7 @@ namespace discord_bot.Interactions
 			}
 		}
 
-		[HasPermission(PermissionType.ChangeRanks)]
+		[HasPermission(PermissionType.AssignRanks)]
 		[SlashCommand("set", "Установить бойцу выбранное звание")]
 		public async Task SetRankCommand(IUser targetedUser, int? rankId = null)
 		{
@@ -158,7 +158,7 @@ namespace discord_bot.Interactions
 			}
 		}
 
-		[HasPermission(PermissionType.ChangeRanks)]
+		[HasPermission(PermissionType.AssignRanks)]
 		[ComponentInteraction("rank-menu-*", ignoreGroupNames: true)]
         public async Task RankMenuHandler(string targetIdString, string[] selectedValues)
         {

@@ -12,15 +12,13 @@ namespace accs.Controllers
     [ApiController]
     public class UnitController : ControllerBase
     {
-        AppDbContext _dbContext;
         private readonly ILogger<UnitController> _logger;
         UnitService _unitService;
 
-        public UnitController(UnitService unitService, ILogger<UnitController> logger, AppDbContext dbContext)
+        public UnitController(UnitService unitService, ILogger<UnitController> logger)
         {
             _unitService = unitService;
             _logger = logger;
-            _dbContext = dbContext;
         }
 
         [HttpGet]
@@ -99,9 +97,9 @@ namespace accs.Controllers
                     result.Value.Nickname,
                     SteamId = result.Value.SteamId.ToString() ?? "",
                     RankUpCounter = $"{result.Value.RankUpCounter}/15",
-                    Joined = result.Value.Joined.ToString("dd.MM.yyyy HH:mm"),
-                    RankId = result.Value.Rank?.Id,
-                    PostsIds = result.Value.Posts.Select(p => p.Id).ToList(),
+                    Joined = result.Value.RegistrationEvent.DateTime.ToString("dd.MM.yyyy HH:mm"),
+                    RankId = result.Value.AssignedRanks.Select(r => r.Id),
+                    PostsIds = result.Value.AssignedPosts.Select(p => p.Id).ToList(),
                     AssignedRewardsIds = result.Value.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
                 };
 
@@ -140,7 +138,7 @@ namespace accs.Controllers
         {
             try
             {
-                var result = await _unitService.GetStatusesAsync(discordId);
+                var result = await _unitService.GetUnitStatusesAsync(discordId);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -151,6 +149,7 @@ namespace accs.Controllers
                     _logger.LogWarning($"Unit not found: Discord ID {discordId}");
                     return NotFound(new { error = "Unit not found" });
                 }
+
                 return Ok(result.Value);
             }
             catch (Exception ex)
@@ -166,7 +165,7 @@ namespace accs.Controllers
         {
             try
             {
-                var result = await _unitService.GetStatusesAsync(discordId);
+                var result = await _unitService.GetUnitActivityAsync(discordId);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -192,17 +191,14 @@ namespace accs.Controllers
         {
             try
             {
-                var unit = await _dbContext.Units.FirstOrDefaultAsync(u => u.DiscordId == discordId);
+                var result = await _unitService.GetPermissionsAsync(discordId);
 
-                if (unit == null)
+                if (!result.IsSuccess)
                 {
-                    _logger.LogWarning($"Unit not found: Discord ID {discordId}");
-                    return NotFound(new { error = "Unit not found" });
+                    return BadRequest(new { error = result.Message });
                 }
 
-                var permissions = unit.GetPermissions().Select(p => (int)p.Type).ToList();
-
-                return Ok(permissions);
+                return Ok(result.Value);
             }
             catch (Exception ex)
             {
@@ -217,35 +213,7 @@ namespace accs.Controllers
         {
             try
             {
-                var unit = await _dbContext.Units.FirstOrDefaultAsync(u => u.DiscordId == discordId);
-
-                if (unit == null)
-                {
-                    _logger.LogWarning($"Unit not found: Discord ID {discordId}");
-                    return NotFound(new { error = "Unit not found" });
-                }
-
-                var unitStatus = unit.UnitStates.FirstOrDefault(us => us.Id == statusId);
-
-                if (unitStatus == null)
-                {
-                    _logger.LogWarning($"Status not found: Status ID {statusId}");
-                    return NotFound(new { error = "Status not found" });
-                }
-
-                var result = new
-                {
-                    UnitId = unitStatus.Unit.DiscordId.ToString(),
-                    Status = new
-                    {
-                        unitStatus.Status.Name,
-                        Color = unitStatus.Status.DiscordRoleId?.ToString() ?? ""
-                    },
-                    Start = unitStatus.Start.ToString("dd.MM.yyyy HH:mm"),
-                    End = unitStatus.End?.ToString("dd.MM.yyyy HH:mm") ?? ""
-                };
-
-                return Ok(result);
+                // проблема со статусом
             }
             catch (Exception ex)
             {
@@ -255,26 +223,125 @@ namespace accs.Controllers
         }
 
 
-        [HttpPut("{id}")]
+        [HttpPut("{discordId}")]
         [Authorize]
-        public async Task<IActionResult> UpdateUnitStatus([FromRoute] ulong id)
+        public async Task<IActionResult> UpdateUnitStatus([FromRoute] ulong discordId, [FromBody] UnitStatusDto dto)
         {
-            return await Task.FromResult(Ok());
+            try
+            {
+                var result = await _unitService.UpdateUnitStatusAsync(discordId, dto.StatusId);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+                return Ok(new { message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in UpdateUnitStatus: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
         }
 
 
-        [HttpPut]
+        [HttpPut("{discordId}/activity")]
         [Authorize]
-        public async Task<IActionResult> FixUnitActivity()
+        public async Task<IActionResult> UpdateUnitActivity([FromRoute] ulong discordId)
         {
-            return await Task.FromResult(Ok()); // это можно в сервисе реализовать
+            try
+            {
+                var result = await _unitService.UpdateUnitActivityAsync(discordId);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+                return Ok(new { message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in UpdateUnitActivity: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
         }
 
-        [HttpDelete]
+        [HttpDelete("{discordId}/status/{statusId}")]
         [Authorize]
-        public async Task<IActionResult> DeleteStatus()
+        public async Task<IActionResult> DeleteStatus([FromRoute] int statusId)
         {
-            return await Task.FromResult(Ok());
+            try
+            {
+                var result = await _unitService.DeleteStatusAsync(statusId);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+                return Ok(new { message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in DeleteStatus: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+        [HttpGet("dismissed")]
+        public async Task<IActionResult> GetDismissedUnits()
+        {
+            try
+            {
+                var result = await _unitService.GetDismissedUnitsAsync();
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+
+                var units = result.Value?.Select(u => new
+                {
+                    u.Nickname,
+                    SteamId = u.SteamId.ToString() ?? "",
+                    RankUpCounter = $"{u.RankUpCounter}/15",
+                    Joined = u.RegistrationEvent.DateTime.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    RankId = u.Rank?.Id,
+                    AssignedRewardsIds = u.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
+                }).ToList();
+
+                return Ok(units);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetDismissedUnits: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+        [HttpGet("retirement")]
+        public async Task<IActionResult> GetRetiredUnits()
+        {
+            try
+            {
+                var result = await _unitService.GetRetiredUnitsAsync();
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+
+                var units = result.Value?.Select(u => new
+                {
+                    u.Nickname,
+                    SteamId = u.SteamId.ToString() ?? "",
+                    RankUpCounter = $"{u.RankUpCounter}/15",
+                    Joined = u.RegistrationEvent.DateTime.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    RankId = u.Rank?.Id,
+                    AssignedRewardsIds = u.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
+                }).ToList();
+
+                return Ok(units);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetRetiredUnits: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
         }
     }
 

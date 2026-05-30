@@ -4,6 +4,7 @@ using accs.Models;
 using accs.Models.Enums;
 using accs.Models.SingleDayEvents;
 using accs.Models.Statuses;
+using accs.Models.Statuses.Abstraction;
 using accs.Models.Util;
 using Microsoft.EntityFrameworkCore;
 
@@ -418,6 +419,71 @@ namespace accs.Services
                 {
                     action.FormFailure("Status deletion restricted. Unauthorized");
                 }
+            }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
+        public async Task<ActionResult<List<int>>> GetPermissionsAsync(ulong discordId)
+        {
+            ActionResult<List<int>> action = new ActionResult<List<int>>(_logger);
+
+            try
+            {
+                var unit = await _db.Units
+                    .Include(u => u.AssignedRanks).ThenInclude(ar => ar.Rank)
+                    .Include(u => u.AssignedPosts).ThenInclude(ap => ap.Post)
+                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+
+                if (unit != null)
+                {
+                    action.Value = unit.GetPermissions().Select(p => (int)p.Type).ToList();
+                    action.FormSuccess("Permissions retrieved");
+                }
+                else
+                {
+                    action.FormFailure("Unit not found");
+                }
+            }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
+        // проблема со статусом
+        public async Task<ActionResult<UnitState>> GetUnitStatusAsync(ulong discordId, int statusId)
+        {
+            ActionResult<UnitState> action = new ActionResult<UnitState>(_logger);
+
+            try
+            {
+                var unit = await _db.Units
+                    .Include(u => u.UnitStates)
+                        .ThenInclude(us => us.Status)
+                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+
+                if (unit == null)
+                {
+                    action.FormFailure("Unit not found");
+                    return action;
+                }
+
+                var status = unit.UnitStates.FirstOrDefault(us => us.Id == statusId);
+                if (status == null)
+                {
+                    action.FormFailure("Status not found");
+                    return action;
+                }
+
+                action.Value = status;
+                action.FormSuccess("Status retrieved");
             }
             catch (Exception ex)
             {

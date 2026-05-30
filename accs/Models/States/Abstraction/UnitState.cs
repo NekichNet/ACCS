@@ -1,10 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace accs.Models.Statuses.Abstraction
 {
-	[Table("UnitStates")]
     public abstract class UnitState
     {
 		public int Id { get; set; }

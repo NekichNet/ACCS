@@ -25,7 +25,8 @@ namespace accs.Services
             int headId,
             int maxRankId,
             string color,
-            bool appendSubdivisionName
+            bool appendSubdivisionName,
+			List<int> permissionsId
             )
         {
             ActionResult<Post> action = new ActionResult<Post>(_logger);
@@ -36,32 +37,63 @@ namespace accs.Services
 				{
 					if (Actor.HasPermission(PermissionType.ManageStructure))
 					{
-						action.Value = new Post
+						Post? headPost = await _db.Posts.FindAsync(headId);
+						if (headPost != null)
 						{
-							Name = name,
-							Description = description,
-							SubdivisionId = subdivisionId,
-							HeadId = headId,
-							MaxRankId = maxRankId,
-							Color = color,
-							AppendSubdivisionName = appendSubdivisionName
-						};
+							IEnumerable<Post> actorOwnPosts = Actor.GetPosts().SelectMany(p => p.GetAllSubordinatesRecursive()).Concat(Actor.GetPosts());
+							if (actorOwnPosts.Contains(headPost))
+							{
+								Subdivision? subdivision = await _db.Subdivisions.FindAsync(subdivisionId);
+								if (subdivision != null)
+								{
+									if (Actor.GetPosts() !subdivision.Posts.Any(p => !actorOwnPosts.Contains(p)))
+									{
+										action.Value = new Post
+										{
+											Name = name,
+											Description = description,
+											SubdivisionId = subdivisionId,
+											HeadId = headId,
+											MaxRankId = maxRankId,
+											Color = color,
+											AppendSubdivisionName = appendSubdivisionName
+										};
 
-						action.Value.UpdateRole();
+										action.Value.UpdateRole();
 
-						await _db.Posts.AddAsync(action.Value);
-						await _db.SaveChangesAsync();
+										await _db.Posts.AddAsync(action.Value);
+										await _db.SaveChangesAsync();
 
-						action.FormSuccess("Post created");
+										action.FormSuccess("Post created");
+									}
+									else
+									{
+										action.FormFailure($"Post creation failed. Subdivision contains posts not in subordinates", eventId: EventIds.Forbidden);
+									}
+								}
+								else
+								{
+									action.FormFailure($"Post creation failed. Subdivision not found", eventId: EventIds.NotFound);
+								}
+							}
+							else
+							{
+								action.FormFailure($"Post creation failed. Head post is should be one of subordinates", eventId: EventIds.Forbidden);
+							}
+						}
+						else
+						{
+							action.FormFailure($"Post creation failed. Head post with ID {headId} not found", eventId: EventIds.NotFound);
+						}
 					}
 					else
 					{
-						action.FormFailure("Post creation restricted");
+						action.FormFailure("Post creation restricted", eventId: EventIds.Forbidden);
 					}
 				}
 				else
 				{
-					action.FormFailure("Post creation restricted. Unauthorized");
+					action.FormFailure("Post creation restricted. Unauthorized", eventId: EventIds.Unauthorized);
 				}
 			}
             catch (Exception ex)

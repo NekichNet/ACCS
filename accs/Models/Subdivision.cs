@@ -1,6 +1,9 @@
 ﻿using accs.Models.Configurations;
+using accs.Models.Enums;
 using accs.Models.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
@@ -10,11 +13,11 @@ namespace accs.Models
 		public int Id { get; set; }
 		public string Description { get; set; } = string.Empty;
 		public bool AppendHeadName { get; set; } = false;
-		public virtual List<Post> Posts { get; set; } = new List<Post>();
+		[JsonIgnore] public virtual List<Post> Posts { get; set; } = new List<Post>();
 		public int? HeadId { get; set; }
-		public virtual Subdivision? Head { get; set; }
-		public virtual List<Subdivision> Subordinates { get; set; } = new List<Subdivision>();
-        public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
+		[JsonIgnore] public virtual Subdivision? Head { get; set; }
+		[JsonIgnore] public virtual List<Subdivision> Subordinates { get; set; } = new List<Subdivision>();
+		[JsonIgnore] public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
 		public string Color { get; set; } = "#AAAAAA";
 		public string Name { get; set; } = string.Empty;
 		public ulong? DiscordRoleId { get; set; }
@@ -37,10 +40,10 @@ namespace accs.Models
 
 		public override string ToString()
 		{
-			return Id.ToString() + " " + Name;
+			return JsonSerializer.Serialize(this);
 		}
 
-		public override HashSet<Permission> GetPermissionsRecursive()
+		public HashSet<Permission> GetPermissionsRecursive()
 		{
 			HashSet<Permission> permissions = [.. GetPermissions()];
 			permissions.Concat(Head.GetGivedPermissionsRecursive()
@@ -49,15 +52,26 @@ namespace accs.Models
 			return permissions;
 		}
 
-		public override HashSet<GivedPermission> GetGivedPermissionsRecursive()
+		public HashSet<GivedPermission> GetGivedPermissionsRecursive()
 		{
 			HashSet<GivedPermission> givedPermissions = [.. GivedPermissions];
-			givedPermissions.Concat(Head.GetGivedPermissionsRecursive()
-				.Where(gp => gp.Inherit));
+			if (Head != null)
+				givedPermissions.Concat(Head.GetGivedPermissionsRecursive()
+					.Where(gp => gp.Inherit));
 			return givedPermissions;
 		}
 
-        public void UpdateRole()
+		public HashSet<Permission> GetPermissions()
+		{
+			return GivedPermissions.Select(gp => gp.Permission).ToHashSet();
+		}
+
+		public bool HasPermission(PermissionType permissionType)
+		{
+			return GetPermissionsRecursive().Any(p => p.Type == permissionType);
+		}
+
+		public void UpdateRole()
         {
             if (DiscordRoleId != null)
             {

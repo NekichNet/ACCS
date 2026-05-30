@@ -1,4 +1,6 @@
 ﻿using accs.Database;
+using accs.Models;
+using accs.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace accs.Controllers
@@ -7,20 +9,33 @@ namespace accs.Controllers
     [ApiController]
     public class StructureController : ControllerBase
     {
-        private readonly AppDbContext _dbContext;
-        private readonly ILogger<UnitController> _logger;
+        private readonly StructureService _structureService;
+        private readonly ILogger<StructureController> _logger;
 
-        public StructureController(AppDbContext dbContext, ILogger<UnitController> logger)
+        public StructureController(StructureService structureService, ILogger<StructureController> logger)
         {
-            _dbContext = dbContext;
             _logger = logger;
+            _structureService = structureService;
         }
 
 
         [HttpGet]
         public async Task<IActionResult> GetStructure()
         {
-            return await Task.FromResult(Ok());
+            try
+            {
+                var actionResult = await _structureService.GetStructureAsync();
+                if (!actionResult.IsSuccess)
+                {
+                    return BadRequest(new { error = actionResult.Message });
+                }
+                return Ok(actionResult.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetStructure: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
         }
     }
 }

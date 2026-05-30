@@ -1,7 +1,13 @@
 ﻿using accs.Database;
+using accs.Models;
+using accs.Services;
+using Discord.Net;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Sprache;
+using System;
+using static System.Collections.Specialized.BitVector32;
 
 namespace accs.Controllers
 {
@@ -9,12 +15,12 @@ namespace accs.Controllers
     [ApiController]
     public class SubdivisionController : ControllerBase
     {
-        private readonly AppDbContext _dbContext;
-        private readonly ILogger<UnitController> _logger;
+        private readonly SubdivisionService _subdivisionService;
+        private readonly ILogger<SubdivisionController> _logger;
 
-        public SubdivisionController(AppDbContext dbContext, ILogger<UnitController> logger)
+        public SubdivisionController(SubdivisionService subdivisionService, ILogger<SubdivisionController> logger)
         {
-            _dbContext = dbContext;
+            _subdivisionService = subdivisionService;
             _logger = logger;
         }
 
@@ -23,17 +29,27 @@ namespace accs.Controllers
         {
             try
             {
-                var subdivisions = await _dbContext.Subdivisions.ToDictionaryAsync(
+                var subdivisions = await _subdivisionService.GetAllAsync();
+                if (!subdivisions.IsSuccess)
+                {
+                    return BadRequest(new { error = subdivisions.Message });
+                }
+                if (subdivisions.Value == null)
+                {
+                    return StatusCode(500, new { error = "Empry list of subdivisions" });
+                }
+
+                var res = subdivisions.Value.ToDictionary(
                     s => s.Name,
                     s => new
                     {
-                        s.Id,
-                        s.Color,
-                        HeadSubdivisionId = s.Head?.Id
+                        Id = s.Id,
+                        Color = s.Color,
+                        HeadSubdivisionId = s.HeadId
                     }
                 );
 
-                return Ok(subdivisions);
+                return Ok(res);
             }
             catch (Exception ex)
             {
@@ -47,25 +63,12 @@ namespace accs.Controllers
         {
             try
             {
-                var subdivision = await _dbContext.Subdivisions.FirstOrDefaultAsync(s => s.Id == subdivisionId);
-
-                if (subdivision == null)
+                var subdivision = await _subdivisionService.GetAsync(subdivisionId);
+                if (!subdivision.IsSuccess)
                 {
-                    _logger.LogWarning($"Subdivision not found: Subdivision ID {subdivisionId}");
-                    return NotFound(new { error = "Subdivision not found" });
+                    return BadRequest(new { error = subdivision.Message });
                 }
-
-                var result = new
-                {
-                    subdivision.Id,
-                    subdivision.Name,
-                    subdivision.Color,
-                    HeadSubdivisionId = subdivision.Head?.Id,
-                    PostsIds = subdivision.Posts.Select(p => p.Id).ToList(),
-                    PermissionsIds = subdivision.GetPermissionsRecursive().Select(p => (int)p.Type).ToList()
-                };
-
-                return Ok(result);
+                return Ok(subdivision);
             }
             catch (Exception ex)
             {
@@ -79,17 +82,18 @@ namespace accs.Controllers
         {
             try
             {
-                var subdivision = await _dbContext.Subdivisions.FirstOrDefaultAsync(s => s.Id == subdivisionId);
-
-                if (subdivision == null)
+                var subdivisions = await _subdivisionService.GetAsync(subdivisionId);
+                if (!subdivisions.IsSuccess)
                 {
-                    _logger.LogWarning($"Subdivision not found: Subdivision ID {subdivisionId}");
-                    return NotFound(new { error = "Subdivision not found" });
+                    return BadRequest(new { error = subdivisions.Message });
+                }
+                if (subdivisions.Value == null)
+                {
+                    return NotFound(new { error = "Subdivision undefined" });
                 }
 
-                var permissionsIds = subdivision.GetPermissionsRecursive().Select(p => (int)p.Type).ToList();
-
-                return Ok(permissionsIds);
+                var permissions = subdivisions.Value.GetPermissionsRecursive();
+                return Ok(permissions);
             }
             catch (Exception ex)
             {
@@ -103,20 +107,18 @@ namespace accs.Controllers
         {
             try
             {
-                var subdivision = await _dbContext.Subdivisions.FirstOrDefaultAsync(s => s.Id == subdivisionId);
-
-                if (subdivision == null)
+                var result = await _subdivisionService.GetAsync(subdivisionId);
+                if (!result.IsSuccess)
                 {
-                    _logger.LogWarning($"Subdivision not found: Subdivision ID {subdivisionId}");
-                    return NotFound(new { error = "Subdivision not found" });
+                    return BadRequest(new { error = result.Message });
+                }
+                if (result.Value == null)
+                {
+                    return NotFound(new { error = "Subdivision undefined" });
                 }
 
-                if (subdivision.DiscordRoleId == null)
-                {
-                    return Ok(new { discord_role_id = "" });
-                }
-
-                return Ok(new { discord_role_id = subdivision.DiscordRoleId.ToString() });
+                var discordRoleId = result.Value.DiscordRoleId;
+                return Ok(new { discord_role_id = discordRoleId?.ToString() ?? "" });
             }
             catch (Exception ex)
             {
@@ -126,21 +128,73 @@ namespace accs.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateNewSubdivision()
+        public async Task<IActionResult> CreateNewSubdivision([FromBody] SubdivisionDto dto)
         {
-            return await Task.FromResult(Ok());
+            try
+            {
+                var subdivision = await _subdivisionService.CreateAsync(dto.Name, dto.EnvRoleString, dto.HeadId);
+                if (!subdivision.IsSuccess)
+                {
+                    return BadRequest(new { error = subdivision.Message });
+                }
+                if (subdivision.Value == null)
+                {
+                    return BadRequest(new { error = "Subdivision undefined. May be u haven't permission" });
+                }
+
+                return Ok(subdivision.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in CreateNewSubdivision: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
         }
 
-        [HttpPatch]
-        public async Task<IActionResult> UpdateSubdivision()
+        [HttpPatch("{subdivisionId}")]
+        public async Task<IActionResult> UpdateSubdivision([FromRoute] int subdivisionId, [FromBody]SubdivisionDto dto)
         {
-            return await Task.FromResult(Ok());
+            try
+            {
+                var subdivision = await _subdivisionService.UpdateAsync(subdivisionId, dto.Name, dto.Color, dto.HeadId);
+                if (!subdivision.IsSuccess)
+                {
+                    return BadRequest(new { error = subdivision.Message });
+                }
+                return Ok(subdivision);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in UpdateSubdivision: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> UpdateRoleSubdivision()
+        [HttpPost("{subdivisionId}/discord-role")]
+        public async Task<IActionResult> UpdateRoleSubdivision([FromRoute] int subdivisionId)
         {
-            return await Task.FromResult(Ok());
+            try
+            {
+                var subdivision = await _subdivisionService.UpdateRoleAsync(subdivisionId);
+                if (!subdivision.IsSuccess)
+                {
+                    return BadRequest(new { error = subdivision.Message });
+                }
+                return Ok(subdivision);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in UpdateRoleSubdivision: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
         }
+    }
+
+    public class SubdivisionDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? EnvRoleString { get; set; } = null;
+        public int? HeadId { get; set; } = null;
+        public string? Color { get; set; } = null;
     }
 }

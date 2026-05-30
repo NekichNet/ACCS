@@ -16,7 +16,6 @@ namespace accs.Models
 		[JsonIgnore] public virtual Rank? Previous { get; set; }
 		public int? NextId { get; set; }
 		[JsonIgnore] public virtual Rank? Next { get; set; }
-		[JsonIgnore] public virtual List<Unit> Units { get; set; } = new List<Unit>();
 		public string Color { get; set; } = "#00FF00";
 		public string Name { get; set; } = string.Empty;
 		public ulong? DiscordRoleId { get; set; }

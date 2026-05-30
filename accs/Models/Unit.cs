@@ -40,6 +40,13 @@ namespace accs.Models
 			return assignedRank == null ? null : assignedRank.Rank;
 		}
 
+		public string GetRankName(DateTime? dateTime = null)
+		{
+			dateTime = dateTime ?? DateTime.UtcNow;
+			AssignedRank? assignedRank = GetAssignedRank(dateTime);
+			return assignedRank == null ? "Без звания" : assignedRank.Rank.Name;
+		}
+
 		public List<AssignedPost> GetAssignedPosts(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;

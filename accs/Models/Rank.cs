@@ -3,6 +3,7 @@ using accs.Models.Enums;
 using accs.Models.Interfaces;
 using accs.Models.Statuses;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace accs.Models
@@ -56,7 +57,7 @@ namespace accs.Models
 
         public override string ToString()
         {
-            return Id.ToString() + " " + Name;
+            return JsonSerializer.Serialize(this);
         }
 
 		public HashSet<GivedPermission> GetGivedPermissionsRecursive()

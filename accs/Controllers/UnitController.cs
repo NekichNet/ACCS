@@ -287,4 +287,9 @@ namespace accs.Controllers
         public int? Rank { get; set; } = null;
         public int? Reward { get; set; } = null;
     }
+
+    public class UnitStatusDto
+    {
+        public int StatusId { get; set; }
+    }
 }

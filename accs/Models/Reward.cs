@@ -1,4 +1,5 @@
 ﻿using accs.Models.Interfaces;
+using System.Text.Json;
 
 namespace accs.Models
 {
@@ -13,25 +14,25 @@ namespace accs.Models
 		public string Name { get; set; } = string.Empty;
 		public ulong? DiscordRoleId { get; set; }
 
+		public void UpdateRole()
+		{
+			if (DiscordRoleId != null)
+			{
+				// TODO: Send request to discord-bot api
+			}
+		}
+
+		public void CheckRoleOnUser(ulong unitId)
+		{
+			if (DiscordRoleId != null)
+			{
+				// TODO: Send request to discord-bot api
+			}
+		}
+
 		public override string ToString()
         {
-            return Id.ToString() + " " + Name;
-        }
-
-        public void UpdateRole()
-        {
-            if (DiscordRoleId != null)
-            {
-                // TODO: Send request to discord-bot api
-            }
-        }
-
-        public void CheckRoleOnUser(ulong unitId)
-        {
-            if (DiscordRoleId != null)
-            {
-                // TODO: Send request to discord-bot api
-            }
+            return JsonSerializer.Serialize(this);
         }
     }
 }

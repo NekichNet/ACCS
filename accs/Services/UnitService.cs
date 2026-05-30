@@ -1,6 +1,7 @@
 ﻿using accs.Database;
 using accs.Models;
 using accs.Models.Enums;
+using accs.Models.Util;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Services
@@ -32,9 +33,9 @@ namespace accs.Services
 							DiscordId = discordId,
 							Nickname = nickname,
 							RankUpCounter = 0,
-							Joined = DateTime.UtcNow,
-							RankId = 1
 						};
+
+
 
 						await _db.Units.AddAsync(action.Value);
 						await _db.SaveChangesAsync();
@@ -90,6 +91,48 @@ namespace accs.Services
 				action.Value = await _db.Units.ToListAsync();
 
 				action.FormSuccess("Unit list formed. Length: " + action.Value.Count());
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+		
+		public async Task<EmptyAction> Dismiss(
+			ulong discordId
+			)
+		{
+			EmptyAction action = new EmptyAction(_logger);
+
+			try
+			{
+				if (Actor != null)
+				{
+					if (Actor.HasPermission(PermissionType.DismissUnits))
+					{
+						Unit? unit = await _db.Units.FindAsync(discordId);
+						if (unit != null)
+						{
+							unit.Posts.Clear();
+
+							action.FormSuccess("Unit dismissed");
+						}
+						else
+						{
+							action.FormFailure("Unit not found");
+						}
+					}
+					else
+					{
+						action.FormFailure("Unit dismissing restricted");
+					}
+				}
+				else
+				{
+					action.FormFailure("Unit dismissing restricted. Unauthorized");
+				}
 			}
 			catch (Exception ex)
 			{

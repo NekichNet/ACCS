@@ -7,6 +7,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using accs.Models;
+using accs.Models.Statuses.Abstraction;
 
 namespace discord_bot.Interactions
 {
@@ -61,7 +62,7 @@ namespace discord_bot.Interactions
 
                 if (unit != null)
                 {
-                    UnitStatus? prevUnitStatus = unit.UnitStatuses.FirstOrDefault(us =>
+                    UnitStatus? prevUnitStatus = unit.UnitStates.FirstOrDefault(us =>
                     (us.Status.Type == StatusType.Gratitude
                     || us.Status.Type == StatusType.Reprimand
                     || us.Status.Type == StatusType.SevereReprimand)
@@ -74,7 +75,7 @@ namespace discord_bot.Interactions
 
                     if (givenType != null)
                     {
-                        Status? status = await _db.Statuses.FindAsync(givenType);
+                        UnitState? status = await _db.UnitStates.FindAsync(givenType);
                         if (status != null)
                         {
                             DateTime? endDate = amountOfDays == null ? null : DateTime.UtcNow.AddDays((double)amountOfDays);
@@ -120,7 +121,7 @@ namespace discord_bot.Interactions
                     return;
                 }
 
-                Status? vacationStatus = await _db.Statuses.FindAsync(StatusType.Vacation);
+                UnitState? vacationStatus = await _db.UnitStates.FindAsync(StatusType.Vacation);
                 if (vacationStatus == null)
                 {
                     await RespondAsync("Статус 'Отпуск' не найден в базе.", ephemeral: true);
@@ -128,7 +129,7 @@ namespace discord_bot.Interactions
                     return;
                 }
 
-                if (unit.UnitStatuses.Any(us => us.Status == vacationStatus && !us.IsCompleted()))
+                if (unit.UnitStates.Any(us => us.Status == vacationStatus && !us.IsCompleted()))
                 {
                     await RespondAsync("Вы уже находитесь в отпуске.", ephemeral: true);
                     return;
@@ -170,7 +171,7 @@ namespace discord_bot.Interactions
                     return;
                 }
 
-                UnitStatus? activeVacation = unit.UnitStatuses.Where(
+                UnitStatus? activeVacation = unit.UnitStates.Where(
                         us => us.Status.Type == StatusType.Vacation
                         && (us.End == null || us.End > DateTime.UtcNow)
                     ).FirstOrDefault();
@@ -206,16 +207,16 @@ namespace discord_bot.Interactions
 
             if (unit != null)
             {
-                if (!unit.UnitStatuses.Any(us => us.Status.Type == StatusType.Retirement && !us.IsCompleted()))
+                if (!unit.UnitStates.Any(us => us.Status.Type == StatusType.Retirement && !us.IsCompleted()))
                 {
-                    Status? retirement = await _db.Statuses.FindAsync(StatusType.Retirement);
+                    UnitState? retirement = await _db.UnitStates.FindAsync(StatusType.Retirement);
                     if (retirement == null)
                     {
                         await ModifyOriginalResponseAsync(r => r.Content = "Ошибка: не удалось получить статус отставки!");
                         return;
                     }
 
-                    unit.UnitStatuses.Add(new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = retirement });
+                    unit.UnitStates.Add(new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = retirement });
                     unit.Posts.Clear();
 
                     _db.SaveChanges();
@@ -251,16 +252,16 @@ namespace discord_bot.Interactions
 
                 if (unit != null)
                 {
-                    if (!unit.UnitStatuses.Any(us => us.Status.Type == StatusType.Retirement && !us.IsCompleted()))
+                    if (!unit.UnitStates.Any(us => us.Status.Type == StatusType.Retirement && !us.IsCompleted()))
                     {
-                        Status? retirement = await _db.Statuses.FindAsync(StatusType.Retirement);
+                        UnitState? retirement = await _db.UnitStates.FindAsync(StatusType.Retirement);
                         if (retirement == null)
                         {
                             await ModifyOriginalResponseAsync(r => r.Content = "Ошибка: не удалось получить статус отставки!");
                             return;
                         }
 
-                        unit.UnitStatuses.Add(new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = retirement });
+                        unit.UnitStates.Add(new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = retirement });
                         unit.Posts.Clear();
 
                         _db.SaveChanges();
@@ -292,7 +293,7 @@ namespace discord_bot.Interactions
 
             Unit? unit = await _db.Units.FindAsync(user.Id);
 
-			Status? temporaryPost = await _db.Statuses.FindAsync(StatusType.TemporaryPost);
+			UnitState? temporaryPost = await _db.UnitStates.FindAsync(StatusType.TemporaryPost);
 			if (temporaryPost == null)
 			{
 				await ModifyOriginalResponseAsync(r => r.Content = "Ошибка: не удалось получить статус ВрИО!");
@@ -301,9 +302,9 @@ namespace discord_bot.Interactions
 
 			if (unit != null)
             {
-                if (!unit.UnitStatuses.Any(us => us.Status.Type == StatusType.TemporaryPost && !us.IsCompleted()))
+                if (!unit.UnitStates.Any(us => us.Status.Type == StatusType.TemporaryPost && !us.IsCompleted()))
                 {
-                    unit.UnitStatuses.Add(new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = temporaryPost });
+                    unit.UnitStates.Add(new UnitStatus { Start = DateTime.UtcNow, Unit = unit, Status = temporaryPost });
 
                     _db.SaveChanges();
 
@@ -319,7 +320,7 @@ namespace discord_bot.Interactions
                 }
                 else
                 {
-                    UnitStatus? tempPost = unit.UnitStatuses.Find(us => us.Status.Type == StatusType.TemporaryPost && !us.IsCompleted());
+                    UnitStatus? tempPost = unit.UnitStates.Find(us => us.Status.Type == StatusType.TemporaryPost && !us.IsCompleted());
                     if (tempPost != null)
                     {
                         tempPost.End = DateTime.UtcNow;

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace accs.Models
+namespace accs.Models.Util
 {
     public class EmptyAction
     {

@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
+﻿using System.Text.Json;
 
-namespace accs.Models
+namespace accs.Models.Util
 {
     public class ActionResult<T> : EmptyAction
     {

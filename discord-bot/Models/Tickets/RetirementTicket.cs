@@ -1,5 +1,6 @@
 ﻿using accs.Database;
 using accs.Models.Enums;
+using accs.Models.Statuses.Abstraction;
 using accs.Services.Interfaces;
 using Discord;
 using Discord.Rest;
@@ -54,7 +55,7 @@ namespace accs.Models.Tickets
 					return;
 				}
 
-				bool inRetirement = unit.UnitStatuses.Any(us =>
+				bool inRetirement = unit.UnitStates.Any(us =>
 					us.Status.Type == StatusType.Retirement && !us.IsCompleted());
 
 				EmbedBuilder embed = new EmbedBuilder()
@@ -84,7 +85,7 @@ namespace accs.Models.Tickets
             }
 
             // поиск активного статуса Retirement
-            var activeRetirement = unit.UnitStatuses
+            var activeRetirement = unit.UnitStates
                 .FirstOrDefault(us =>
                     us.Status.Type == StatusType.Retirement &&
                     !us.IsCompleted()
@@ -93,7 +94,7 @@ namespace accs.Models.Tickets
             if (activeRetirement == null)
             {
 				// еще не в отставке -> в отставку
-                Status? retirementStatus = await db.Statuses.FindAsync(StatusType.Retirement);
+                UnitState? retirementStatus = await db.UnitStates.FindAsync(StatusType.Retirement);
                 if (retirementStatus == null)
                 {
                     await channel.SendMessageAsync("Ошибка: статус Retirement не найден.");

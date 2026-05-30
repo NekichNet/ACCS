@@ -1,11 +1,10 @@
-﻿using accs.Database;
-using accs.Models.Configurations;
+﻿using accs.Models.Configurations;
 using accs.Models.Enums;
 using accs.Models.Interfaces;
-using Discord;
-using Discord.Rest;
-using Discord.WebSocket;
+using accs.Models.Statuses;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
@@ -15,18 +14,18 @@ namespace accs.Models
 		public int Id { get; set; }
 		public string Description { get; set; } = string.Empty;
 		public int? SubdivisionId { get; set; }
-		public virtual Subdivision? Subdivision { get; set; }
+		[JsonIgnore] public virtual Subdivision? Subdivision { get; set; }
 		public bool AppendSubdivisionName { get; set; } = false;
 		public int? HeadId { get; set; }
-		public virtual Post? Head { get; set; }
-		public virtual List<Post> Subordinates { get; set; } = new List<Post>();
+		[JsonIgnore] public virtual Post? Head { get; set; }
+		[JsonIgnore] public virtual List<Post> Subordinates { get; set; } = new List<Post>();
 		public int MaxRankId { get; set; }
-		public virtual Rank MaxRank { get; set; }
-		public virtual List<Unit> Units { get; set; } = new List<Unit>();
-        public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
+		[JsonIgnore] public virtual Rank MaxRank { get; set; }
+		[JsonIgnore] public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
         public string Color { get; set; }
 		public string Name { get; set; }
 		public ulong? DiscordRoleId { get; set; }
+		[JsonIgnore] public virtual List<AssignedPost> AssignedPosts { get; set; } = new List<AssignedPost>();
 
 		public Post(string envRoleString)
 		{
@@ -79,7 +78,7 @@ namespace accs.Models
 
 		public override string ToString()
 		{
-			return Id.ToString() + " " + Name;
+			return JsonSerializer.Serialize(this);
 		}
 
         public void UpdateRole()

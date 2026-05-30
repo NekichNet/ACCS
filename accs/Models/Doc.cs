@@ -1,5 +1,8 @@
 ﻿using accs.Models.Configurations;
+using accs.Models.SingleDayEvents.Abstraction;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
@@ -8,14 +11,14 @@ namespace accs.Models
 	{
 		public int Id { get; set; }
 		public string Name { get; set; }
-		public string FilePath { get; set; }
-		public virtual DocType? DocType { get; set; }
-		public virtual Unit Author { get; set; }
-		public virtual List<Unit> Units { get; set; } = new List<Unit>(); // Люди, связанные с этим документом
+		public ulong AuthorId { get; set; }
+		[JsonIgnore] public virtual Unit Author { get; set; }
+		public int EventId { get; set; }
+		[JsonIgnore] public virtual EventWithDoc Event { get; set; }
 
         public override string ToString()
         {
-            return Id.ToString() + " " + Name;
+            return JsonSerializer.Serialize(this);
         }
 	}
 }

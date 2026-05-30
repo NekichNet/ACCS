@@ -207,7 +207,7 @@ namespace discord_bot.Interactions
 			}
 
 			// поиск активного статуса Retirement
-			UnitStatus activeRetirement = unit.UnitStatuses
+			UnitStatus activeRetirement = unit.UnitStates
 				.First(us =>
 					us.Status.Type == StatusType.Retirement &&
 					us.End == null

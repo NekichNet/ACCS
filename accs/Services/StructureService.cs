@@ -22,7 +22,10 @@ namespace accs.Services
             try
             {
                 var posts = await _db.Posts.ToListAsync();
-                var units = await _db.Units.ToListAsync();
+                var units = await _db.Units
+                    .Include(u => u.AssignedPosts)
+                        .ThenInclude(ap => ap.Post)
+                    .ToListAsync();
 
                 var rootPost = posts.FirstOrDefault(p => p.HeadId == null);
 
@@ -50,12 +53,12 @@ namespace accs.Services
         private Dictionary<string, object> BuildPostStructure(Post post, List<Post> allPosts, List<Unit> allUnits)
         {
             var people = allUnits
-                .Where(u => u.Posts.Any(p => p.Id == post.Id))
+                .Where(u => u.GetPosts().Any(p => p.Id == post.Id))
                 .Select(u => u.Nickname)
                 .ToList();
 
             var subordinates = allPosts
-                .Where(p => p.Head != null && p.Head.Id == post.Id)
+                .Where(p => p.HeadId == post.Id)
                 .ToDictionary(
                     p => p.Name,
                     p => BuildPostStructure(p, allPosts, allUnits)

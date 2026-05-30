@@ -37,15 +37,7 @@ namespace accs.Controllers
                     return StatusCode(500, new { error = "Internal server error" });
                 }
 
-                var ranks = action.Value.Select(r => new
-                {
-                    r.Id,
-                    r.Name,
-                    r.DiscordRoleId,
-                    UnitsCount = r.Units.Count
-                }).ToList();
-
-                return Ok(ranks);
+                return Ok(action.Value);
             }
             catch (Exception ex)
             {
@@ -69,19 +61,7 @@ namespace accs.Controllers
                     return NotFound(new { error = "Rank not found" });
                 }
 
-                var rank = action.Value;
-                var result = new
-                {
-                    rank.Id,
-                    rank.Name,
-                    rank.DiscordRoleId,
-                    UnitsIds = rank.Units.Select(u => u.DiscordId).ToList(),
-                    PermissionsIds = rank.GetPermissionsRecursive().Select(p => (int)p.Type).ToList(),
-                    PreviousRankId = rank.Previous?.Id,
-                    NextRankId = rank.Next?.Id
-                };
-
-                return Ok(result);
+                return Ok(action.Value);
             }
             catch (Exception ex)
             {

@@ -32,16 +32,7 @@ namespace accs.Controllers
                     return BadRequest(new { error = result.Message });
                 }
 
-                var units = result.Value?.Select(u => new
-                {
-                    u.Nickname,
-                    SteamId = u.SteamId.ToString() ?? "",
-                    RankUpCounter = $"{u.RankUpCounter}/15",
-                    Joined = u.RegistrationEvent.DateTime.ToString("dd.MM.yyyy HH:mm") ?? "",
-                    RankId = u.AssignedRanks,
-                    PostsIds = u.AssignedPosts,
-                    AssignedRewardsIds = u.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
-                }).ToList();
+                var units = result.Value;
 
                 return Ok(units);
             }
@@ -295,15 +286,7 @@ namespace accs.Controllers
                     return BadRequest(new { error = result.Message });
                 }
 
-                var units = result.Value?.Select(u => new
-                {
-                    u.Nickname,
-                    SteamId = u.SteamId.ToString() ?? "",
-                    RankUpCounter = $"{u.RankUpCounter}/15",
-                    Joined = u.RegistrationEvent.DateTime.ToString("dd.MM.yyyy HH:mm") ?? "",
-                    RankId = u.Rank?.Id,
-                    AssignedRewardsIds = u.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
-                }).ToList();
+                var units = result.Value;
 
                 return Ok(units);
             }
@@ -325,15 +308,7 @@ namespace accs.Controllers
                     return BadRequest(new { error = result.Message });
                 }
 
-                var units = result.Value?.Select(u => new
-                {
-                    u.Nickname,
-                    SteamId = u.SteamId.ToString() ?? "",
-                    RankUpCounter = $"{u.RankUpCounter}/15",
-                    Joined = u.RegistrationEvent.DateTime.ToString("dd.MM.yyyy HH:mm") ?? "",
-                    RankId = u.Rank?.Id,
-                    AssignedRewardsIds = u.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
-                }).ToList();
+                var units = result.Value;
 
                 return Ok(units);
             }

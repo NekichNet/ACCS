@@ -22,59 +22,14 @@ namespace accs.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllPosts()
         {
-            try
-            {
-                var posts = await _dbContext.Posts.Select(p => new
-                {
-                    p.Id,
-                    p.Name,
-                    p.DiscordRoleId,
-                    p.SubdivisionId,
-                    HeadId = p.Head.Id,
-                    UnitsCount = p.Units.Count
-                }).ToListAsync();
-
-                return Ok(posts);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetAllPosts: {ex.Message}");
-                return StatusCode(500, new { error = "Internal server error" });
-            }
+            return await Task.FromResult(Ok());
         }
 
 
         [HttpGet("{postId}")]
         public async Task<IActionResult> GetPost([FromRoute] int postId)
         {
-            try
-            {
-                var post = await _dbContext.Posts.FirstOrDefaultAsync(p => p.Id == postId);
-
-                if (post == null)
-                {
-                    _logger.LogWarning($"Post not found: Post ID {postId}");
-                    return NotFound(new { error = "Post not found" });
-                }
-
-                var result = new
-                {
-                    post.Id,
-                    post.Name,
-                    post.DiscordRoleId,
-                    post.SubdivisionId,
-                    HeadId = post.Head?.Id,
-                    UnitsIds = post.Units.Select(u => u.DiscordId).ToList(),
-                    PermissionsIds = post.GetPermissionsRecursive().Select(p => (int)p.Type).ToList()
-                };
-
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetPost: {ex.Message}");
-                return StatusCode(500, new { error = "Internal server error" });
-            }
+            return await Task.FromResult(Ok());
         }
 
 

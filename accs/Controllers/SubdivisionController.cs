@@ -40,15 +40,7 @@ namespace accs.Controllers
                     return StatusCode(500, new { error = "Empry list of subdivisions" });
                 }
 
-                var res = subdivisions.Value.ToDictionary(
-                    s => s.Name,
-                    s => new
-                    {
-                        Id = s.Id,
-                        Color = s.Color,
-                        HeadSubdivisionId = s.HeadId
-                    }
-                );
+                var res = subdivisions;
 
                 return Ok(res);
             }

@@ -3,6 +3,8 @@ using accs.Models.Enums;
 using accs.Models.SingleDayEvents;
 using accs.Models.SingleDayEvents.Abstraction;
 using accs.Models.States;
+using accs.Models.States.Abstraction;
+using accs.Models.States.Statuses;
 using accs.Models.Statuses;
 using accs.Models.Statuses.Abstraction;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +28,12 @@ namespace accs.Database
 		public DbSet<Activity> Activities { get; set; }
 
 		public DbSet<UnitState> UnitStates { get; set; }
+		public DbSet<StateWithDoc> StatesWithDoc { get; set; }
+		public DbSet<Status> Statuses { get; set; }
+		public DbSet<Gratitude> Gratitudes { get; set; }
+		public DbSet<NoStatus> NoStatuses { get; set; }
+		public DbSet<Reprimand> Reprimands { get; set; }
+		public DbSet<SevereReprimand> SevereReprimands { get; set; }
 		public DbSet<AssignedPost> AssignedPosts { get; set; }
 		public DbSet<AssignedRank> AssignedRanks { get; set; }
 		public DbSet<Retirement> Retirements { get; set; }

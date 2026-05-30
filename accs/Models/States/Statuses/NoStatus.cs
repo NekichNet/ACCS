@@ -2,7 +2,7 @@
 
 namespace accs.Models.States.Statuses
 {
-    public class WithoutStatus : Status
+    public class NoStatus : Status
     {
         public override int GetIndex()
         {

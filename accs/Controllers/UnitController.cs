@@ -205,6 +205,14 @@ namespace accs.Controllers
             try
             {
                 // проблема со статусом
+                var result = await _unitService.GetUnitStatusAsync(discordId, statusId);
+
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+
+                return Ok(result.Value);
             }
             catch (Exception ex)
             {
@@ -261,7 +269,6 @@ namespace accs.Controllers
         {
             try
             {
-                // исправить проблему с discordId
                 var result = await _unitService.DeleteStatusAsync(statusId);
                 if (!result.IsSuccess)
                 {

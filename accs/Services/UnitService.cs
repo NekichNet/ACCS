@@ -188,8 +188,14 @@ namespace accs.Services
 
             try
             {
-                action.Value = await _db.Units.Where(u => u.Posts.Count == 0).ToListAsync();
-                action.FormSuccess("Dismissed units list formed. Length: " + action.Value.Count());
+                action.Value = await _db.Units
+                .Where(u => u.AssignedPosts.Count == 0)
+                .Include(u => u.AssignedRanks)
+                .ThenInclude(ar => ar.Rank)
+                .ToListAsync();
+
+                action.FormSuccess("Dismissed units list formed. Length: " + action.Value.Count(),
+                    eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
             }
             catch (Exception ex)
             {
@@ -205,8 +211,15 @@ namespace accs.Services
 
             try
             {
-                action.Value = await _db.Units.Where(u => u.IsRetired).ToListAsync();
-                action.FormSuccess("Retired units list formed. Length: " + action.Value.Count());
+                action.Value = await _db.Units
+                .Where(u => u.AssignedPosts.Count == 0 && u.AssignedRanks.Count > 0)
+                .Include(u => u.AssignedRanks)
+                .ThenInclude(ar => ar.Rank)
+                .Include(u => u.AssignedRewards)
+                .ToListAsync();
+
+                action.FormSuccess("Retired units list formed. Length: " + action.Value.Count(),
+                    eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
             }
             catch (Exception ex)
             {
@@ -465,9 +478,9 @@ namespace accs.Services
             try
             {
                 var unit = await _db.Units
-                    .Include(u => u.UnitStates)
+                .Include(u => u.UnitStates)
                         .ThenInclude(us => us.Status)
-                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+                .FirstOrDefaultAsync(u => u.DiscordId == discordId);
 
                 if (unit == null)
                 {
@@ -484,6 +497,57 @@ namespace accs.Services
 
                 action.Value = status;
                 action.FormSuccess("Status retrieved");
+            }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
+        public async Task<EmptyAction> DeleteAsync(ulong id)
+        {
+            EmptyAction action = new EmptyAction(_logger);
+
+            try
+            {
+                if (Actor != null)
+                {
+                    if (Actor.HasPermission(PermissionType.Administrator))
+                    {
+                        _logger.LogTrace(EventIds.Processing, $"Searching for unit: {id}");
+                        Unit? unit = await _db.Units.FindAsync(id);
+
+                        if (unit != null)
+                        {
+                            UnitDismissingEvent dismissingEvent = new UnitDismissingEvent()
+                            {
+                                Initiator = Actor,
+                                Unit = unit
+                            };
+                            _db.UnitDismissingEvents.Add(dismissingEvent);
+
+                            _logger.LogTrace(EventIds.Processing, $"Removing unit from database");
+                            _db.Units.Remove(unit);
+                            await _db.SaveChangesAsync();
+
+                            action.FormSuccess("Unit deleted", eventId: EventIds.Updated);
+                        }
+                        else
+                        {
+                            action.FormFailure("Unit not found", eventId: EventIds.NotFound);
+                        }
+                    }
+                    else
+                    {
+                        action.FormFailure("Unit deletion restricted", eventId: EventIds.Forbidden);
+                    }
+                }
+                else
+                {
+                    action.FormFailure("Unit deletion restricted. Unauthorized", eventId: EventIds.Unauthorized);
+                }
             }
             catch (Exception ex)
             {

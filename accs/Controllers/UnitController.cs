@@ -22,7 +22,7 @@ namespace accs.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetUnits([FromBody] UnitDto dto)
+        public async Task<IActionResult> GetUnits()
         {
             try
             {
@@ -104,7 +104,7 @@ namespace accs.Controllers
         }
 
 
-        [HttpPatch("{id}")]
+        [HttpPatch("{discordId}")]
         public async Task<IActionResult> UpdateUnit([FromRoute] ulong discordId)
         {
             try
@@ -214,7 +214,7 @@ namespace accs.Controllers
         }
 
 
-        [HttpPut("{discordId}")]
+        [HttpPut("{discordId}/status")]
         [Authorize]
         public async Task<IActionResult> UpdateUnitStatus([FromRoute] ulong discordId, [FromBody] UnitStatusDto dto)
         {
@@ -257,10 +257,11 @@ namespace accs.Controllers
 
         [HttpDelete("{discordId}/status/{statusId}")]
         [Authorize]
-        public async Task<IActionResult> DeleteStatus([FromRoute] int statusId)
+        public async Task<IActionResult> DeleteStatus([FromRoute] ulong discordId, [FromRoute] int statusId)
         {
             try
             {
+                // исправить проблему с discordId
                 var result = await _unitService.DeleteStatusAsync(statusId);
                 if (!result.IsSuccess)
                 {
@@ -315,6 +316,26 @@ namespace accs.Controllers
             catch (Exception ex)
             {
                 _logger.LogError($"Error in GetRetiredUnits: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteUnit([FromRoute] ulong id)
+        {
+            try
+            {
+                var result = await _unitService.DeleteAsync(id);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+                return Ok(new { message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in DeleteUnit: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }

@@ -34,28 +34,7 @@ namespace accs.Controllers
         [HttpGet("{rewardId}/discord-role")]
         public async Task<IActionResult> GetRewardDiscordRole([FromRoute] int rewardId)
         {
-            try
-            {
-                var reward = await _dbContext.Rewards.FirstOrDefaultAsync(r => r.Id == rewardId);
-
-                if (reward == null)
-                {
-                    _logger.LogWarning($"Reward not found: Reward ID {rewardId}");
-                    return NotFound(new { error = "Reward not found" });
-                }
-
-                if (reward.DiscordRoleId == 0)
-                {
-                    return Ok(new { discord_role_id = "" });
-                }
-
-                return Ok(new { discord_role_id = reward.DiscordRoleId.ToString() });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetRewardDiscordRole: {ex.Message}");
-                return StatusCode(500, new { error = "Internal server error" });
-            }
+            return await Task.FromResult(Ok());
         }
 
         [HttpPost]
@@ -75,6 +54,27 @@ namespace accs.Controllers
         [HttpPost("{rewardId}/discord-role")]
         [Authorize]
         public async Task<IActionResult> UpdateDiscordRoleReward([FromRoute] int rewardId)
+        {
+            return await Task.FromResult(Ok());
+        }
+
+        [HttpGet("{rewardId}/assign")]
+        [Authorize]
+        public async Task<IActionResult> GetAssignedUnits([FromRoute] int rewardId)
+        {
+            return await Task.FromResult(Ok());
+        }
+
+        [HttpPost("{rewardId}/assign")]
+        [Authorize]
+        public async Task<IActionResult> AssignReward([FromRoute] int rewardId)
+        {
+            return await Task.FromResult(Ok());
+        }
+
+        [HttpGet("{rewardId}/assign/{discordId}")]
+        [Authorize]
+        public async Task<IActionResult> GetAssignedUnits([FromRoute] int rewardId, [FromRoute] ulong discordId)
         {
             return await Task.FromResult(Ok());
         }

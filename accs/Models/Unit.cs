@@ -1,5 +1,6 @@
 ﻿using accs.Models.Enums;
 using accs.Models.SingleDayEvents;
+using accs.Models.States.Abstraction;
 using accs.Models.Statuses;
 using accs.Models.Statuses.Abstraction;
 using System.ComponentModel.DataAnnotations;
@@ -26,8 +27,9 @@ namespace accs.Models
 		[JsonIgnore] public virtual List<AssignedRank> AssignedRanks { get; set; } = new List<AssignedRank>();
 		[JsonIgnore] public virtual List<AssignedPost> AssignedPosts { get; set; } = new List<AssignedPost>();
 		[JsonIgnore] public virtual List<UnitState> UnitStates { get; set; } = new List<UnitState>();
+        [JsonIgnore] public virtual List<Status> Statuses { get; set; } = new List<Status>();
 
-		public AssignedRank? GetAssignedRank(DateTime? dateTime = null)
+        public AssignedRank? GetAssignedRank(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;
 			return AssignedRanks.FirstOrDefault(ar => ar.IsActive(dateTime));

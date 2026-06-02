@@ -204,7 +204,6 @@ namespace accs.Controllers
         {
             try
             {
-                // проблема со статусом
                 var result = await _unitService.GetUnitStatusAsync(discordId, statusId);
 
                 if (!result.IsSuccess)

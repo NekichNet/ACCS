@@ -6,7 +6,6 @@ using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
-	[EntityTypeConfiguration(typeof(DocConfiguration))]
 	public class Doc
 	{
 		public int Id { get; set; }

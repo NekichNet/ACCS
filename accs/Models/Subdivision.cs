@@ -11,27 +11,17 @@ namespace accs.Models
 	public class Subdivision : IEntityWithPermissions, IEntityWithDiscordRole
 	{
 		public int Id { get; set; }
-		public string Description { get; set; } = string.Empty;
+		public string Name { get; set; } = string.Empty;
 		public bool AppendHeadName { get; set; } = false;
-		[JsonIgnore] public virtual List<Post> Posts { get; set; } = new List<Post>();
+		public string Description { get; set; } = string.Empty;
+		public string Color { get; set; } = "#AAAAAA";
+		public ulong? DiscordRoleId { get; set; }
 		public int? HeadId { get; set; }
 		[JsonIgnore] public virtual Subdivision? Head { get; set; }
+		[JsonIgnore] public virtual List<Post> Posts { get; set; } = new List<Post>();
 		[JsonIgnore] public virtual List<Subdivision> Subordinates { get; set; } = new List<Subdivision>();
 		[JsonIgnore] public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
-		public string Color { get; set; } = "#AAAAAA";
-		public string Name { get; set; } = string.Empty;
-		public ulong? DiscordRoleId { get; set; }
-
-		public Subdivision(string name, string? envRoleString = null)
-		{
-			if (envRoleString != null)
-			{
-				DiscordRoleId = ulong.Parse(DotNetEnv.Env.GetString(envRoleString, $"{envRoleString} Not found"));
-			}
-			Name = name;
-		}
-
-		public Subdivision() { }
+		
 
 		public string GetFullName()
 		{

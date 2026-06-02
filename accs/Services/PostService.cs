@@ -32,68 +32,27 @@ namespace accs.Services
 
             try
             {
-				if (Actor != null)
+				ActionResult<Post> result = await CheckCanManageAsync(headId);
+				if (!result.IsSuccess)
+					return action.FormFailure("Permission check failed");
+
+				action.Value = new Post
 				{
-					if (Actor.HasPermission(PermissionType.ManageStructure))
-					{
-						Post? headPost = await _db.Posts.FindAsync(headId);
-						if (headPost != null)
-						{
-							IEnumerable<Post> actorOwnPosts = Actor.GetPosts().SelectMany(p => p.GetAllSubordinatesRecursive()).Concat(Actor.GetPosts());
-							if (actorOwnPosts.Contains(headPost))
-							{
-								Subdivision? subdivision = await _db.Subdivisions.FindAsync(subdivisionId);
-								if (subdivision != null)
-								{
-									if (!subdivision.Posts.Any(p => !actorOwnPosts.Contains(p)))
-									{
-										action.Value = new Post
-										{
-											Name = name,
-											Description = description,
-											SubdivisionId = subdivisionId,
-											HeadId = headId,
-											MaxRankId = maxRankId,
-											Color = color,
-											AppendSubdivisionName = appendSubdivisionName
-										};
+					Name = name,
+					Description = description,
+					SubdivisionId = subdivisionId,
+					HeadId = headId,
+					MaxRankId = maxRankId,
+					Color = color,
+					AppendSubdivisionName = appendSubdivisionName
+				};
 
-										action.Value.UpdateRole();
+				action.Value.UpdateRole();
 
-										await _db.Posts.AddAsync(action.Value);
-										await _db.SaveChangesAsync();
+				await _db.Posts.AddAsync(action.Value);
+				await _db.SaveChangesAsync();
 
-										action.FormSuccess("Post created");
-									}
-									else
-									{
-										action.FormFailure($"Post creation failed. Subdivision contains posts not in subordinates", eventId: EventIds.Forbidden);
-									}
-								}
-								else
-								{
-									action.FormFailure($"Post creation failed. Subdivision not found", eventId: EventIds.NotFound);
-								}
-							}
-							else
-							{
-								action.FormFailure($"Post creation failed. Head post is should be one of subordinates", eventId: EventIds.Forbidden);
-							}
-						}
-						else
-						{
-							action.FormFailure($"Post creation failed. Head post with ID {headId} not found", eventId: EventIds.NotFound);
-						}
-					}
-					else
-					{
-						action.FormFailure("Post creation restricted", eventId: EventIds.Forbidden);
-					}
-				}
-				else
-				{
-					action.FormFailure("Post creation restricted. Unauthorized", eventId: EventIds.Unauthorized);
-				}
+				action.FormSuccess("Post created");
 			}
             catch (Exception ex)
             {
@@ -303,5 +262,71 @@ namespace accs.Services
 
 			return action;
 		}
-    }
+
+		public async Task<ActionResult<Post>> CheckCanManageAsync(int postId, Post? post = null)
+		{
+			ActionResult<Post> action = new ActionResult<Post>(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Can't check permissions. Unauthorized", eventId: EventIds.Unauthorized);
+
+				if (post == null)
+					post = await _db.Posts.FindAsync(postId);
+				action.Value = post;
+
+				if (action.Value == null)
+					return action.FormFailure($"Can't check permissions. Post with ID {postId} not found", eventId: EventIds.NotFound);
+
+				List<Post> actorControllablePosts = Actor.GetPosts().SelectMany(p => p.GetAllSubordinatesRecursive()).ToList();
+
+				if (!Actor.HasPermission(PermissionType.ManageStructure))
+					return action.FormFailure($"{Actor.Nickname} don't have ManageStructure permission", eventId: EventIds.Forbidden);
+				else if (!Actor.IsAdmin() && !actorControllablePosts.Contains(action.Value))
+					return action.FormFailure($"Post {action.Value.GetFullName()} isn't under {Actor.Nickname}'s control", eventId: EventIds.Forbidden);
+
+				action.FormSuccess($"{Actor.Nickname} can manage post {action.Value.GetFullName()}");
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<ActionResult<Post>> CheckCanAssignAsync(int postId, Post? post = null)
+		{
+			ActionResult<Post> action = new ActionResult<Post>(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Can't check permissions. Unauthorized", eventId: EventIds.Unauthorized);
+
+				if (post == null)
+					post = await _db.Posts.FindAsync(postId);
+				action.Value = post;
+
+				if (action.Value == null)
+					return action.FormFailure($"Can't check permissions. Post with ID {postId} not found", eventId: EventIds.NotFound);
+
+				List<Post> actorHeads = Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).ToList();
+
+				if (!Actor.HasPermission(PermissionType.AssignPosts))
+					return action.FormFailure($"{Actor.Nickname} don't have AssignPosts permission", eventId: EventIds.Forbidden);
+				else if (actorHeads.Contains(action.Value))
+					return action.FormFailure($"Post {action.Value.GetFullName()} is one of {Actor.Nickname}'s heads", eventId: EventIds.Forbidden);
+
+				action.FormSuccess($"{Actor.Nickname} can manage post {action.Value.GetFullName()}");
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+	}
 }

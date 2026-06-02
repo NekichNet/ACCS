@@ -1,4 +1,5 @@
 ﻿using accs.Database;
+using accs.Logging;
 using accs.Models;
 using accs.Models.Enums;
 using accs.Models.Util;
@@ -15,37 +16,49 @@ namespace accs.Services
             _db = db;
         }
 
-        public async Task<ActionResult<Subdivision>> CreateAsync(string name, string? envRoleString = null, int? headId = null)
+        public async Task<ActionResult<Subdivision>> CreateAsync(
+            string name,
+			bool appendSubdivisionName,
+			string description,
+            string color,
+            ulong? discordRoleId,
+            int? headId
+            )
         {
             ActionResult<Subdivision> action = new ActionResult<Subdivision>(_logger);
 
             try
             {
-                if (Actor != null)
+                if (headId != null)
                 {
-                    if (Actor.HasPermission(PermissionType.ManageStructure))
-                    {
-                        action.Value = new Subdivision(name, envRoleString)
-                        {
-                            HeadId = headId
-                        };
-
-                        action.Value.UpdateRole();
-
-                        await _db.Subdivisions.AddAsync(action.Value);
-                        await _db.SaveChangesAsync();
-
-                        action.FormSuccess("Subdivision created");
-                    }
-                    else
-                    {
-                        action.FormFailure("Subdivision creation restricted");
-                    }
+                    if (Actor == null)
+                        return action.FormFailure("Creating subdivision restricted. Unauthorized", eventId: EventIds.Unauthorized);
+                    if (!Actor.HasPermission(PermissionType.ManageStructure))
+                        return action.FormFailure("Creating subdivision restricted", eventId: EventIds.Forbidden);
                 }
                 else
                 {
-                    action.FormFailure("Subdivision creation restricted. Unauthorized");
+                    ActionResult<Subdivision> result = await CheckCanManageAsync((int)headId);
+                    if (!result.IsSuccess)
+                        return action.FormFailure("Permission check failed");
                 }
+
+                action.Value = new Subdivision
+                {
+                    Name = name,
+                    AppendHeadName = appendSubdivisionName,
+                    Description = description,
+                    Color = color,
+                    DiscordRoleId = discordRoleId,
+                    HeadId = headId
+                };
+
+                action.Value.UpdateRole();
+
+                await _db.Subdivisions.AddAsync(action.Value);
+                await _db.SaveChangesAsync();
+
+                action.FormSuccess("Subdivision created");
             }
             catch (Exception ex)
             {
@@ -93,7 +106,7 @@ namespace accs.Services
         }
 
         public async Task<EmptyAction> UpdateAsync(
-            int id,
+            int subdivisionId,
             string name,
             string? color = null,
             int? headId = null
@@ -103,37 +116,20 @@ namespace accs.Services
 
             try
             {
-                if (Actor != null)
-                {
-                    if (Actor.HasPermission(PermissionType.ManageStructure))
-                    {
-                        var subdivision = await _db.Subdivisions.FindAsync(id);
-                        if (subdivision != null)
-                        {
-                            subdivision.Name = name;
-                            if (color != null)
-                                subdivision.Color = color;
-                            if (headId.HasValue)
-                                subdivision.HeadId = headId.Value;
+                ActionResult<Subdivision> result = await CheckCanManageAsync(subdivisionId);
 
-                            _db.Subdivisions.Update(subdivision);
-                            await _db.SaveChangesAsync();
-                            action.FormSuccess("Subdivision updated");
-                        }
-                        else
-                        {
-                            action.FormFailure("Subdivision not found");
-                        }
-                    }
-                    else
-                    {
-                        action.FormFailure("Subdivision update restricted");
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Subdivision update restricted. Unauthorized");
-                }
+                if (!result.IsSuccess)
+					return action.FormFailure("Permission check failed");
+
+				result.Value.Name = name;
+                if (color != null)
+					result.Value.Color = color;
+                if (headId.HasValue)
+					result.Value.HeadId = headId.Value;
+
+                _db.Subdivisions.Update(result.Value);
+                await _db.SaveChangesAsync();
+                action.FormSuccess("Subdivision updated");
             }
             catch (Exception ex)
             {
@@ -143,39 +139,53 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> UpdateRoleAsync(int id)
+        public async Task<EmptyAction> UpdateRoleAsync(int subdivisionId)
         {
             EmptyAction action = new EmptyAction(_logger);
 
             try
             {
-                if (Actor != null)
-                {
-                    if (Actor.HasPermission(PermissionType.ManageStructure))
-                    {
-                        var subdivision = await _db.Subdivisions.FindAsync(id);
-                        if (subdivision != null)
-                        {
-                            subdivision.UpdateRole();
-                            _db.Subdivisions.Update(subdivision);
-                            await _db.SaveChangesAsync();
-                            action.FormSuccess("Subdivision discord role updated");
-                        }
-                        else
-                        {
-                            action.FormFailure("Subdivision not found");
-                        }
-                    }
-                    else
-                    {
-                        action.FormFailure("Subdivision role update restricted");
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Subdivision role update restricted. Unauthorized");
-                }
+				ActionResult<Subdivision> result = await CheckCanManageAsync(subdivisionId);
+
+                if (!result.IsSuccess)
+					return action.FormFailure("Permission check failed");
+
+			    result.Value.UpdateRole();
+                _db.Subdivisions.Update(result.Value);
+                await _db.SaveChangesAsync();
+                action.FormSuccess("Subdivision discord role updated");
             }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
+        public async Task<ActionResult<Subdivision>> CheckCanManageAsync(int subdivisionId)
+        {
+			ActionResult<Subdivision> action = new ActionResult<Subdivision>(_logger);
+
+            try
+            {
+                if (Actor == null)
+					return action.FormFailure("Can't check permissions. Unauthorized", eventId: EventIds.Unauthorized);
+
+                action.Value = await _db.Subdivisions.FindAsync(subdivisionId);
+
+                if (action.Value == null)
+					return action.FormFailure($"Can't check permissions. Subdivision with ID {subdivisionId} not found", eventId: EventIds.NotFound);
+
+                List<Post> actorControllablePosts = Actor.GetPosts().SelectMany(p => p.GetAllSubordinatesRecursive()).ToList();
+
+                if (!Actor.HasPermission(PermissionType.ManageStructure))
+					return action.FormFailure($"{Actor.Nickname} don't have ManageStructure permission", eventId: EventIds.Forbidden);
+                else if (!Actor.IsAdmin() && action.Value.Posts.Any(p => !actorControllablePosts.Contains(p)))
+                    return action.FormFailure($"Subdivision {action.Value.GetFullName()} is not under {Actor.Nickname}'s control", eventId: EventIds.Forbidden);
+
+                action.FormSuccess($"{Actor.Nickname} can manage subdivision {action.Value.GetFullName()}");
+			}
             catch (Exception ex)
             {
                 action.FormException(ex);

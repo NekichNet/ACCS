@@ -1,4 +1,5 @@
 ﻿using accs.Database;
+using accs.Models;
 using accs.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -214,18 +215,16 @@ namespace accs.Controllers
         {
             try
             {
-                // список из AssignedRank
-                // Реализовать!!!!
                 var action = await _rankService.GetUnitsByRankAsync(rankId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
                 }
-                if (action.Value == null)
+                if (action == null)
                 {
                     return NotFound(new { error = "Rank not found" });
                 }
-                return Ok(action.Value);
+                return Ok(action);
             }
             catch (Exception ex)
             {
@@ -236,17 +235,11 @@ namespace accs.Controllers
 
         [HttpPost("{rankId}/assign")]
         [Authorize]
-        public async Task<IActionResult> AssignRank([FromRoute] int rankId)
+        public async Task<IActionResult> AssignRank([FromRoute] int rankId, [FromBody] RankDto dto)
         {
             try
             {
-                // Реализовать!!!!
-                var unitIdStr = Request.Query["unit_id"].ToString();
-                if (string.IsNullOrEmpty(unitIdStr) || !int.TryParse(unitIdStr, out int unitId))
-                {
-                    return BadRequest(new { error = "Invalid or missing unit_id query parameter" });
-                }
-                var action = await _rankService.AssignUnitAsync(rankId, unitId);
+                var action = await _rankService.AssignUnitAsync(rankId, dto.DiscordId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -265,8 +258,6 @@ namespace accs.Controllers
         {
             try
             {
-                // AssignedRank или null
-                // Реализовать!!!!
                 var action = await _rankService.GetAssignedUnitAsync(rankId, discordId);
                 if (!action.IsSuccess)
                 {
@@ -274,7 +265,7 @@ namespace accs.Controllers
                 }
                 if (action.Value == null)
                 {
-                    return NotFound(new { error = "Unit not found" });
+                    return Ok(null);
                 }
                 return Ok(action.Value);
             }
@@ -290,5 +281,6 @@ namespace accs.Controllers
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public ulong DiscordId { get; set; }
     }
 }

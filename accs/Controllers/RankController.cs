@@ -132,6 +132,8 @@ namespace accs.Controllers
         {
             try
             {
+                _rankService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var newRank = await _rankService.CreateAsync(dto.Id, dto.Name);
                 if (!newRank.IsSuccess)
                 {
@@ -153,6 +155,8 @@ namespace accs.Controllers
         {
             try
             {
+                _rankService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var action = await _rankService.DeleteAsync(rankId);
                 if (!action.IsSuccess)
                 {
@@ -174,6 +178,8 @@ namespace accs.Controllers
         {
             try
             {
+                _rankService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var action = await _rankService.UpdateAsync(rankId, name);
                 if (!action.IsSuccess)
                 {
@@ -195,6 +201,8 @@ namespace accs.Controllers
         {
             try
             {
+                _rankService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var action = await _rankService.UpdateRoleAsync(rankId);
                 if (!action.IsSuccess)
                 {
@@ -239,6 +247,8 @@ namespace accs.Controllers
         {
             try
             {
+                _rankService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var action = await _rankService.AssignUnitAsync(rankId, dto.DiscordId);
                 if (!action.IsSuccess)
                 {

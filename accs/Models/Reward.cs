@@ -1,9 +1,10 @@
-﻿using accs.Models.Interfaces;
+﻿using accs.Models.Abstraction;
+using accs.Models.Interfaces;
 using System.Text.Json;
 
 namespace accs.Models
 {
-	public class Reward : IEntityWithDiscordRole
+	public class Reward : IEntityWithDiscordRole, IEntityWithImage
 	{
 		public int Id { get; set; }
 		public string Conditions { get; set; } = string.Empty;
@@ -33,6 +34,11 @@ namespace accs.Models
 		public override string ToString()
         {
             return JsonSerializer.Serialize(this);
+        }
+
+        public string GetImageFolderName()
+        {
+            return "rewards";
         }
     }
 }

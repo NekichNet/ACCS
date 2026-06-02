@@ -1,4 +1,5 @@
-﻿using accs.Models.Configurations;
+﻿using accs.Models.Abstraction;
+using accs.Models.Configurations;
 using accs.Models.Enums;
 using accs.Models.Interfaces;
 using accs.Models.Statuses;
@@ -9,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace accs.Models
 {
 	[EntityTypeConfiguration(typeof(RankConfiguration))]
-	public class Rank : IEntityWithPermissions, IEntityWithDiscordRole
+	public class Rank : IEntityWithPermissions, IEntityWithDiscordRole, IEntityWithImage
 	{
 		public int Id { get; set; }
 		public ushort CounterToReach { get; set; }
@@ -105,5 +106,10 @@ namespace accs.Models
 				// TODO: Send request to discord-bot api
 			}
 		}
-	}
+
+        public string GetImageFolderName()
+        {
+			return "ranks";
+        }
+    }
 }

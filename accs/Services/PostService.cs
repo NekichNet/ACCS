@@ -2,7 +2,6 @@
 using accs.Logging;
 using accs.Models;
 using accs.Models.Enums;
-using accs.Models.SingleDayEvents;
 using accs.Models.Statuses;
 using accs.Models.Util;
 using Microsoft.EntityFrameworkCore;
@@ -46,7 +45,7 @@ namespace accs.Services
 								Subdivision? subdivision = await _db.Subdivisions.FindAsync(subdivisionId);
 								if (subdivision != null)
 								{
-									if (Actor.GetPosts() !subdivision.Posts.Any(p => !actorOwnPosts.Contains(p)))
+									if (!subdivision.Posts.Any(p => !actorOwnPosts.Contains(p)))
 									{
 										action.Value = new Post
 										{
@@ -143,7 +142,7 @@ namespace accs.Services
 			return action;
         }
 
-		public async Task<ActionResult<AssignedPost>> AssignPost(ulong unitDiscordId, int postId)
+		public async Task<ActionResult<AssignedPost>> AssignAsync(ulong unitDiscordId, int postId)
 		{ // Это хороший пример того, как все проверки выглядят во вложенных if. Это нужно исправить
 			ActionResult<AssignedPost> action = new ActionResult<AssignedPost>(_logger);
 
@@ -214,6 +213,43 @@ namespace accs.Services
 			return action;
 		}
 
-		//public async Task<>
+		public async Task<EmptyAction> DeposeAsync(ulong unitDiscordId, int postId)
+		{
+			EmptyAction action = new EmptyAction(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Unit deposing restricted. Unauthorized", eventId: EventIds.Forbidden);
+				if (!Actor.HasPermission(PermissionType.AssignPosts))
+					return action.FormFailure("Unit deposing restricted.", eventId: EventIds.Forbidden);
+
+				Unit? unit = await _db.Units.FindAsync(unitDiscordId);
+				if (unit == null)
+					return action.FormFailure($"Unit deposing failed. Unit with Discord ID {unitDiscordId} not found", eventId: EventIds.NotFound);
+				if (unit.GetPosts().Count == 0)
+					return action.FormFailure($"Unit {unit.Nickname} deposing failed. Unit have no assigned posts", eventId: EventIds.ImpossibleAction);
+				if (unit.GetPosts().Count == 1)
+					return action.FormFailure($"Unit {unit.Nickname} deposing failed. Unit has last post assigned", eventId: EventIds.ImpossibleAction);
+				
+				AssignedPost? assignedPost = await _db.AssignedPosts.FirstOrDefaultAsync(ap => ap.PostId == postId && ap.IsActive());
+				if (assignedPost == null)
+					return action.FormFailure($"Unit {unit.Nickname} deposing failed. Unit isn't assigned to post with ID {postId}", eventId: EventIds.InvalidData);
+				if (!Actor.IsAdmin() && Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).Contains(assignedPost.Post))
+					return action.FormFailure($"Unit {unit.Nickname} deposing resctricted. Post {assignedPost.Post.Name} is one of heads' posts");
+				
+				assignedPost.Terminate();
+
+				await _db.SaveChangesAsync();
+
+				action.FormSuccess($"Unit {unit.Nickname} deposed from {assignedPost.Post.Name}", eventId: EventIds.Ok);
+			}
+			catch (Exception ex)
+			{
+				return action.FormException(ex);
+			}
+
+			return action;
+		}
     }
 }

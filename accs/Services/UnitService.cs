@@ -263,22 +263,17 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<ActionResult<List<int>>> GetUnitStatusesAsync(ulong discordId)
+        public async Task<ActionResult<List<int>>> GetUnitStatusIdsAsync(ulong unitDiscordId)
         {
             ActionResult<List<int>> action = new ActionResult<List<int>>(_logger);
 
             try
             {
-                var unit = await _db.Units.FindAsync(discordId);
-                if (unit != null)
-                {
-                    action.Value = unit.UnitStates.Select(us => us.Id).ToList();
-                    action.FormSuccess("Unit statuses retrieved");
-                }
-                else
-                {
-                    action.FormFailure("Unit not found");
-                }
+                Unit? unit = await _db.Units.FindAsync(unitDiscordId);
+                if (unit == null)
+					return action.FormFailure("Getting unit statuses failed. Unit not found", eventId: EventIds.NotFound);
+
+                action.Value = unit.GetStatuses().Select(s => s.Id).ToList();
             }
             catch (Exception ex)
             {

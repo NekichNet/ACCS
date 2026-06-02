@@ -129,7 +129,7 @@ namespace accs.Controllers
         {
             try
             {
-                var result = await _unitService.GetUnitStatusesAsync(discordId);
+                var result = await _unitService.GetUnitStatusIdsAsync(discordId);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });

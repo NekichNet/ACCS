@@ -142,7 +142,61 @@ namespace accs.Services
 			return action;
         }
 
-		public async Task<ActionResult<AssignedPost>> AssignAsync(ulong unitDiscordId, int postId)
+		public async Task<ActionResult<List<AssignedPost>>> SetAssignedPosts(ulong unitDiscordId, int[] postIds)
+		{
+			ActionResult<List<AssignedPost>> action = new ActionResult<List<AssignedPost>>(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Posts setting restricted. Unauthorized", eventId: EventIds.Unauthorized);
+				if (!Actor.HasPermission(PermissionType.AssignPosts))
+					return action.FormFailure("Posts setting restricted", eventId: EventIds.Forbidden);
+
+				if (postIds.Length == 0)
+					return action.FormFailure($"Posts setting failure. Can't set zero posts", eventId: EventIds.InvalidData);
+
+				Unit? unit = await _db.Units.FindAsync(unitDiscordId);
+				if (unit == null)
+					return action.FormFailure($"Posts setting failure. Unit with ID {unitDiscordId} not found", eventId: EventIds.NotFound);
+				if (!unit.IsActive())
+					return action.FormFailure($"Posts setting restricted. Unit {unit.Nickname} is in retirement or dismissed", eventId: EventIds.Forbidden);
+
+				List<AssignedPost> assignedPosts = unit.GetAssignedPosts();
+
+				ushort assignedCounter = 0;
+				foreach (int postId in postIds)
+				{
+					ActionResult<AssignedPost> result = await AssignAsync(unitDiscordId, postId, unit);
+					if (result.IsSuccess)
+						assignedCounter++;
+				}
+
+				if (assignedCounter == 0)
+					return action.FormFailure("Failed to assign any of provided posts", eventId: EventIds.Failed);
+
+				ushort deposedCounter = 0;
+				foreach (AssignedPost assignedPost in assignedPosts)
+				{
+					EmptyAction result = await DeposeAsync(unitDiscordId, assignedPost.Post.Id, unit, assignedPost);
+					if (result.IsSuccess)
+						deposedCounter++;
+				}
+
+				action.FormSuccess(
+					$"{unit.GetRankName()} {unit.Nickname} was assigned to {assignedCounter} posts, deposed from {deposedCounter} posts",
+					eventId: EventIds.Updated
+				);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<ActionResult<AssignedPost>> AssignAsync(ulong unitDiscordId, int postId, Unit? unit = null)
 		{ // Это хороший пример того, как все проверки выглядят во вложенных if. Это нужно исправить
 			ActionResult<AssignedPost> action = new ActionResult<AssignedPost>(_logger);
 
@@ -152,42 +206,36 @@ namespace accs.Services
 				{
 					if (Actor.HasPermission(PermissionType.AssignPosts))
 					{
-						Unit? unit = await _db.Units.FindAsync(unitDiscordId);
+						if (unit == null)
+							unit = await _db.Units.FindAsync(unitDiscordId);
 						if (unit != null)
 						{
-							if (!Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).Intersect(unit.GetPosts()).Any() || Actor.IsAdmin())
+							Post? post = await _db.Posts.FindAsync(postId);
+							if (post != null)
 							{
-								Post? post = await _db.Posts.FindAsync(postId);
-								if (post != null)
+								if (!Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).Contains(post) || Actor.IsAdmin())
 								{
-									if (!Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).Contains(post) || Actor.IsAdmin())
+									AssignedPost assignedPost = new AssignedPost
 									{
-										AssignedPost assignedPost = new AssignedPost
-										{
-											Unit = unit,
-											Post = post
-										};
-										action.Value = assignedPost;
+										Unit = unit,
+										Post = post
+									};
+									action.Value = assignedPost;
 
-										await _db.AssignedPosts.AddAsync(assignedPost);
+									await _db.AssignedPosts.AddAsync(assignedPost);
 
-										await _db.SaveChangesAsync();
+									await _db.SaveChangesAsync();
 
-										action.FormSuccess($"Unit {unit.Nickname} was assigned to post {post.GetFullName()}", eventId: EventIds.Created);
-									}
-									else
-									{
-										action.FormFailure($"Post assignment restricted. Can't assign heads' post", eventId: EventIds.Forbidden);
-									}
+									action.FormSuccess($"Unit {unit.Nickname} was assigned to post {post.GetFullName()}", eventId: EventIds.Created);
 								}
 								else
 								{
-									action.FormFailure($"Post with ID {postId} not found", eventId: EventIds.NotFound);
+									action.FormFailure($"Post assignment restricted. Can't assign heads' post", eventId: EventIds.Forbidden);
 								}
 							}
 							else
 							{
-								action.FormFailure($"Post assignment restricted. Can't change heads' posts", eventId: EventIds.Forbidden);
+								action.FormFailure($"Post with ID {postId} not found", eventId: EventIds.NotFound);
 							}
 						}
 						else
@@ -213,7 +261,7 @@ namespace accs.Services
 			return action;
 		}
 
-		public async Task<EmptyAction> DeposeAsync(ulong unitDiscordId, int postId)
+		public async Task<EmptyAction> DeposeAsync(ulong unitDiscordId, int postId, Unit? unit = null, AssignedPost? assignedPost = null)
 		{
 			EmptyAction action = new EmptyAction(_logger);
 
@@ -224,15 +272,19 @@ namespace accs.Services
 				if (!Actor.HasPermission(PermissionType.AssignPosts))
 					return action.FormFailure("Unit deposing restricted.", eventId: EventIds.Forbidden);
 
-				Unit? unit = await _db.Units.FindAsync(unitDiscordId);
+				if (unit == null)
+					unit = await _db.Units.FindAsync(unitDiscordId);
 				if (unit == null)
 					return action.FormFailure($"Unit deposing failed. Unit with Discord ID {unitDiscordId} not found", eventId: EventIds.NotFound);
+				if (!unit.IsActive())
+					return action.FormFailure($"Unit {unit.Nickname} deposing impossible. Unit is in retirement or dismissed", eventId: EventIds.ImpossibleAction);
 				if (unit.GetPosts().Count == 0)
 					return action.FormFailure($"Unit {unit.Nickname} deposing failed. Unit have no assigned posts", eventId: EventIds.ImpossibleAction);
 				if (unit.GetPosts().Count == 1)
 					return action.FormFailure($"Unit {unit.Nickname} deposing failed. Unit has last post assigned", eventId: EventIds.ImpossibleAction);
 				
-				AssignedPost? assignedPost = await _db.AssignedPosts.FirstOrDefaultAsync(ap => ap.PostId == postId && ap.IsActive());
+				if (assignedPost == null)
+					assignedPost = await _db.AssignedPosts.FirstOrDefaultAsync(ap => ap.PostId == postId && ap.IsActive());
 				if (assignedPost == null)
 					return action.FormFailure($"Unit {unit.Nickname} deposing failed. Unit isn't assigned to post with ID {postId}", eventId: EventIds.InvalidData);
 				if (!Actor.IsAdmin() && Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).Contains(assignedPost.Post))

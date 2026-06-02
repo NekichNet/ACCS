@@ -51,29 +51,33 @@
 		// User Errors
 
 		/// <summary>
+		/// Не удалось выполнить
+		/// </summary>
+		public const int Failed = 300;
+		/// <summary>
 		/// Не удалось считать входные данные
 		/// </summary>
-		public const int BadData = 300;
+		public const int BadData = 301;
 		/// <summary>
 		/// Пользователь неавторизован
 		/// </summary>
-		public const int Unauthorized = 301;
+		public const int Unauthorized = 302;
 		/// <summary>
-		/// Неверные входные данные
+		/// Некорректные входные данные
 		/// </summary>
-		public const int InvalidData = 302;
+		public const int InvalidData = 303;
 		/// <summary>
 		/// У пользователя недостаточно прав
 		/// </summary>
-		public const int Forbidden = 303;
+		public const int Forbidden = 304;
 		/// <summary>
 		/// Не найдены нужные данные
 		/// </summary>
-		public const int NotFound = 304;
+		public const int NotFound = 305;
 		/// <summary>
 		/// Действие выполнить невозможно
 		/// </summary>
-		public const int ImpossibleAction = 305;
+		public const int ImpossibleAction = 306;
 
 		// System Errors
 

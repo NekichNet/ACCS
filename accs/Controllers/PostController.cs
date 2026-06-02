@@ -113,5 +113,29 @@ namespace accs.Controllers
         {
             return await Task.FromResult(Ok());
         }
+
+        [HttpGet("{id}/assign")]
+        public async Task<IActionResult> GetAssignedUnits([FromRoute] int id)
+        {
+            return await Task.FromResult(Ok());
+        }
+
+        [HttpPost("{id}/assign")]
+        public async Task<IActionResult> AssignUnit([FromRoute] int id)
+        {
+            return await Task.FromResult(Ok());
+        }
+
+        [HttpGet("{id}/assign/{discordId}")]
+        public async Task<IActionResult> GetInfoAssignedUnit([FromRoute] int id, [FromRoute] ulong discordId)
+        {
+            return await Task.FromResult(Ok());
+        }
+
+        [HttpDelete("{id}/assign/{discordId}")]
+        public async Task<IActionResult> UnassignUnit([FromRoute] int id, [FromRoute] ulong discordId)
+        {
+            return await Task.FromResult(Ok());
+        }
     }
 }

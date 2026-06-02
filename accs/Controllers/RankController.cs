@@ -208,6 +208,82 @@ namespace accs.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+
+        [HttpGet("{rankId}/assign")]
+        public async Task<IActionResult> GetUnitsByRank([FromRoute] int rankId)
+        {
+            try
+            {
+                // список из AssignedRank
+                // Реализовать!!!!
+                var action = await _rankService.GetUnitsByRankAsync(rankId);
+                if (!action.IsSuccess)
+                {
+                    return BadRequest(new { error = action.Message });
+                }
+                if (action.Value == null)
+                {
+                    return NotFound(new { error = "Rank not found" });
+                }
+                return Ok(action.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetUnitsByRank: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+        [HttpPost("{rankId}/assign")]
+        [Authorize]
+        public async Task<IActionResult> AssignRank([FromRoute] int rankId)
+        {
+            try
+            {
+                // Реализовать!!!!
+                var unitIdStr = Request.Query["unit_id"].ToString();
+                if (string.IsNullOrEmpty(unitIdStr) || !int.TryParse(unitIdStr, out int unitId))
+                {
+                    return BadRequest(new { error = "Invalid or missing unit_id query parameter" });
+                }
+                var action = await _rankService.AssignUnitAsync(rankId, unitId);
+                if (!action.IsSuccess)
+                {
+                    return BadRequest(new { error = action.Message });
+                }
+                return Ok(new { message = action.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in AssignRank: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+        [HttpGet("{rankId}/assign/{discordId}")]
+        public async Task<IActionResult> GetAssignedUnit([FromRoute] int rankId, [FromRoute] ulong discordId)
+        {
+            try
+            {
+                // AssignedRank или null
+                // Реализовать!!!!
+                var action = await _rankService.GetAssignedUnitAsync(rankId, discordId);
+                if (!action.IsSuccess)
+                {
+                    return BadRequest(new { error = action.Message });
+                }
+                if (action.Value == null)
+                {
+                    return NotFound(new { error = "Unit not found" });
+                }
+                return Ok(action.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetAssignedUnit: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
     }
 
     public class RankDto

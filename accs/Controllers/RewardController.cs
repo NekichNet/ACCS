@@ -44,7 +44,7 @@ namespace accs.Controllers
             return await Task.FromResult(Ok());
         }
 
-        [HttpPost("{rewardId}")]
+        [HttpPatch("{rewardId}")]
         [Authorize]
         public async Task<IActionResult> UpdateReward([FromRoute] int rewardId)
         {

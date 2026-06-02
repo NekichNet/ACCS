@@ -71,7 +71,7 @@ namespace accs.Controllers
         {
             try
             {
-                var result = await _unitService.Get(id);
+                var result = await _unitService.GetAsync(id);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -204,7 +204,6 @@ namespace accs.Controllers
         {
             try
             {
-                // проблема со статусом
                 var result = await _unitService.GetUnitStatusAsync(discordId, statusId);
 
                 if (!result.IsSuccess)

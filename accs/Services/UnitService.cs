@@ -3,6 +3,7 @@ using accs.Logging;
 using accs.Models;
 using accs.Models.Enums;
 using accs.Models.SingleDayEvents;
+using accs.Models.States.Abstraction;
 using accs.Models.Statuses;
 using accs.Models.Statuses.Abstraction;
 using accs.Models.Util;
@@ -71,9 +72,7 @@ namespace accs.Services
 			return action;
 		}
 
-		public async Task<ActionResult<Unit>> Get(
-			ulong discordId
-			)
+		public async Task<ActionResult<Unit>> GetAsync(ulong discordId)
 		{
 			ActionResult<Unit> action = new ActionResult<Unit>(_logger);
 
@@ -235,10 +234,15 @@ namespace accs.Services
 
             try
             {
-                var unit = await _db.Units.FindAsync(discordId);
+                var unit = await _db.Units
+                    .Include(u => u.Statuses)
+                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
                 if (unit != null)
                 {
-                    action.Value = unit.UnitStates.Select(us => us.Id).ToList();
+                    action.Value = unit.UnitStates
+                        .Where(us => us.IsActive())
+                        .Select(us => us.Id)
+                        .ToList();
                     action.FormSuccess("Unit statuses retrieved");
                 }
                 else
@@ -260,11 +264,14 @@ namespace accs.Services
 
             try
             {
-                var unit = await _db.Units.FindAsync(discordId);
+                var unit = await _db.Units
+                    .Include(u => u.Activities)
+                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
                 if (unit != null)
                 {
                     action.Value = unit.Activities
-                        .Select(ad => ad.Date.ToString("dd.MM.yyyy HH:mm"))
+                         .OrderBy(a => a.Date)
+                        .Select(ad => ad.Date.ToString("dd.MM.yyyy"))
                         .ToList();
                     action.FormSuccess("Unit activity retrieved");
                 }
@@ -411,10 +418,10 @@ namespace accs.Services
                 {
                     if (Actor.HasPermission(PermissionType.Administrator))
                     {
-                        var status = await _db.UnitStates.FindAsync(statusId);
-                        if (status != null)
+                        var unitStatus = await _db.Statuses.FindAsync(statusId);
+                        if (unitStatus != null)
                         {
-                            _db.UnitStates.Remove(status);
+                            _db.Statuses.Remove(unitStatus);
                             await _db.SaveChangesAsync();
                             action.FormSuccess("Status deleted");
                         }
@@ -470,32 +477,27 @@ namespace accs.Services
             return action;
         }
 
-        // проблема со статусом
-        public async Task<ActionResult<UnitState>> GetUnitStatusAsync(ulong discordId, int statusId)
+        public async Task<ActionResult<Status>> GetUnitStatusAsync(ulong discordId, int statusId)
         {
-            ActionResult<UnitState> action = new ActionResult<UnitState>(_logger);
+            ActionResult<Status> action = new ActionResult<Status>(_logger);
 
             try
             {
                 var unit = await _db.Units
-                .Include(u => u.UnitStates)
-                        .ThenInclude(us => us.Status)
+               .Include(u => u.Statuses)
                 .FirstOrDefaultAsync(u => u.DiscordId == discordId);
 
                 if (unit == null)
                 {
                     action.FormFailure("Unit not found");
-                    return action;
                 }
 
-                var status = unit.UnitStates.FirstOrDefault(us => us.Id == statusId);
-                if (status == null)
+                var unitStatus = unit.Statuses.FirstOrDefault(us => us.Id == statusId);
+                if (unitStatus == null)
                 {
                     action.FormFailure("Status not found");
-                    return action;
                 }
 
-                action.Value = status;
                 action.FormSuccess("Status retrieved");
             }
             catch (Exception ex)

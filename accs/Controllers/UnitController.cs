@@ -26,7 +26,7 @@ namespace accs.Controllers
         {
             try
             {
-                var result = await _unitService.GetList();
+                var result = await _unitService.GetAllAsync();
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -287,7 +287,7 @@ namespace accs.Controllers
         {
             try
             {
-                var result = await _unitService.GetDismissedUnitsAsync();
+                var result = await _unitService.GetDismissedListAsync();
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });

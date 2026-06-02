@@ -1,5 +1,6 @@
 ﻿using accs.Models.Enums;
 using accs.Models.SingleDayEvents;
+using accs.Models.States;
 using accs.Models.States.Abstraction;
 using accs.Models.Statuses;
 using accs.Models.Statuses.Abstraction;
@@ -30,9 +31,10 @@ namespace accs.Models
 		[JsonIgnore] public virtual List<Activity> Activities { get; set; } = new List<Activity>();
 		[JsonIgnore] public virtual List<AssignedRank> AssignedRanks { get; set; } = new List<AssignedRank>();
 		[JsonIgnore] public virtual List<AssignedPost> AssignedPosts { get; set; } = new List<AssignedPost>();
+		[JsonIgnore] public virtual List<Retirement> Retirements { get; set; }
+		[JsonIgnore] public virtual List<Status> Statuses { get; set; } = new List<Status>();
 		[JsonIgnore] public virtual List<UnitState> UnitStates { get; set; } = new List<UnitState>();
-        [JsonIgnore] public virtual List<Status> Statuses { get; set; } = new List<Status>();
-
+        
         public AssignedRank? GetAssignedRank(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;
@@ -105,6 +107,40 @@ namespace accs.Models
 		public bool IsActive()
 		{
 			return AssignedRanks.Any(ar => ar.IsActive()) && AssignedPosts.Any(ap => ap.IsActive());
+		}
+
+		/// <summary>
+		/// Проверка, находится ли боец в отставке
+		/// </summary>
+		/// <returns>true, если в отставке</returns>
+		public bool IsInRetirement()
+		{
+			return Retirements.Any(r => r.IsActive());
+		}
+
+		/// <summary>
+		/// Получить максимальное звание которое может получить боец с текущими должностями
+		/// </summary>
+		/// <returns>Rank, если есть должности. null, если должностей нет</returns>
+		public Rank? GetMaxRank()
+		{
+			Rank? rank = null;
+			foreach (Post post in GetPosts())
+			{
+				if (rank != null)
+				{
+					if (rank.GetAllHigherRecursive().Contains(post.MaxRank))
+						rank = post.MaxRank;
+				}
+				else
+					rank = post.MaxRank;
+			}
+			return rank;
+		}
+
+		public List<Status> GetStatuses()
+		{
+			return Statuses.Where(s => s.IsActive()).ToList();
 		}
 
         public override string ToString()

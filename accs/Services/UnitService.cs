@@ -31,28 +31,35 @@ namespace accs.Services
 			{
 				if (Actor != null)
 				{
-					if (Actor.HasPermission(PermissionType.Administrator))
+					if (Actor.IsAdmin())
 					{
-						action.Value = new Unit
-						{
-							DiscordId = discordId,
-							Nickname = nickname,
-							RankUpCounter = 0,
-						};
+                        if ((await _db.Units.FindAsync(discordId)) == null)
+                        {
+							action.Value = new Unit
+							{
+								DiscordId = discordId,
+								Nickname = nickname,
+								RankUpCounter = 0,
+							};
 
-						await _db.Units.AddAsync(action.Value);
+							await _db.Units.AddAsync(action.Value);
 
-						UnitRegistrationEvent registrationEvent = new UnitRegistrationEvent
-						{
-							Initiator = Actor,
-							Unit = action.Value
-						};
+							UnitRegistrationEvent registrationEvent = new UnitRegistrationEvent
+							{
+								Initiator = Actor,
+								Unit = action.Value
+							};
 
-						await _db.UnitRegistrationEvents.AddAsync(registrationEvent);
-						
-						await _db.SaveChangesAsync();
+							await _db.UnitRegistrationEvents.AddAsync(registrationEvent);
 
-						action.FormSuccess("Unit registered");
+							await _db.SaveChangesAsync();
+
+							action.FormSuccess("Unit registered");
+						}
+                        else
+                        {
+                            action.FormFailure($"Unit with ID {discordId} already registered");
+                        }
 					}
 					else
 					{
@@ -92,7 +99,10 @@ namespace accs.Services
 			return action;
 		}
 
-		public async Task<ActionResult<List<Unit>>> GetList()
+        /// <summary>
+        /// Получить список абсолютно всех зарегистрированных бойцов
+        /// </summary>
+		public async Task<ActionResult<List<Unit>>> GetAllAsync()
 		{
 			ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
 
@@ -110,8 +120,34 @@ namespace accs.Services
 
 			return action;
 		}
+
+        /// <summary>
+        /// Получить всех бойцов, которые на текущий момент в клане
+        /// </summary>
+        public async Task<ActionResult<List<Unit>>> GetActiveListAsync()
+        {
+			ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
+
+			try
+			{
+				action.Value = await _db.Units.Where(u => u.IsActive()).ToListAsync();
+
+				action.FormSuccess("Unit list formed. Length: " + action.Value.Count(),
+					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
 		
-		public async Task<EmptyAction> Dismiss(
+        /// <summary>
+        /// Уволить бойца
+        /// </summary>
+        /// <param name="discordId">Discord ID бойца к увольнению</param>
+		public async Task<EmptyAction> DismissAsync(
 			ulong discordId
 			)
 		{
@@ -180,18 +216,19 @@ namespace accs.Services
 			return action;
 		}
 
-
-        public async Task<ActionResult<List<Unit>>> GetDismissedUnitsAsync()
+        /// <summary>
+        /// Получить список всех уволенных бойцов
+        /// </summary>
+        public async Task<ActionResult<List<Unit>>> GetDismissedListAsync()
         {
             ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
 
             try
             {
                 action.Value = await _db.Units
-                .Where(u => u.AssignedPosts.Count == 0)
-                .Include(u => u.AssignedRanks)
-                .ThenInclude(ar => ar.Rank)
-                .ToListAsync();
+                    .Where(u => !u.IsActive())
+                    .Where(u => !u.IsInRetirement())
+                    .ToListAsync();
 
                 action.FormSuccess("Dismissed units list formed. Length: " + action.Value.Count(),
                     eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
@@ -211,13 +248,10 @@ namespace accs.Services
             try
             {
                 action.Value = await _db.Units
-                .Where(u => u.AssignedPosts.Count == 0 && u.AssignedRanks.Count > 0)
-                .Include(u => u.AssignedRanks)
-                .ThenInclude(ar => ar.Rank)
-                .Include(u => u.AssignedRewards)
-                .ToListAsync();
+                    .Where(u => u.IsInRetirement())
+                    .ToListAsync();
 
-                action.FormSuccess("Retired units list formed. Length: " + action.Value.Count(),
+                action.FormSuccess("Units in retirenment list formed. Length: " + action.Value.Count(),
                     eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
             }
             catch (Exception ex)

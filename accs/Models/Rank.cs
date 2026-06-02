@@ -111,5 +111,27 @@ namespace accs.Models
         {
 			return "ranks";
         }
+
+		public List<Rank> GetAllHigherRecursive()
+		{
+			List<Rank> higherRanks = new List<Rank>();
+			if (Next != null)
+			{
+				higherRanks.Add(Next);
+				higherRanks.AddRange(Next.GetAllHigherRecursive());
+			}
+			return higherRanks;
+		}
+
+		public List<Rank> GetAllLowerRecursive()
+		{
+			List<Rank> higherRanks = new List<Rank>();
+			if (Previous != null)
+			{
+				higherRanks.Add(Previous);
+				higherRanks.AddRange(Previous.GetAllHigherRecursive());
+			}
+			return higherRanks;
+		}
     }
 }

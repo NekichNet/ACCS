@@ -1,7 +1,9 @@
 ﻿using accs.Models.Statuses.Abstraction;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace accs.Models.States
 {
+    [Table("Retirements")]
     public class Retirement : UnitState
     {
         public override string GetText()

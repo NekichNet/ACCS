@@ -314,7 +314,7 @@ namespace accs.Services
 
             try
             {
-                AssignedRank? assignedRank = _db.AssignedRanks.FirstOrDefault(ar => ar.UnitId == unitDiscordId && ar.RankId == rankId && ar.IsActive());
+                AssignedRank? assignedRank = _db.AssignedRanks.FirstOrDefault(ar => ar.UnitId == unitDiscordId && ar.RankId == rankId && ar.IsActive(null));
 
                 if (assignedRank == null)
                     return action.FormFailure($"Unit with Discord ID {unitDiscordId} not assigned to rank {rankId}", eventId: EventIds.NotFound);

@@ -365,7 +365,7 @@ namespace accs.Services
 					return action.FormFailure($"Unit {unit.Nickname} deposing failed. Unit has last post assigned", eventId: EventIds.ImpossibleAction);
 				
 				if (assignedPost == null)
-					assignedPost = await _db.AssignedPosts.FirstOrDefaultAsync(ap => ap.UnitId == unitDiscordId && ap.PostId == postId && ap.IsActive());
+					assignedPost = await _db.AssignedPosts.FirstOrDefaultAsync(ap => ap.UnitId == unitDiscordId && ap.PostId == postId && ap.IsActive(null));
 				if (assignedPost == null)
 					return action.FormFailure($"Unit {unit.Nickname} deposing failed. Unit isn't assigned to post with ID {postId}", eventId: EventIds.NotFound);
 				
@@ -403,7 +403,7 @@ namespace accs.Services
 
 				List<Post> actorControllablePosts = Actor.GetPosts().SelectMany(p => p.GetAllSubordinatesRecursive()).ToList();
 				
-				else if (!Actor.IsAdmin() && !actorControllablePosts.Contains(action.Value))
+				if (!Actor.IsAdmin() && !actorControllablePosts.Contains(action.Value))
 					return action.FormFailure($"Post {action.Value.GetFullName()} isn't under {Actor.Nickname}'s control", eventId: EventIds.Forbidden);
 
 				action.FormSuccess($"{Actor.Nickname} can manage post {action.Value.GetFullName()}");

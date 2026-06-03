@@ -2,7 +2,7 @@
 
 namespace accs.Models
 {
-    public class FavoriteKit : IEntityWithImage
+    public class FavoriteKit : IEntityWithFiles
     {
         public int Id { get; set; }
         public string Name { get; set; }

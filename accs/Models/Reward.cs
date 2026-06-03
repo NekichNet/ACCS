@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace accs.Models
 {
-	public class Reward : IEntityWithDiscordRole, IEntityWithImage
+	public class Reward : IEntityWithDiscordRole, IEntityWithFiles
 	{
 		public int Id { get; set; }
 		public string Conditions { get; set; } = string.Empty;

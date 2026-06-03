@@ -1,6 +1,6 @@
 ﻿namespace accs.Models.Abstraction
 {
-    public interface IEntityWithImage
+    public interface IEntityWithFiles
     {
         string GetImageFolderName();
     }

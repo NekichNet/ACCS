@@ -1,5 +1,6 @@
 ﻿
 using accs.Database;
+using accs.Logging;
 using accs.Models;
 using accs.Models.Enums;
 using accs.Models.Statuses;
@@ -239,7 +240,7 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> AssignUnitAsync(int rankId, ulong id)
+        public async Task<EmptyAction> AssignAsync(int rankId, ulong id)
         {
             EmptyAction action = new EmptyAction(_logger);
 
@@ -306,15 +307,14 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<ActionResult<AssignedRank>> GetAssignedUnitAsync(int rankId, ulong discordId)
+        public async Task<ActionResult<AssignedRank>> GetAssignedUnitAsync(int rankId, ulong unitDiscordId)
         {
             ActionResult<AssignedRank> action = new ActionResult<AssignedRank>(_logger);
 
             try
             {
-                var unit = await _db.Units
-                    .Include(u => u.AssignedRanks)
-                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+                Unit? unit = await _db.Units
+                    .FirstOrDefaultAsync(u => u.DiscordId == unitDiscordId);
 
                 if (unit == null)
                 {
@@ -334,6 +334,28 @@ namespace accs.Services
 
                 action.Value = assignedRank;
                 action.FormSuccess("Assignment retrieved");
+            }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
+        public async Task<ActionResult<Unit>> CheckCanChangeRankAsync(ulong unitDiscordId, Unit? unit)
+        {
+            ActionResult<Unit> action = new ActionResult<Unit>(_logger);
+
+            try
+            {
+                if (Actor == null)
+
+
+                if (unit == null)
+                    unit = await _db.Units.FindAsync(unitDiscordId);
+                if (unit == null)
+                    return action.FormFailure("Permission checking failed. Unit not found", eventId: EventIds.NotFound);
             }
             catch (Exception ex)
             {

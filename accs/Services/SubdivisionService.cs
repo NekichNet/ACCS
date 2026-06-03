@@ -58,7 +58,7 @@ namespace accs.Services
                 await _db.Subdivisions.AddAsync(action.Value);
                 await _db.SaveChangesAsync();
 
-                action.FormSuccess("Subdivision created");
+                action.FormSuccess($"Subdivision {action.Value.GetFullName()} created");
             }
             catch (Exception ex)
             {
@@ -139,9 +139,14 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> UpdateRoleAsync(int subdivisionId)
+		/// <summary>
+		/// Обновляет Discord роль подразделения или создаёт её, если не существует
+		/// </summary>
+		/// <param name="subdivisionId">ID подразделения</param>
+		/// <returns>ActionResult с Discord ID роли подразделения</returns>
+		public async Task<ActionResult<ulong?>> UpdateRoleAsync(int subdivisionId)
         {
-            EmptyAction action = new EmptyAction(_logger);
+			ActionResult<ulong?> action = new ActionResult<ulong?>(_logger);
 
             try
             {
@@ -153,7 +158,8 @@ namespace accs.Services
 			    result.Value.UpdateRole();
                 _db.Subdivisions.Update(result.Value);
                 await _db.SaveChangesAsync();
-                action.FormSuccess("Subdivision discord role updated");
+                action.Value = result.Value.DiscordRoleId;
+                action.FormSuccess("Subdivision Discord role updated");
             }
             catch (Exception ex)
             {

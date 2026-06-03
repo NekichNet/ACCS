@@ -17,7 +17,6 @@ namespace accs.Services
 
         public async Task<ActionResult<Reward>> CreateAsync(
             string name,
-            string description,
             int? subdivisionId,
             string color,
             string conditions,
@@ -108,7 +107,7 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> UpdateAsync(int rewardId, string name, string description, string color, string conditions, string privileges, string? imagePath)
+        public async Task<EmptyAction> UpdateAsync(int rewardId, string name, string color, string conditions, string privileges, string? imagePath)
         {
             EmptyAction action = new EmptyAction(_logger);
 
@@ -226,7 +225,7 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<ActionResult<AssignedReward>> AssignAsync(int rewardId, int unitId)
+        public async Task<ActionResult<AssignedReward>> AssignAsync(int rewardId, ulong unitId)
         {
             ActionResult<AssignedReward> action = new ActionResult<AssignedReward>(_logger);
 
@@ -290,7 +289,7 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<ActionResult<AssignedReward>> GetAssignedRewardAsync(int rewardId, int unitId)
+        public async Task<ActionResult<AssignedReward>> GetAssignedRewardAsync(int rewardId, ulong unitId)
         {
             ActionResult<AssignedReward> action = new ActionResult<AssignedReward>(_logger);
 
@@ -299,7 +298,7 @@ namespace accs.Services
                 var assignedReward = await _db.AssignedRewards
                     .Include(ar => ar.Unit)
                     .Include(ar => ar.Reward)
-                    .FirstOrDefaultAsync(ar => ar.RewardId == rewardId && ar.UnitId == unitId);
+                    .FirstOrDefaultAsync(ar => ar.RewardId == rewardId && (ulong)ar.UnitId == unitId);
 
                 if (assignedReward == null)
                 {

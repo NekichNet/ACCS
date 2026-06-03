@@ -12,19 +12,19 @@ namespace accs.Models
 	public class Post : IEntityWithPermissions, IEntityWithDiscordRole
 	{
 		public int Id { get; set; }
-		public string Description { get; set; } = string.Empty;
-		public int? SubdivisionId { get; set; }
-		[JsonIgnore] public virtual Subdivision? Subdivision { get; set; }
+		public string Name { get; set; }
 		public bool AppendSubdivisionName { get; set; } = false;
+		public string Description { get; set; } = string.Empty;
+		public string Color { get; set; }
+		public int? SubdivisionId { get; set; }
+		public ulong? DiscordRoleId { get; set; }
+		[JsonIgnore] public virtual Subdivision? Subdivision { get; set; }
+		public int MaxRankId { get; set; }
+		[JsonIgnore] public virtual Rank MaxRank { get; set; }
 		public int? HeadId { get; set; }
 		[JsonIgnore] public virtual Post? Head { get; set; }
 		[JsonIgnore] public virtual List<Post> Subordinates { get; set; } = new List<Post>();
-		public int MaxRankId { get; set; }
-		[JsonIgnore] public virtual Rank MaxRank { get; set; }
 		[JsonIgnore] public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
-        public string Color { get; set; }
-		public string Name { get; set; }
-		public ulong? DiscordRoleId { get; set; }
 		[JsonIgnore] public virtual List<AssignedPost> AssignedPosts { get; set; } = new List<AssignedPost>();
 
 		public Post(string envRoleString)

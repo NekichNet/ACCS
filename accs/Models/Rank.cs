@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace accs.Models
 {
 	[EntityTypeConfiguration(typeof(RankConfiguration))]
-	public class Rank : IEntityWithPermissions, IEntityWithDiscordRole, IEntityWithImage
+	public class Rank : IEntityWithPermissions, IEntityWithDiscordRole, IEntityWithFiles
 	{
 		public int Id { get; set; }
 		public ushort CounterToReach { get; set; }

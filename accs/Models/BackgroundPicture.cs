@@ -2,7 +2,7 @@
 
 namespace accs.Models
 {
-    public class BackgroundPicture : IEntityWithImage
+    public class BackgroundPicture : IEntityWithFiles
     {
         public int Id { get; set; }
         public string Name { get; set; }

@@ -249,7 +249,7 @@ namespace accs.Controllers
             {
                 _rankService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _rankService.AssignUnitAsync(rankId, dto.DiscordId);
+                var action = await _rankService.AssignAsync(rankId, dto.DiscordId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });

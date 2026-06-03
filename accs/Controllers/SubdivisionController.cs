@@ -126,6 +126,8 @@ namespace accs.Controllers
         {
             try
             {
+                _subdivisionService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var subdivision = await _subdivisionService.CreateAsync(dto.Name, dto.EnvRoleString, dto.HeadId);
                 if (!subdivision.IsSuccess)
                 {
@@ -151,6 +153,8 @@ namespace accs.Controllers
         {
             try
             {
+                _subdivisionService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var subdivision = await _subdivisionService.UpdateAsync(subdivisionId, dto.Name, dto.Color, dto.HeadId);
                 if (!subdivision.IsSuccess)
                 {
@@ -171,6 +175,8 @@ namespace accs.Controllers
         {
             try
             {
+                _subdivisionService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var subdivision = await _subdivisionService.UpdateRoleAsync(subdivisionId);
                 if (!subdivision.IsSuccess)
                 {

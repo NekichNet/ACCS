@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
+using System.Security.Claims;
 using System.Text;
 
 
@@ -86,6 +87,28 @@ namespace accs
             _app.UseAuthentication();
             _app.UseAuthorization();
 
+
+            _app.Use(async (context, next) =>
+            {
+                var discordIdClaim = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (!string.IsNullOrEmpty(discordIdClaim) &&
+                    ulong.TryParse(discordIdClaim, out var discordId))
+                {
+                    using var scope = _app.Services.CreateScope();
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    var unit = await db.Units.FindAsync(discordId);
+
+                    if (unit != null)
+                    {
+                        context.Items["Actor"] = unit;
+                    }
+                }
+
+                await next();
+            });
+
+            _app.MapControllers();
             _app.Run();
 		}
 	}

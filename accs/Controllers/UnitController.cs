@@ -50,6 +50,8 @@ namespace accs.Controllers
         {
             try
             {
+                _unitService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var result = await _unitService.RegisterAsync(dto.DiscordId, dto.Nickname);
                 if (!result.IsSuccess)
                 {
@@ -105,10 +107,13 @@ namespace accs.Controllers
 
 
         [HttpPatch("{discordId}")]
+        [Authorize]
         public async Task<IActionResult> UpdateUnit([FromRoute] ulong discordId)
         {
             try
             {
+                _unitService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var result = await _unitService.UpdateAsync(discordId);
                 if (!result.IsSuccess)
                 {
@@ -227,6 +232,8 @@ namespace accs.Controllers
         {
             try
             {
+                _unitService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var result = await _unitService.UpdateUnitStatusAsync(discordId, dto.StatusId);
                 if (!result.IsSuccess)
                 {
@@ -248,6 +255,8 @@ namespace accs.Controllers
         {
             try
             {
+                _unitService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var result = await _unitService.UpdateUnitActivityAsync(discordId);
                 if (!result.IsSuccess)
                 {
@@ -268,6 +277,8 @@ namespace accs.Controllers
         {
             try
             {
+                _unitService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var result = await _unitService.DeleteStatusAsync(statusId);
                 if (!result.IsSuccess)
                 {
@@ -332,6 +343,8 @@ namespace accs.Controllers
         {
             try
             {
+                _unitService.Actor = HttpContext.Items["Actor"] as Unit;
+
                 var result = await _unitService.DeleteAsync(id);
                 if (!result.IsSuccess)
                 {

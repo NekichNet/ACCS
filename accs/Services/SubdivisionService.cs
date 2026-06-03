@@ -163,6 +163,31 @@ namespace accs.Services
             return action;
         }
 
+        public async Task<EmptyAction> DeleteAsync(int subdivisionId)
+        {
+            EmptyAction action = new EmptyAction(_logger);
+
+            try
+            {
+                ActionResult<Subdivision> result = await CheckCanManageAsync(subdivisionId);
+
+                if (!result.IsSuccess)
+                    return action.FormFailure("Permission check failed", eventId: EventIds.Forbidden);
+
+                _db.Subdivisions.Remove(result.Value);
+
+                await _db.SaveChangesAsync();
+
+                action.FormSuccess($"Subdivision {result.Value.Name} deleted", eventId: EventIds.Deleted);
+            }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
         public async Task<ActionResult<Subdivision>> CheckCanManageAsync(int subdivisionId)
         {
 			ActionResult<Subdivision> action = new ActionResult<Subdivision>(_logger);

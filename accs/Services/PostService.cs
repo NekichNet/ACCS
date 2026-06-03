@@ -101,6 +101,32 @@ namespace accs.Services
 			return action;
         }
 
+		public async Task<EmptyAction> DeleteAsync(int postId)
+		{
+			EmptyAction action = new EmptyAction(_logger);
+
+			try
+			{
+				ActionResult<Post> result = await CheckCanManageAsync(postId);
+
+				if (!result.IsSuccess)
+					return action.FormFailure("Permission check failure", eventId: EventIds.Forbidden);
+
+				_db.Posts.Remove(result.Value);
+
+				await _db.SaveChangesAsync();
+
+				action.FormSuccess($"Post {result.Value.Name} deleted", eventId: EventIds.Deleted);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+
 		public async Task<ActionResult<List<AssignedPost>>> SetAssignedPosts(ulong unitDiscordId, int[] postIds)
 		{
 			ActionResult<List<AssignedPost>> action = new ActionResult<List<AssignedPost>>(_logger);

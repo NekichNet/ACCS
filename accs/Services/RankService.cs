@@ -89,7 +89,7 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> DeleteAsync(int id)
+        public async Task<EmptyAction> DeleteAsync(int rankId)
         {
             EmptyAction action = new EmptyAction(_logger);
 
@@ -99,7 +99,7 @@ namespace accs.Services
                 {
                     if (Actor.HasPermission(PermissionType.ManageStructure))
                     {
-                        var rank = await _db.Ranks.FindAsync(id);
+                        var rank = await _db.Ranks.FindAsync(rankId);
                         if (rank != null)
                         {
                             _db.Ranks.Remove(rank);
@@ -129,7 +129,7 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> UpdateAsync(int id, string name)
+        public async Task<EmptyAction> UpdateAsync(int rankId, string name)
         {
             EmptyAction action = new EmptyAction(_logger);
 
@@ -139,7 +139,7 @@ namespace accs.Services
                 {
                     if (Actor.HasPermission(PermissionType.ManageStructure))
                     {
-                        var rank = await _db.Ranks.FindAsync(id);
+                        var rank = await _db.Ranks.FindAsync(rankId);
                         if (rank != null)
                         {
                             rank.Name = name;
@@ -170,7 +170,7 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> UpdateRoleAsync(int id)
+        public async Task<EmptyAction> UpdateRoleAsync(int rankId)
         {
             EmptyAction action = new EmptyAction(_logger);
 
@@ -180,7 +180,7 @@ namespace accs.Services
                 {
                     if (Actor.HasPermission(PermissionType.ManageStructure))
                     {
-                        var rank = await _db.Ranks.FindAsync(id);
+                        var rank = await _db.Ranks.FindAsync(rankId);
                         if (rank != null)
                         {
                             rank.UpdateRole();

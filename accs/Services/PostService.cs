@@ -161,56 +161,27 @@ namespace accs.Services
 
 			try
 			{
-				if (Actor != null)
+				ActionResult<Post> result = await CheckCanAssignAsync(postId);
+				if (!result.IsSuccess)
+					return action.FormFailure("Permission check failed", eventId: EventIds.Forbidden);
+
+				if (unit == null)
+					unit = await _db.Units.FindAsync(unitDiscordId);
+				if (unit == null)
+					return action.FormFailure($"Post assigning failed. Unit with ID {unitDiscordId} not found", eventId: EventIds.NotFound);
+
+                AssignedPost assignedPost = new AssignedPost
 				{
-					if (Actor.HasPermission(PermissionType.AssignPosts))
-					{
-						if (unit == null)
-							unit = await _db.Units.FindAsync(unitDiscordId);
-						if (unit != null)
-						{
-							Post? post = await _db.Posts.FindAsync(postId);
-							if (post != null)
-							{
-								if (!Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).Contains(post) || Actor.IsAdmin())
-								{
-									AssignedPost assignedPost = new AssignedPost
-									{
-										Unit = unit,
-										Post = post
-									};
-									action.Value = assignedPost;
+					Unit = unit,
+					Post = result.Value
+				};
+				action.Value = assignedPost;
 
-									await _db.AssignedPosts.AddAsync(assignedPost);
+				await _db.AssignedPosts.AddAsync(assignedPost);
 
-									await _db.SaveChangesAsync();
+				await _db.SaveChangesAsync();
 
-									action.FormSuccess($"Unit {unit.Nickname} was assigned to post {post.GetFullName()}", eventId: EventIds.Created);
-								}
-								else
-								{
-									action.FormFailure($"Post assignment restricted. Can't assign heads' post", eventId: EventIds.Forbidden);
-								}
-							}
-							else
-							{
-								action.FormFailure($"Post with ID {postId} not found", eventId: EventIds.NotFound);
-							}
-						}
-						else
-						{
-							action.FormFailure($"Unit with ID {unitDiscordId} not found", eventId: EventIds.NotFound);
-						}
-					}
-					else
-					{
-						action.FormFailure("Post assignment restricted", eventId: EventIds.Forbidden);
-					}
-				}
-				else
-				{
-					action.FormFailure("Post assignment restricted. Unauthorized", eventId: EventIds.Unauthorized);
-				}
+				action.FormSuccess($"Unit {unit.Nickname} was assigned to post {result.Value.GetFullName()}", eventId: EventIds.Created);
 			}
 			catch (Exception ex)
 			{

@@ -2,8 +2,10 @@
 using accs.Database;
 using accs.Models;
 using accs.Models.Enums;
+using accs.Models.Statuses;
 using accs.Models.Util;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace accs.Services
 {
@@ -200,6 +202,138 @@ namespace accs.Services
                 {
                     action.FormFailure("Rank role update restricted. Unauthorized");
                 }
+            }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
+        public async Task<EmptyAction> GetUnitsByRankAsync(int rankId)
+        {
+            EmptyAction action = new EmptyAction(_logger);
+
+            try
+            {
+                var rank = await _db.Ranks.FindAsync(rankId);
+                if (rank == null)
+                {
+                    action.FormFailure("Rank not found");
+                    return action;
+                }
+
+                var assignedRanks = await _db.AssignedRanks
+                    .Where(ar => ar.RankId == rankId)
+                    .Include(ar => ar.Unit)
+                    .ToListAsync();
+
+                action.FormSuccess("Units by rank retrieved");
+            }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
+        public async Task<EmptyAction> AssignUnitAsync(int rankId, ulong id)
+        {
+            EmptyAction action = new EmptyAction(_logger);
+
+            try
+            {
+                if (Actor != null)
+                {
+                    if (Actor.HasPermission(PermissionType.AssignRanks))
+                    {
+                        Unit unit = await _db.Units.FindAsync(id);
+
+                        var rank = await _db.Ranks.FindAsync(rankId);
+                        if (rank == null)
+                        {
+                            action.FormFailure("Rank not found");
+                            return action;
+                        }
+
+                        var res = await _db.Units
+                            .Include(u => u.AssignedRanks)
+                            .FirstOrDefaultAsync(u => u.DiscordId == unit.DiscordId);
+
+                        if (res == null)
+                        {
+                            action.FormFailure("Unit not found");
+                            return action;
+                        }
+
+                        var activeRank = res.AssignedRanks.FirstOrDefault(ar => ar.IsActive());
+                        if (activeRank != null)
+                        {
+                            activeRank.End = DateTime.UtcNow;
+                            _db.AssignedRanks.Update(activeRank);
+                        }
+
+                        var newAssignedRank = new AssignedRank
+                        {
+                            UnitId = res.DiscordId,
+                            RankId = rankId,
+                            Start = DateTime.UtcNow,
+                            End = null
+                        };
+
+                        await _db.AssignedRanks.AddAsync(newAssignedRank);
+                        await _db.SaveChangesAsync();
+
+                        action.FormSuccess("Rank assigned to res");
+                    }
+                    else
+                    {
+                        action.FormFailure("Rank assignment restricted");
+                    }
+                }
+                else
+                {
+                    action.FormFailure("Rank assignment restricted. Unauthorized");
+                }
+            }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
+        public async Task<ActionResult<AssignedRank>> GetAssignedUnitAsync(int rankId, ulong discordId)
+        {
+            ActionResult<AssignedRank> action = new ActionResult<AssignedRank>(_logger);
+
+            try
+            {
+                var unit = await _db.Units
+                    .Include(u => u.AssignedRanks)
+                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+
+                if (unit == null)
+                {
+                    action.FormFailure("Unit not found");
+                    return action;
+                }
+
+                var assignedRank = unit.AssignedRanks
+                    .FirstOrDefault(ar => ar.RankId == rankId && ar.IsActive());
+
+                if (assignedRank == null)
+                {
+                    action.Value = null;
+                    action.FormSuccess("No active assignment");
+                    return action;
+                }
+
+                action.Value = assignedRank;
+                action.FormSuccess("Assignment retrieved");
             }
             catch (Exception ex)
             {

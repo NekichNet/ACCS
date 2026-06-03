@@ -19,6 +19,7 @@
         AssignPosts,
 		AssignRewards,
 
+        ManageRanks,
 		ManageStructure,
         ManageRewards,
         ManageDocTypes,

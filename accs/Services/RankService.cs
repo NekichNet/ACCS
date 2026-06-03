@@ -6,6 +6,7 @@ using accs.Models.Enums;
 using accs.Models.Statuses;
 using accs.Models.Util;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using System;
 
 namespace accs.Services
@@ -307,32 +308,18 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<ActionResult<AssignedRank>> GetAssignedUnitAsync(int rankId, ulong unitDiscordId)
+        public async Task<ActionResult<AssignedRank>> GetAssignedRankAsync(int rankId, ulong unitDiscordId)
         {
             ActionResult<AssignedRank> action = new ActionResult<AssignedRank>(_logger);
 
             try
             {
-                Unit? unit = await _db.Units
-                    .FirstOrDefaultAsync(u => u.DiscordId == unitDiscordId);
-
-                if (unit == null)
-                {
-                    action.FormFailure("Unit not found");
-                    return action;
-                }
-
-                var assignedRank = unit.AssignedRanks
-                    .FirstOrDefault(ar => ar.RankId == rankId && ar.IsActive());
+                AssignedRank? assignedRank = _db.AssignedRanks.FirstOrDefault(ar => ar.UnitId == unitDiscordId && ar.RankId == rankId && ar.IsActive());
 
                 if (assignedRank == null)
-                {
-                    action.Value = null;
-                    action.FormSuccess("No active assignment");
-                    return action;
-                }
+                    return action.FormFailure($"Unit with Discord ID {unitDiscordId} not assigned to rank {rankId}", eventId: EventIds.NotFound);
 
-                action.Value = assignedRank;
+				action.Value = assignedRank;
                 action.FormSuccess("Assignment retrieved");
             }
             catch (Exception ex)
@@ -343,6 +330,27 @@ namespace accs.Services
             return action;
         }
 
+        public async Task<EmptyAction> CheckCanManageAsync()
+        {
+			EmptyAction action = new EmptyAction(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Can't check permissions. Unauthorized", eventId: EventIds.Unauthorized);
+				if (!Actor.HasPermission(PermissionType.ManageRanks))
+					return action.FormFailure($"{Actor.Nickname} don't have ManageRanks permission", eventId: EventIds.Forbidden);
+
+				action.FormSuccess($"{Actor.Nickname} can manage ranks");
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
         public async Task<ActionResult<Unit>> CheckCanChangeRankAsync(ulong unitDiscordId, Unit? unit)
         {
             ActionResult<Unit> action = new ActionResult<Unit>(_logger);
@@ -350,12 +358,20 @@ namespace accs.Services
             try
             {
                 if (Actor == null)
-
+                    return action.FormFailure("Permission check failed. Unauthorized", eventId: EventIds.Unauthorized);
+                if (!Actor.HasPermission(PermissionType.AssignRanks))
+                    return action.FormFailure($"{Actor.Nickname} don't have AssignRanks permission", eventId: EventIds.Forbidden);
 
                 if (unit == null)
                     unit = await _db.Units.FindAsync(unitDiscordId);
                 if (unit == null)
-                    return action.FormFailure("Permission checking failed. Unit not found", eventId: EventIds.NotFound);
+                    return action.FormFailure("Permission check failed. Unit not found", eventId: EventIds.NotFound);
+                action.Value = unit;
+
+                if (Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).Intersect(unit.GetPosts()).Any())
+                    return action.FormFailure("Permission check failed. Can't change heads ranks", eventId: EventIds.Forbidden);
+
+                action.FormSuccess($"{Actor.Nickname} can change {action.Value.Nickname}'s rank");
             }
             catch (Exception ex)
             {

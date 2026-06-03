@@ -268,7 +268,7 @@ namespace accs.Controllers
         {
             try
             {
-                var action = await _rankService.GetAssignedUnitAsync(rankId, discordId);
+                var action = await _rankService.GetAssignedRankAsync(rankId, discordId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });

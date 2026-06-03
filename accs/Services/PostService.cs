@@ -391,6 +391,8 @@ namespace accs.Services
 			{
 				if (Actor == null)
 					return action.FormFailure("Can't check permissions. Unauthorized", eventId: EventIds.Unauthorized);
+				if (!Actor.HasPermission(PermissionType.ManageStructure))
+					return action.FormFailure($"{Actor.Nickname} don't have ManageStructure permission", eventId: EventIds.Forbidden);
 
 				if (post == null)
 					post = await _db.Posts.FindAsync(postId);
@@ -400,9 +402,7 @@ namespace accs.Services
 					return action.FormFailure($"Can't check permissions. Post with ID {postId} not found", eventId: EventIds.NotFound);
 
 				List<Post> actorControllablePosts = Actor.GetPosts().SelectMany(p => p.GetAllSubordinatesRecursive()).ToList();
-
-				if (!Actor.HasPermission(PermissionType.ManageStructure))
-					return action.FormFailure($"{Actor.Nickname} don't have ManageStructure permission", eventId: EventIds.Forbidden);
+				
 				else if (!Actor.IsAdmin() && !actorControllablePosts.Contains(action.Value))
 					return action.FormFailure($"Post {action.Value.GetFullName()} isn't under {Actor.Nickname}'s control", eventId: EventIds.Forbidden);
 
@@ -439,7 +439,7 @@ namespace accs.Services
 				else if (!Actor.IsAdmin() && actorHeads.Contains(action.Value))
 					return action.FormFailure($"Post {action.Value.GetFullName()} is one of {Actor.Nickname}'s heads", eventId: EventIds.Forbidden);
 
-				action.FormSuccess($"{Actor.Nickname} can manage post {action.Value.GetFullName()}");
+				action.FormSuccess($"{Actor.Nickname} can manage post {action.Value.GetFullName()}", eventId: EventIds.Accessed);
 			}
 			catch (Exception ex)
 			{

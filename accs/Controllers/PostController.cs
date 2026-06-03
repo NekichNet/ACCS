@@ -188,13 +188,23 @@ namespace accs.Controllers
 
         [HttpPatch("{id}")]
         [Authorize]
-        public async Task<IActionResult> UpdatePost([FromRoute] int id)
+        public async Task<IActionResult> UpdatePost([FromRoute] int id, [FromBody] PostDto dto)
         {
             try
             {
                 _postService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                // пока что нет метода в сервисе для обновления должности
+                var action = await _postService.UpdateAsync(id, dto.Name, dto.AppendSubdivisionName, dto.Description, dto.Color, dto.SubdivisionId, dto.MaxRankId, dto.HeadId);
+                if (!action.IsSuccess)
+                {
+                    return BadRequest(new { error = action.Message });
+                }
+                if (action == null)
+                {
+                    return NotFound(new { error = "Post not found" });
+                }
+
+                return Ok(action);
             }
             catch (Exception ex)
             {
@@ -205,12 +215,23 @@ namespace accs.Controllers
 
         [HttpPost("{id}/discord-role")]
         [Authorize]
-        public async Task<IActionResult> UpdatePostRole([FromRoute] int id)
+        public async Task<IActionResult> UpdatePostRole([FromRoute] int id, [FromBody] PostDto dto)
         {
             try
             {
                 _postService.Actor = HttpContext.Items["Actor"] as Unit;
-                // пока что нет метода в сервисе для обновления роли должности
+                
+                var action = await _postService.UpdateRoleAsync(id);
+                if (!action.IsSuccess)
+                {
+                    return BadRequest(new { error = action.Message });
+                }
+                if (action.Value == null)
+                {
+                    return NotFound(new { error = "Post not found" });
+                }
+
+                return Ok(action);
             }
             catch (Exception ex)
             {

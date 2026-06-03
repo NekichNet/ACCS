@@ -1,4 +1,5 @@
 ﻿using accs.Database;
+using accs.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,12 +11,12 @@ namespace accs.Controllers
     [ApiController]
     public class RewardController : ControllerBase
     {
-        private readonly AppDbContext _dbContext;
+        private readonly RewardService _rewardService;
         private readonly ILogger<RewardController> _logger;
 
-        public RewardController(AppDbContext dbContext, ILogger<RewardController> logger)
+        public RewardController(RewardService rewardService, ILogger<RewardController> logger)
         {
-            _dbContext = dbContext;
+            _rewardService = rewardService;
             _logger = logger;
         }
 
@@ -78,5 +79,13 @@ namespace accs.Controllers
         {
             return await Task.FromResult(Ok());
         }
+    }
+
+    public class RewardDto
+    {
+        public string Name { get; set; } = null!;
+        public string? Description { get; set; }
+        public int? SubdivisionId { get; set; }
+        public ulong? DiscordRoleId { get; set; }
     }
 }

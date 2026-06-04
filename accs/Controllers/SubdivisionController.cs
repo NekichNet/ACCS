@@ -128,7 +128,13 @@ namespace accs.Controllers
             {
                 _subdivisionService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var subdivision = await _subdivisionService.CreateAsync(dto.Name, dto.EnvRoleString, dto.HeadId);
+                var subdivision = await _subdivisionService.CreateAsync(
+                    dto.Name,
+                    dto.AppendSubdivisionName,
+                    dto.Description,
+                    dto.Color,
+                    dto.DiscordRoleId,
+                    dto.HeadId);
                 if (!subdivision.IsSuccess)
                 {
                     return BadRequest(new { error = subdivision.Message });
@@ -190,13 +196,38 @@ namespace accs.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+
+        [HttpDelete("{subdivisionId}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteSubdivision([FromRoute] int subdivisionId)
+        {
+            try
+            {
+                _subdivisionService.Actor = HttpContext.Items["Actor"] as Unit;
+
+                var subdivision = await _subdivisionService.DeleteAsync(subdivisionId);
+                if (!subdivision.IsSuccess)
+                {
+                    return BadRequest(new { error = subdivision.Message });
+                }
+
+                return Ok(subdivision);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in DeleteSubdivision: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
     }
 
     public class SubdivisionDto
     {
         public string Name { get; set; } = string.Empty;
-        public string? EnvRoleString { get; set; } = null;
+        public bool AppendSubdivisionName { get; set; } = false;
         public int? HeadId { get; set; } = null;
         public string? Color { get; set; } = null;
+        public string? Description { get; set; } = null;
+        public ulong? DiscordRoleId { get; set; } = null;
     }
 }

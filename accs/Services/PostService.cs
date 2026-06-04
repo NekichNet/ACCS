@@ -403,7 +403,7 @@ namespace accs.Services
 
 				List<Post> actorControllablePosts = Actor.GetPosts().SelectMany(p => p.GetAllSubordinatesRecursive()).ToList();
 				
-				else if (!Actor.IsAdmin() && !actorControllablePosts.Contains(action.Value))
+				if (!Actor.IsAdmin() && !actorControllablePosts.Contains(action.Value))
 					return action.FormFailure($"Post {action.Value.GetFullName()} isn't under {Actor.Nickname}'s control", eventId: EventIds.Forbidden);
 
 				action.FormSuccess($"{Actor.Nickname} can manage post {action.Value.GetFullName()}");

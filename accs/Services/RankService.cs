@@ -97,31 +97,19 @@ namespace accs.Services
 
             try
             {
-                if (Actor != null)
-                {
-                    if (Actor.HasPermission(PermissionType.ManageStructure))
-                    {
-                        var rank = await _db.Ranks.FindAsync(rankId);
-                        if (rank != null)
-                        {
-                            _db.Ranks.Remove(rank);
-                            await _db.SaveChangesAsync();
-                            action.FormSuccess("Rank deleted");
-                        }
-                        else
-                        {
-                            action.FormFailure("Rank not found");
-                        }
-                    }
-                    else
-                    {
-                        action.FormFailure("Rank deletion restricted");
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Rank deletion restricted. Unauthorized");
-                }
+                EmptyAction result = await CheckCanManageAsync();
+                if (!result.IsSuccess)
+                    return action.FormFailure("Rank deleting restricted. Permission check failed", eventId: EventIds.Forbidden);
+
+                Rank? rank = await _db.Ranks.FindAsync(rankId);
+                if (rank == null)
+                    return action.FormFailure("Rank deleting failed. Rank not found", eventId: EventIds.NotFound);
+
+                _db.Ranks.Remove(rank);
+
+                await _db.SaveChangesAsync();
+
+                action.FormSuccess("Rank deleted");
             }
             catch (Exception ex)
             {

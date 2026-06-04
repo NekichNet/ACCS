@@ -80,7 +80,7 @@ namespace accs.Services
 				await _db.Posts.AddAsync(action.Value);
 				await _db.SaveChangesAsync();
 
-				action.FormSuccess($"Post {action.Value.GetFullName()} created");
+				action.FormSuccess($"Post {action.Value.GetFullName()} created", eventId: EventIds.Created);
 			}
             catch (Exception ex)
             {
@@ -100,9 +100,9 @@ namespace accs.Services
             {
 				action.Value = await _db.Posts.FindAsync(id);
 				if (action.Value != null)
-					action.FormSuccess("Post found");
+					action.FormSuccess("Post found", eventId: EventIds.Read);
 				else
-					action.FormFailure("Post not found");
+					action.FormFailure("Post not found", eventId: EventIds.NotFound);
 			}
 			catch (Exception ex)
 			{
@@ -119,7 +119,8 @@ namespace accs.Services
 			try
 			{
 				action.Value = await _db.Posts.ToListAsync();
-				action.FormSuccess("Post list formed, length: " + action.Value.Count());
+				action.FormSuccess("Post list formed, length: " + action.Value.Count(),
+					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
 			}
 			catch (Exception ex)
 			{
@@ -184,7 +185,7 @@ namespace accs.Services
 
 				result.Value.UpdateRole();
 
-				action.FormSuccess("Post updated");
+				action.FormSuccess("Post updated", eventId: EventIds.Updated);
 			}
 			catch (Exception ex)
 			{
@@ -208,13 +209,13 @@ namespace accs.Services
 				ActionResult<Post> result = await CheckCanManageAsync(postId);
 
 				if (!result.IsSuccess)
-					return action.FormFailure("Permission check failed");
+					return action.FormFailure("Post updating. Permission check failed", eventId: EventIds.Forbidden);
 
 				result.Value.UpdateRole();
 				_db.Posts.Update(result.Value);
 				await _db.SaveChangesAsync();
 				action.Value = result.Value.DiscordRoleId;
-				action.FormSuccess("Post Discord role updated");
+				action.FormSuccess("Post Discord role updated", eventId: EventIds.Updated);
 			}
 			catch (Exception ex)
 			{

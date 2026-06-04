@@ -1,13 +1,10 @@
-﻿
-using accs.Database;
+﻿using accs.Database;
 using accs.Logging;
 using accs.Models;
 using accs.Models.Enums;
 using accs.Models.Statuses;
 using accs.Models.Util;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using System;
 
 namespace accs.Services
 {
@@ -19,32 +16,38 @@ namespace accs.Services
             _db = db;
         }
 
-        public async Task<ActionResult<Rank>> CreateAsync(int id, string name)
+        public async Task<ActionResult<Rank>> CreateAsync(
+            string name,
+			ushort counterToReach,
+			string color,
+			int lowerId
+        )
         {
             ActionResult<Rank> action = new ActionResult<Rank>(_logger);
 
             try
             {
-                if (Actor != null)
-                {
-                    if (Actor.HasPermission(PermissionType.ManageStructure))
-                    {
-                        action.Value = new Rank(id, name);
+                EmptyAction result = await CheckCanManageAsync();
+                if (!result.IsSuccess)
+                    return action.FormFailure("Creating rank restricted. Permission check failed", eventId: EventIds.Forbidden);
 
-                        await _db.Ranks.AddAsync(action.Value);
-                        await _db.SaveChangesAsync();
+                Rank? lowerRank = await _db.Ranks.FindAsync(lowerId);
+                if (lowerRank == null)
+                    return action.FormFailure("Creating rank failed. Lower rank not found", eventId: EventIds.NotFound);
 
-                        action.FormSuccess("Rank created");
-                    }
-                    else
-                    {
-                        action.FormFailure("Rank creation restricted");
-                    }
-                }
-                else
+                action.Value = new Rank
                 {
-                    action.FormFailure("Rank creation restricted. Unauthorized");
-                }
+                    Name = name,
+                    CounterToReach = counterToReach,
+                    Color = color,
+                    LowerId = lowerId,
+                    HigherId = lowerRank.HigherId
+                };
+
+                await _db.Ranks.AddAsync(action.Value);
+                await _db.SaveChangesAsync();
+
+                action.FormSuccess($"Rank {name} created");
             }
             catch (Exception ex)
             {
@@ -54,17 +57,17 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<ActionResult<Rank>> GetAsync(int id)
+        public async Task<ActionResult<Rank>> GetAsync(int rankId)
         {
             ActionResult<Rank> action = new ActionResult<Rank>(_logger);
 
             try
             {
-                action.Value = await _db.Ranks.FindAsync(id);
+                action.Value = await _db.Ranks.FindAsync(rankId);
                 if (action.Value != null)
-                    action.FormSuccess("Rank found");
+                    action.FormSuccess("Rank found", eventId: EventIds.Read);
                 else
-                    action.FormFailure("Rank not found");
+                    action.FormFailure("Rank not found", eventId: EventIds.NotFound);
             }
             catch (Exception ex)
             {
@@ -81,7 +84,8 @@ namespace accs.Services
             try
             {
                 action.Value = await _db.Ranks.ToListAsync();
-                action.FormSuccess("Rank list formed, length: " + action.Value.Count());
+                action.FormSuccess("Rank list formed, length: " + action.Value.Count(),
+					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
             }
             catch (Exception ex)
             {
@@ -105,6 +109,12 @@ namespace accs.Services
                 if (rank == null)
                     return action.FormFailure("Rank deleting failed. Rank not found", eventId: EventIds.NotFound);
 
+                if (rank.Higher != null)
+                    rank.Higher.LowerId = rank.LowerId;
+
+                if (rank.Lower != null)
+                    rank.Lower.HigherId = rank.HigherId;
+
                 _db.Ranks.Remove(rank);
 
                 await _db.SaveChangesAsync();
@@ -119,38 +129,40 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> UpdateAsync(int rankId, string name)
+        public async Task<EmptyAction> UpdateAsync(
+            int rankId,
+            string name,
+            ushort counterToReach,
+            string color,
+            int lowerId
+        )
         {
             EmptyAction action = new EmptyAction(_logger);
 
             try
             {
-                if (Actor != null)
-                {
-                    if (Actor.HasPermission(PermissionType.ManageStructure))
-                    {
-                        var rank = await _db.Ranks.FindAsync(rankId);
-                        if (rank != null)
-                        {
-                            rank.Name = name;
-                            _db.Ranks.Update(rank);
-                            await _db.SaveChangesAsync();
-                            action.FormSuccess("Rank updated");
-                        }
-                        else
-                        {
-                            action.FormFailure("Rank not found");
-                        }
-                    }
-                    else
-                    {
-                        action.FormFailure("Rank update restricted");
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Rank update restricted. Unauthorized");
-                }
+                EmptyAction result = await CheckCanManageAsync();
+                if (!result.IsSuccess)
+                    return action.FormFailure("Rank updating restricted. Permission check failed", eventId: EventIds.Forbidden);
+
+                Rank? rank = await _db.Ranks.FindAsync(rankId);
+                if (rank == null)
+                    return action.FormFailure("Rank updating failed. Rank not found", eventId: EventIds.NotFound);
+
+                Rank? lowerRank = await _db.Ranks.FindAsync(lowerId);
+                if (lowerRank == null)
+                    return action.FormFailure("Rank updating failed. Lower rank not found", eventId: EventIds.NotFound);
+
+                rank.Name = name;
+				rank.CounterToReach = counterToReach;
+                rank.Color = color;
+                rank.LowerId = lowerId;
+                rank.HigherId = lowerRank.HigherId;
+
+				_db.Ranks.Update(rank);
+                await _db.SaveChangesAsync();
+
+                action.FormSuccess($"Rank {name} updated");
             }
             catch (Exception ex)
             {
@@ -166,60 +178,20 @@ namespace accs.Services
 
             try
             {
-                if (Actor != null)
-                {
-                    if (Actor.HasPermission(PermissionType.ManageStructure))
-                    {
-                        var rank = await _db.Ranks.FindAsync(rankId);
-                        if (rank != null)
-                        {
-                            rank.UpdateRole();
-                            _db.Ranks.Update(rank);
-                            await _db.SaveChangesAsync();
-                            action.FormSuccess("Rank discord role updated");
-                        }
-                        else
-                        {
-                            action.FormFailure("Rank not found");
-                        }
-                    }
-                    else
-                    {
-                        action.FormFailure("Rank role update restricted");
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Rank role update restricted. Unauthorized");
-                }
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+                EmptyAction result = await CheckCanManageAsync();
+                if (!result.IsSuccess)
+                    return action.FormFailure("Updating rank role restricted. Permission check failed", eventId: EventIds.Forbidden);
 
-            return action;
-        }
-
-        public async Task<EmptyAction> GetUnitsByRankAsync(int rankId)
-        {
-            EmptyAction action = new EmptyAction(_logger);
-
-            try
-            {
-                var rank = await _db.Ranks.FindAsync(rankId);
+                Rank? rank = await _db.Ranks.FindAsync(rankId);
                 if (rank == null)
-                {
-                    action.FormFailure("Rank not found");
-                    return action;
-                }
+                    return action.FormFailure("Updating rank role failed. Rank not found", eventId: EventIds.NotFound);
 
-                var assignedRanks = await _db.AssignedRanks
-                    .Where(ar => ar.RankId == rankId)
-                    .Include(ar => ar.Unit)
-                    .ToListAsync();
+				rank.UpdateRole();
+				_db.Ranks.Update(rank);
 
-                action.FormSuccess("Units by rank retrieved");
+                await _db.SaveChangesAsync();
+
+                action.FormSuccess($"Rank {rank.Name} discord role updated");
             }
             catch (Exception ex)
             {
@@ -229,64 +201,60 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> AssignAsync(int rankId, ulong id)
+        public async Task<ActionResult<List<Unit>>> GetUnitsByRankAsync(int rankId)
         {
-            EmptyAction action = new EmptyAction(_logger);
+			ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
 
             try
             {
-                if (Actor != null)
+                Rank? rank = await _db.Ranks.FindAsync(rankId);
+                if (rank == null)
+                    return action.FormFailure("Getting units by rank failed. Rank not found", eventId: EventIds.NotFound);
+
+                action.Value = rank.AssignedRanks.Where(r => r.IsActive()).Select(ar => ar.Unit).ToList();
+
+                action.FormSuccess($"Units by {rank.Name} rank retrieved",
+					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
+            }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
+        public async Task<ActionResult<AssignedRank>> AssignAsync(int rankId, ulong unitId)
+        {
+			ActionResult<AssignedRank> action = new ActionResult<AssignedRank>(_logger);
+
+            try
+            {
+                ActionResult<Unit> result = await CheckCanChangeRankAsync(unitId);
+                if (!result.IsSuccess)
+                    return action.FormFailure("Rank assigning restricted. Permission check failed", eventId: EventIds.Forbidden);
+
+                Rank? rank = await _db.Ranks.FindAsync(rankId);
+                if (rank == null)
+                    return action.FormFailure("Rank assigning failed. Rank not found", eventId: EventIds.NotFound);
+
+                AssignedRank currentAssignment = result.Value.GetAssignedRank();
+
+                if (currentAssignment.Rank.Id == rank.Id)
+                    return action.FormFailure($"Rank assigning failed. Unit {result.Value.Nickname} already assigned to this rank", eventId: EventIds.ImpossibleAction);
+
+                currentAssignment.Terminate();
+
+                var newAssignedRank = new AssignedRank
                 {
-                    if (Actor.HasPermission(PermissionType.AssignRanks))
-                    {
-                        Unit unit = await _db.Units.FindAsync(id);
+                    UnitId = result.Value.DiscordId,
+                    RankId = rankId
+                };
 
-                        var rank = await _db.Ranks.FindAsync(rankId);
-                        if (rank == null)
-                        {
-                            action.FormFailure("Rank not found");
-                            return action;
-                        }
+                await _db.AssignedRanks.AddAsync(newAssignedRank);
+                await _db.SaveChangesAsync();
 
-                        var res = await _db.Units
-                            .Include(u => u.AssignedRanks)
-                            .FirstOrDefaultAsync(u => u.DiscordId == unit.DiscordId);
-
-                        if (res == null)
-                        {
-                            action.FormFailure("Unit not found");
-                            return action;
-                        }
-
-                        var activeRank = res.AssignedRanks.FirstOrDefault(ar => ar.IsActive());
-                        if (activeRank != null)
-                        {
-                            activeRank.End = DateTime.UtcNow;
-                            _db.AssignedRanks.Update(activeRank);
-                        }
-
-                        var newAssignedRank = new AssignedRank
-                        {
-                            UnitId = res.DiscordId,
-                            RankId = rankId,
-                            Start = DateTime.UtcNow,
-                            End = null
-                        };
-
-                        await _db.AssignedRanks.AddAsync(newAssignedRank);
-                        await _db.SaveChangesAsync();
-
-                        action.FormSuccess("Rank assigned to res");
-                    }
-                    else
-                    {
-                        action.FormFailure("Rank assignment restricted");
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Rank assignment restricted. Unauthorized");
-                }
+                action.FormSuccess($"Unit {result.Value.Nickname} assigned to rank {rank.Name}", eventId: EventIds.Created);
             }
             catch (Exception ex)
             {
@@ -339,7 +307,7 @@ namespace accs.Services
 			return action;
 		}
 
-        public async Task<ActionResult<Unit>> CheckCanChangeRankAsync(ulong unitDiscordId, Unit? unit)
+        public async Task<ActionResult<Unit>> CheckCanChangeRankAsync(ulong unitDiscordId, Unit? unit = null)
         {
             ActionResult<Unit> action = new ActionResult<Unit>(_logger);
 
@@ -355,6 +323,9 @@ namespace accs.Services
                 if (unit == null)
                     return action.FormFailure("Permission check failed. Unit not found", eventId: EventIds.NotFound);
                 action.Value = unit;
+
+                if (!unit.IsActive())
+                    return action.FormFailure("Permission check failed. Unit is in retirement or dismissed", eventId: EventIds.Forbidden);
 
                 if (Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).Intersect(unit.GetPosts()).Any())
                     return action.FormFailure("Permission check failed. Can't change heads ranks", eventId: EventIds.Forbidden);

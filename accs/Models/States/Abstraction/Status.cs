@@ -1,11 +1,12 @@
 ﻿using accs.Models.Interfaces;
+using accs.Models.Statuses.Abstraction;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 
 namespace accs.Models.States.Abstraction
 {
     [Table("Statuses")]
-    public abstract class Status : StateWithDoc, IEntityWithDiscordRole
+    public abstract class Status : UnitState, IEntityWithDiscordRole
     {
         public string Color { get; set; }
         public string Name { get; set; }

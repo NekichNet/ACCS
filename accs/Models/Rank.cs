@@ -13,47 +13,37 @@ namespace accs.Models
 	public class Rank : IEntityWithPermissions, IEntityWithDiscordRole, IEntityWithFiles
 	{
 		public int Id { get; set; }
-		public ushort CounterToReach { get; set; }
-		public int? PreviousId { get; set; }
-		[JsonIgnore] public virtual Rank? Previous { get; set; }
-		public int? NextId { get; set; }
-		[JsonIgnore] public virtual Rank? Next { get; set; }
-		public string Color { get; set; } = "#00FF00";
 		public string Name { get; set; } = string.Empty;
+		public ushort CounterToReach { get; set; }
+		public string Color { get; set; } = "#00FF00";
 		public ulong? DiscordRoleId { get; set; }
+		public int? LowerId { get; set; }
+		[JsonIgnore] public virtual Rank? Lower { get; set; }
+		public int? HigherId { get; set; }
+		[JsonIgnore] public virtual Rank? Higher { get; set; }
 		[JsonIgnore] public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
 		[JsonIgnore] public virtual List<AssignedRank> AssignedRanks { get; set; } = new List<AssignedRank>();
 
-		public Rank(int id, string name, ushort counterToReach = 5)
-		{
-			Id = id;
-			Name = name;
-			CounterToReach = counterToReach;
-			DiscordRoleId = ulong.Parse(DotNetEnv.Env.GetString($"RANK{Id}_ROLE_ID", $"RANK{Id}_ROLE_ID Not found"));
-		}
-
-		public Rank() { }
-
 		public void InsertPrevious(Rank rank)
 		{
-			if (Previous != null)
+			if (Lower != null)
 			{
-				Previous.NextId = rank.Id;
-				rank.PreviousId = Previous.Id;
+				Lower.HigherId = rank.Id;
+				rank.LowerId = Lower.Id;
 			}
-			rank.NextId = Id;
-			PreviousId = rank.Id;
+			rank.HigherId = Id;
+			LowerId = rank.Id;
 		}
 
 		public void InsertNext(Rank rank)
 		{
-			if (Next != null)
+			if (Higher != null)
 			{
-				Next.PreviousId = rank.Id;
-				rank.NextId = Next.Id;
+				Higher.LowerId = rank.Id;
+				rank.HigherId = Higher.Id;
 			}
-			rank.PreviousId = Id;
-			NextId = rank.Id;
+			rank.LowerId = Id;
+			HigherId = rank.Id;
 		}
 
         public override string ToString()
@@ -64,9 +54,9 @@ namespace accs.Models
 		public HashSet<GivedPermission> GetGivedPermissionsRecursive()
 		{
 			HashSet<GivedPermission> givedPermissions = [.. GivedPermissions];
-			if (Previous != null)
+			if (Lower != null)
 				foreach (GivedPermission givedPermission in
-					Previous.GetGivedPermissionsRecursive().Where(gp => gp.Inherit))
+					Lower.GetGivedPermissionsRecursive().Where(gp => gp.Inherit))
 					givedPermissions.Add(givedPermission);
 			return givedPermissions;
 		}
@@ -74,9 +64,9 @@ namespace accs.Models
 		public HashSet<Permission> GetPermissionsRecursive()
         {
 			HashSet<Permission> permissions = [.. GetPermissions()];
-			if (Previous != null)
+			if (Lower != null)
 				foreach (GivedPermission givedPermission in
-					Previous.GetGivedPermissionsRecursive().Where(gp => gp.Inherit))
+					Lower.GetGivedPermissionsRecursive().Where(gp => gp.Inherit))
 					permissions.Add(givedPermission.Permission);
 			return permissions;
 		}
@@ -115,10 +105,10 @@ namespace accs.Models
 		public List<Rank> GetAllHigherRecursive()
 		{
 			List<Rank> higherRanks = new List<Rank>();
-			if (Next != null)
+			if (Higher != null)
 			{
-				higherRanks.Add(Next);
-				higherRanks.AddRange(Next.GetAllHigherRecursive());
+				higherRanks.Add(Higher);
+				higherRanks.AddRange(Higher.GetAllHigherRecursive());
 			}
 			return higherRanks;
 		}
@@ -126,10 +116,10 @@ namespace accs.Models
 		public List<Rank> GetAllLowerRecursive()
 		{
 			List<Rank> higherRanks = new List<Rank>();
-			if (Previous != null)
+			if (Lower != null)
 			{
-				higherRanks.Add(Previous);
-				higherRanks.AddRange(Previous.GetAllHigherRecursive());
+				higherRanks.Add(Lower);
+				higherRanks.AddRange(Lower.GetAllHigherRecursive());
 			}
 			return higherRanks;
 		}

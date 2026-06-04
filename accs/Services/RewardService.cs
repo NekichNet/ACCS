@@ -235,7 +235,7 @@ namespace accs.Services
                 {
                     if (Actor.HasPermission(PermissionType.ManageStructure))
                     {
-                        var unit = await _db.Units.FindAsync((ulong)unitId);
+                        var unit = await _db.Units.FindAsync(unitId);
                         if (unit == null)
                         {
                             action.FormFailure($"Unit with ID {unitId} not found");
@@ -250,7 +250,7 @@ namespace accs.Services
                         }
 
                         var existingAssignment = await _db.AssignedRewards
-                            .FirstOrDefaultAsync(ar => ar.RewardId == rewardId && (ulong)ar.UnitId == unit.DiscordId);
+                            .FirstOrDefaultAsync(ar => ar.RewardId == rewardId && ar.UnitId == unit.DiscordId);
 
                         if (existingAssignment != null)
                         {
@@ -260,7 +260,7 @@ namespace accs.Services
 
                         var newAssignedReward = new AssignedReward
                         {
-                            UnitId = (int)unit.DiscordId,
+                            UnitId = unit.DiscordId,
                             RewardId = rewardId,
                             Display = true
                         };

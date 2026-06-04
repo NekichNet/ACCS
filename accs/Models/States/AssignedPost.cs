@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace accs.Models.Statuses
 {
     [Table("AssignedPosts")]
-    public class AssignedPost : StateWithDoc
+    public class AssignedPost : UnitState
     {
         public int PostId { get; set; }
         [JsonIgnore] public virtual Post Post { get; set; }

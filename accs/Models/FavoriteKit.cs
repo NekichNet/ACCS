@@ -1,4 +1,5 @@
 ﻿using accs.Models.Abstraction;
+using System.Text.Json;
 
 namespace accs.Models
 {
@@ -10,6 +11,11 @@ namespace accs.Models
         public string GetImageFolderName()
         {
             return "kits";
+        }
+
+        public override string ToString()
+        {
+            return JsonSerializer.Serialize(this);
         }
     }
 }

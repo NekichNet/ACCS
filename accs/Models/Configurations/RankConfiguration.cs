@@ -7,7 +7,7 @@ namespace accs.Models.Configurations
 	{
 		public void Configure(EntityTypeBuilder<Rank> builder)
 		{
-			builder.HasOne(r => r.Previous).WithOne(rp => rp.Next);
+			builder.HasOne(r => r.Lower).WithOne(rp => rp.Higher);
 		}
 	}
 }

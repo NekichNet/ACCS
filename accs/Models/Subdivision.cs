@@ -22,7 +22,6 @@ namespace accs.Models
 		[JsonIgnore] public virtual List<Subdivision> Subordinates { get; set; } = new List<Subdivision>();
 		[JsonIgnore] public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
 		
-
 		public string GetFullName()
 		{
 			return AppendHeadName && Head != null ? Name + " " + Head.GetFullName() : Name;

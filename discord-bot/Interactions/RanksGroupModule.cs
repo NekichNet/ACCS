@@ -91,9 +91,9 @@ namespace discord_bot.Interactions
 					/*
 					var allowedRanks = new List<Rank>(); 
 					Rank CurrentTestRank = actorUnit.Rank;
-					while (CurrentTestRank.Previous != null)
+					while (CurrentTestRank.Lower != null)
 					{
-						CurrentTestRank = CurrentTestRank.Previous;
+						CurrentTestRank = CurrentTestRank.Lower;
 						allowedRanks.Add(CurrentTestRank);
 					}
 					*/

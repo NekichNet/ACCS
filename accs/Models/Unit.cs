@@ -1,5 +1,6 @@
 ﻿using accs.Models.Enums;
 using accs.Models.SingleDayEvents;
+using accs.Models.SingleDayEvents.Abstraction;
 using accs.Models.States;
 using accs.Models.States.Abstraction;
 using accs.Models.Statuses;
@@ -34,6 +35,7 @@ namespace accs.Models
 		[JsonIgnore] public virtual List<Retirement> Retirements { get; set; }
 		[JsonIgnore] public virtual List<Status> Statuses { get; set; } = new List<Status>();
 		[JsonIgnore] public virtual List<UnitState> UnitStates { get; set; } = new List<UnitState>();
+		[JsonIgnore] public virtual List<SingleDayEvent> SingleDayEvents { get; set; } = new List<SingleDayEvent>();
         
         public AssignedRank? GetAssignedRank(DateTime? dateTime = null)
 		{

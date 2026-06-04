@@ -1,6 +1,8 @@
 ﻿using accs.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
@@ -11,11 +13,11 @@ namespace accs.Models
 		public PermissionType Type { get; set; }
 		public string Name { get; set; }
 		public string Description { get; set; } = string.Empty;
-		public virtual List<GivedPermission> GivedPermissions { get; set; } = new List<GivedPermission>();
+		[JsonIgnore] public virtual List<GivedPermission> GivedPermissions { get; set; } = new List<GivedPermission>();
 
         public override string ToString()
         {
-            return Type.ToString();
+            return JsonSerializer.Serialize(this);
         }
 	}
 }

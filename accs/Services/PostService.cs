@@ -4,6 +4,7 @@ using accs.Models;
 using accs.Models.Enums;
 using accs.Models.Statuses;
 using accs.Models.Util;
+using accs.Services.Abstraction;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Services
@@ -99,6 +100,7 @@ namespace accs.Services
             try
             {
 				action.Value = await _db.Posts.FindAsync(id);
+
 				if (action.Value != null)
 					action.FormSuccess("Post found", eventId: EventIds.Read);
 				else
@@ -119,6 +121,7 @@ namespace accs.Services
 			try
 			{
 				action.Value = await _db.Posts.ToListAsync();
+
 				action.FormSuccess("Post list formed, length: " + action.Value.Count(),
 					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
 			}
@@ -180,10 +183,10 @@ namespace accs.Services
 				result.Value.Color = color;
 				result.Value.AppendSubdivisionName = appendSubdivisionName;
 
+				result.Value.UpdateRole();
+
 				_db.Posts.Update(result.Value);
 				await _db.SaveChangesAsync();
-
-				result.Value.UpdateRole();
 
 				action.FormSuccess("Post updated", eventId: EventIds.Updated);
 			}
@@ -212,10 +215,11 @@ namespace accs.Services
 					return action.FormFailure("Post updating. Permission check failed", eventId: EventIds.Forbidden);
 
 				result.Value.UpdateRole();
-				_db.Posts.Update(result.Value);
-				await _db.SaveChangesAsync();
 				action.Value = result.Value.DiscordRoleId;
-				action.FormSuccess("Post Discord role updated", eventId: EventIds.Updated);
+
+				await _db.SaveChangesAsync();
+
+				action.FormSuccess($"Post {result.Value.GetFullName()} Discord role updated", eventId: EventIds.Updated);
 			}
 			catch (Exception ex)
 			{
@@ -313,7 +317,7 @@ namespace accs.Services
 			{
 				ActionResult<Post> result = await CheckCanAssignAsync(postId);
 				if (!result.IsSuccess)
-					return action.FormFailure("Permission check failed", eventId: EventIds.Forbidden);
+					return action.FormFailure("Post assigning restricted. Permission check failed", eventId: EventIds.Forbidden);
 
 				if (unit == null)
 					unit = await _db.Units.FindAsync(unitDiscordId);
@@ -352,7 +356,7 @@ namespace accs.Services
 					post = assignedPost.Post;
 				EmptyAction result = await CheckCanAssignAsync(postId, post);
 				if (!result.IsSuccess)
-					return action.FormFailure("Permission check failure", eventId: EventIds.Forbidden);
+					return action.FormFailure("Unit deposing restricted. Permission check failure", eventId: EventIds.Forbidden);
 
 				if (unit == null)
 					unit = await _db.Units.FindAsync(unitDiscordId);
@@ -393,7 +397,7 @@ namespace accs.Services
 				if (Actor == null)
 					return action.FormFailure("Can't check permissions. Unauthorized", eventId: EventIds.Unauthorized);
 				if (!Actor.HasPermission(PermissionType.ManageStructure))
-					return action.FormFailure($"{Actor.Nickname} don't have ManageStructure permission", eventId: EventIds.Forbidden);
+					return action.FormFailure($"{Actor.Nickname} doesn't have ManageStructure permission", eventId: EventIds.Forbidden);
 
 				if (post == null)
 					post = await _db.Posts.FindAsync(postId);

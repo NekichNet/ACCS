@@ -7,6 +7,7 @@ using accs.Models.States.Abstraction;
 using accs.Models.Statuses;
 using accs.Models.Statuses.Abstraction;
 using accs.Models.Util;
+using accs.Services.Abstraction;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Services
@@ -29,47 +30,30 @@ namespace accs.Services
 
 			try
 			{
-				if (Actor != null)
+                if (Actor == null)
+					return action.FormFailure("Unit registration restricted. Unauthorized", eventId: EventIds.Unauthorized);
+                if (!Actor.HasPermission(PermissionType.RegisterNewUnits))
+                    return action.FormFailure("Unit registration restricted", eventId: EventIds.Forbidden);
+                if ((await _db.Units.FindAsync(discordId)) == null)
+					return action.FormFailure($"Unit with ID {discordId} already registered", eventId: EventIds.ImpossibleAction);
+                
+				action.Value = new Unit
 				{
-					if (Actor.IsAdmin())
-					{
-                        if ((await _db.Units.FindAsync(discordId)) == null)
-                        {
-							action.Value = new Unit
-							{
-								DiscordId = discordId,
-								Nickname = nickname,
-								RankUpCounter = 0,
-							};
+					DiscordId = discordId,
+					Nickname = nickname
+				};
 
-							await _db.Units.AddAsync(action.Value);
-
-							UnitRegistrationEvent registrationEvent = new UnitRegistrationEvent
-							{
-								Initiator = Actor,
-								Unit = action.Value
-							};
-
-							await _db.UnitRegistrationEvents.AddAsync(registrationEvent);
-
-							await _db.SaveChangesAsync();
-
-							action.FormSuccess("Unit registered");
-						}
-                        else
-                        {
-                            action.FormFailure($"Unit with ID {discordId} already registered");
-                        }
-					}
-					else
-					{
-						action.FormFailure("Unit registration restricted");
-					}
-				}
-				else
+				UnitRegistrationEvent registrationEvent = new UnitRegistrationEvent
 				{
-					action.FormFailure("Unit registration restricted. Unauthorized");
-				}
+					Initiator = Actor,
+					Unit = action.Value
+				};
+
+				await _db.Units.AddAsync(action.Value);
+				await _db.UnitRegistrationEvents.AddAsync(registrationEvent);
+				await _db.SaveChangesAsync();
+
+				action.FormSuccess($"Unit {action.Value.Nickname} registered", eventId: EventIds.Created);
 			}
 			catch (Exception ex)
 			{
@@ -87,9 +71,9 @@ namespace accs.Services
 			{
 				action.Value = await _db.Units.FindAsync(discordId);
 				if (action.Value != null)
-					action.FormSuccess("Unit found");
+					action.FormSuccess($"Unit {action.Value.Nickname} found", eventId: EventIds.Read);
 				else
-					action.FormFailure("Unit not found");
+					action.FormFailure($"Unit with Discord ID {discordId} not found", eventId: EventIds.NotFound);
 			}
 			catch (Exception ex)
 			{

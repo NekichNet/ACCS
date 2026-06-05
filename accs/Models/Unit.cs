@@ -19,7 +19,7 @@ namespace accs.Models
 		public ulong DiscordId { get; set; }
 		public string Nickname { get; set; }
 		public ulong? SteamId { get; set; }
-		public ushort RankUpCounter { get; set; }
+		public ushort RankUpCounter { get; set; } = 0;
 		public int RegistrationEventId { get; set; }
 		[JsonIgnore] public virtual UnitRegistrationEvent RegistrationEvent { get; set; }
 		public int FavoriteKitId { get; set; } = 1;

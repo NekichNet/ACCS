@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace accs.Models.SingleDayEvents
 {
     [Table("RewardAssignmentEvents")]
-    public class RewardAssignmentEvent : EventWithDoc
+    public class RewardAssignmentEvent : EventWithInitiator
     {
         public int AssignedRewardId { get; set; }
         [JsonIgnore] public virtual AssignedReward AssignedReward { get; set; }

@@ -1,6 +1,6 @@
 ﻿using accs.Models;
 
-namespace accs.Services
+namespace accs.Services.Abstraction
 {
     public abstract class BusinessService
     {

@@ -4,6 +4,7 @@ using accs.Models;
 using accs.Models.Enums;
 using accs.Models.Statuses;
 using accs.Models.Util;
+using accs.Services.Abstraction;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Services
@@ -159,10 +160,12 @@ namespace accs.Services
                 rank.LowerId = lowerId;
                 rank.HigherId = lowerRank.HigherId;
 
+                rank.UpdateRole();
+
 				_db.Ranks.Update(rank);
                 await _db.SaveChangesAsync();
 
-                action.FormSuccess($"Rank {name} updated");
+                action.FormSuccess($"Rank {name} updated", eventId: EventIds.Updated);
             }
             catch (Exception ex)
             {
@@ -172,9 +175,9 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> UpdateRoleAsync(int rankId)
+        public async Task<ActionResult<ulong?>> UpdateRoleAsync(int rankId)
         {
-            EmptyAction action = new EmptyAction(_logger);
+			ActionResult<ulong?> action = new ActionResult<ulong?>(_logger);
 
             try
             {
@@ -187,11 +190,12 @@ namespace accs.Services
                     return action.FormFailure("Updating rank role failed. Rank not found", eventId: EventIds.NotFound);
 
 				rank.UpdateRole();
-				_db.Ranks.Update(rank);
+                action.Value = rank.DiscordRoleId;
 
+				_db.Ranks.Update(rank);
                 await _db.SaveChangesAsync();
 
-                action.FormSuccess($"Rank {rank.Name} discord role updated");
+                action.FormSuccess($"Rank {rank.Name} Discord role updated", eventId: EventIds.Updated);
             }
             catch (Exception ex)
             {
@@ -276,7 +280,7 @@ namespace accs.Services
                     return action.FormFailure($"Unit with Discord ID {unitDiscordId} not assigned to rank {rankId}", eventId: EventIds.NotFound);
 
 				action.Value = assignedRank;
-                action.FormSuccess("Assignment retrieved");
+                action.FormSuccess($"{assignedRank.Unit.Nickname} assignment to {assignedRank.Rank.Name} retrieved", eventId: EventIds.Read);
             }
             catch (Exception ex)
             {

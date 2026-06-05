@@ -2,7 +2,9 @@
 using accs.Logging;
 using accs.Models;
 using accs.Models.Enums;
+using accs.Models.SingleDayEvents;
 using accs.Models.Util;
+using accs.Services.Abstraction;
 using Microsoft.EntityFrameworkCore;
 namespace accs.Services
 {
@@ -17,46 +19,33 @@ namespace accs.Services
 
         public async Task<ActionResult<Reward>> CreateAsync(
             string name,
-            int? subdivisionId,
             string color,
             string conditions,
-            string privileges,
-            string? imagePath
+            string privileges
         )
         {
             ActionResult<Reward> action = new ActionResult<Reward>(_logger);
 
             try
             {
-                if (Actor != null)
+                EmptyAction result = await CheckCanManageRewards();
+                if (!result.IsSuccess)
+                    return action.FormFailure("Creating reward restricted. Permission check failed", eventId: EventIds.Forbidden);
+
+                action.Value = new Reward
                 {
-                    if (Actor.HasPermission(PermissionType.ManageStructure))
-                    {
-                        action.Value = new Reward
-                        {
-                            Name = name,
-                            Conditions = conditions,
-                            Privileges = privileges,
-                            Color = color,
-                            ImagePath = imagePath
-                        };
+                    Name = name,
+                    Conditions = conditions,
+                    Privileges = privileges,
+                    Color = color
+                };
 
-                        action.Value.UpdateRole();
+                await _db.Rewards.AddAsync(action.Value);
+                await _db.SaveChangesAsync();
 
-                        await _db.Rewards.AddAsync(action.Value);
-                        await _db.SaveChangesAsync();
+				action.Value.UpdateRole();
 
-                        action.FormSuccess("Reward created");
-                    }
-                    else
-                    {
-                        action.FormFailure("Reward creation restricted");
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Reward creation restricted. Unauthorized");
-                }
+				action.FormSuccess($"Reward {action.Value.Name} created");
             }
             catch (Exception ex)
             {
@@ -66,19 +55,18 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<ActionResult<Reward>> GetAsync(int id)
+        public async Task<ActionResult<Reward>> GetAsync(int rewardId)
         {
             ActionResult<Reward> action = new ActionResult<Reward>(_logger);
 
             try
             {
-                action.Value = await _db.Rewards
-                    .Include(r => r.Assigned)
-                    .FirstOrDefaultAsync(r => r.Id == id);
+                action.Value = await _db.Rewards.FindAsync(rewardId);
+
                 if (action.Value != null)
-                    action.FormSuccess("Reward found");
+                    action.FormSuccess($"Reward {rewardId} found");
                 else
-                    action.FormFailure("Reward not found");
+                    action.FormFailure($"Reward with ID {rewardId} not found");
             }
             catch (Exception ex)
             {
@@ -94,10 +82,10 @@ namespace accs.Services
 
             try
             {
-                action.Value = await _db.Rewards
-                    .Include(r => r.Assigned)
-                    .ToListAsync();
-                action.FormSuccess("Reward list formed, length: " + action.Value.Count());
+                action.Value = await _db.Rewards.ToListAsync();
+
+                action.FormSuccess("Reward list formed, length: " + action.Value.Count(),
+					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
             }
             catch (Exception ex)
             {
@@ -113,38 +101,26 @@ namespace accs.Services
 
             try
             {
-                if (Actor != null)
-                {
-                    if (Actor.HasPermission(PermissionType.ManageStructure))
-                    {
-                        var reward = await _db.Rewards.FindAsync(rewardId);
-                        if (reward != null)
-                        {
-                            reward.Name = name;
-                            reward.Conditions = conditions;
-                            reward.Privileges = privileges;
-                            reward.Color = color;
-                            if (imagePath != null)
-                                reward.ImagePath = imagePath;
+                EmptyAction result = await CheckCanManageRewards();
+                if (!result.IsSuccess)
+                    return action.FormFailure("Updating reward restricted. Permission check failed", eventId: EventIds.Forbidden);
 
-                            _db.Rewards.Update(reward);
-                            await _db.SaveChangesAsync();
-                            action.FormSuccess("Reward updated");
-                        }
-                        else
-                        {
-                            action.FormFailure("Reward not found");
-                        }
-                    }
-                    else
-                    {
-                        action.FormFailure("Reward update restricted");
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Reward update restricted. Unauthorized");
-                }
+                Reward? reward = await _db.Rewards.FindAsync(rewardId);
+
+                if (reward == null)
+                    return action.FormFailure($"Updating reward failed. Reward with ID {rewardId} not found", eventId: EventIds.NotFound);
+
+                reward.Name = name;
+                reward.Conditions = conditions;
+                reward.Privileges = privileges;
+                reward.Color = color;
+
+                _db.Rewards.Update(reward);
+                await _db.SaveChangesAsync();
+
+                reward.UpdateRole();
+
+                action.FormSuccess($"Reward {reward.Name} updated", eventId: EventIds.Updated);
             }
             catch (Exception ex)
             {
@@ -154,38 +130,27 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> UpdateRoleAsync(int rewardId)
+        public async Task<ActionResult<ulong?>> UpdateRoleAsync(int rewardId)
         {
-            EmptyAction action = new EmptyAction(_logger);
+			ActionResult<ulong?> action = new ActionResult<ulong?>(_logger);
 
             try
             {
-                if (Actor != null)
-                {
-                    if (Actor.HasPermission(PermissionType.ManageStructure))
-                    {
-                        var reward = await _db.Rewards.FindAsync(rewardId);
-                        if (reward != null)
-                        {
-                            reward.UpdateRole();
-                            _db.Rewards.Update(reward);
-                            await _db.SaveChangesAsync();
-                            action.FormSuccess("Reward discord role updated");
-                        }
-                        else
-                        {
-                            action.FormFailure("Reward not found");
-                        }
-                    }
-                    else
-                    {
-                        action.FormFailure("Reward role update restricted");
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Reward role update restricted. Unauthorized");
-                }
+                EmptyAction result = await CheckCanManageRewards();
+                if (!result.IsSuccess)
+                    return action.FormFailure("Updating reward Discord role restricted. Permission check failed", eventId: EventIds.Forbidden);
+
+                Reward? reward = await _db.Rewards.FindAsync(rewardId);
+
+                if (reward == null)
+                    return action.FormFailure($"Updating reward Discord role failed. Reward with ID {rewardId} not found", eventId: EventIds.NotFound);
+
+				reward.UpdateRole();
+				action.Value = reward.DiscordRoleId;
+
+				await _db.SaveChangesAsync();
+
+				action.FormSuccess($"Reward {reward.Name} Discord role updated", eventId: EventIds.Updated);
             }
             catch (Exception ex)
             {
@@ -201,21 +166,13 @@ namespace accs.Services
 
             try
             {
-                var reward = await _db.Rewards.FindAsync(rewardId);
+                Reward? reward = await _db.Rewards.FindAsync(rewardId);
                 if (reward == null)
-                {
-                    action.FormFailure("Reward not found");
-                    return action;
-                }
-
-                var assignedRewards = await _db.AssignedRewards
-                    .Where(ar => ar.RewardId == rewardId)
-                    .Include(ar => ar.Unit)
-                    .Include(ar => ar.Reward)
-                    .ToListAsync();
-
-                action.Value = assignedRewards;
-                action.FormSuccess("Assigned rewards retrieved");
+                    return action.FormFailure($"Getting assigned units failed. Reward with ID {rewardId} not found", eventId: EventIds.NotFound);
+                
+                action.Value = reward.Assigned;
+                action.FormSuccess($"Assigned {reward.Name} rewards retrieved, length: " + action.Value.Count,
+					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
             }
             catch (Exception ex)
             {
@@ -231,55 +188,40 @@ namespace accs.Services
 
             try
             {
-                if (Actor != null)
+                ActionResult<Reward> result = await CheckCanAssignReward(rewardId);
+                if (!result.IsSuccess)
+                    return action.FormFailure("Assigning reward restricted. Permission check failed", eventId: EventIds.Forbidden);
+
+                Unit? unit = await _db.Units.FindAsync(unitId);
+                if (unit == null)
+                    return action.FormFailure($"Assigning reward failed. Unit with ID {unitId} not found", eventId: EventIds.NotFound);
+
+                AssignedReward? existingAssignment = await _db.AssignedRewards
+                    .FirstOrDefaultAsync(ar => ar.RewardId == rewardId && ar.UnitId == unit.DiscordId);
+
+                if (existingAssignment != null)
+                    return action.FormFailure("Unit already assigned to this reward");
+
+                AssignedReward newAssignedReward = new AssignedReward
                 {
-                    if (Actor.HasPermission(PermissionType.ManageStructure))
-                    {
-                        var unit = await _db.Units.FindAsync(unitId);
-                        if (unit == null)
-                        {
-                            action.FormFailure($"Unit with ID {unitId} not found");
-                            return action;
-                        }
+                    UnitId = unit.DiscordId,
+                    RewardId = rewardId
+                };
 
-                        var reward = await _db.Rewards.FindAsync(rewardId);
-                        if (reward == null)
-                        {
-                            action.FormFailure("Reward not found");
-                            return action;
-                        }
-
-                        var existingAssignment = await _db.AssignedRewards
-                            .FirstOrDefaultAsync(ar => ar.RewardId == rewardId && ar.UnitId == unit.DiscordId);
-
-                        if (existingAssignment != null)
-                        {
-                            action.FormFailure("Unit already assigned to this reward");
-                            return action;
-                        }
-
-                        var newAssignedReward = new AssignedReward
-                        {
-                            UnitId = unit.DiscordId,
-                            RewardId = rewardId,
-                            Display = true
-                        };
-
-                        await _db.AssignedRewards.AddAsync(newAssignedReward);
-                        await _db.SaveChangesAsync();
-
-                        action.Value = newAssignedReward;
-                        action.FormSuccess($"Unit {unit.Nickname} assigned to reward {reward.Name}");
-                    }
-                    else
-                    {
-                        action.FormFailure("Reward assignment restricted");
-                    }
-                }
-                else
+                RewardAssignmentEvent assignmentEvent = new RewardAssignmentEvent
                 {
-                    action.FormFailure("Reward assignment restricted. Unauthorized");
-                }
+                    UnitId = unit.DiscordId,
+                    InitiatorId = Actor.DiscordId,
+                    AssignedReward = newAssignedReward
+                };
+
+                await _db.AssignedRewards.AddAsync(newAssignedReward);
+                await _db.RewardAssignmentEvents.AddAsync(assignmentEvent);
+                await _db.SaveChangesAsync();
+
+				action.Value = newAssignedReward;
+
+				action.FormSuccess($"Unit {unit.Nickname} assigned to reward {result.Value.Name}");
             }
             catch (Exception ex)
             {
@@ -295,20 +237,14 @@ namespace accs.Services
 
             try
             {
-                var assignedReward = await _db.AssignedRewards
-                    .Include(ar => ar.Unit)
-                    .Include(ar => ar.Reward)
-                    .FirstOrDefaultAsync(ar => ar.RewardId == rewardId && (ulong)ar.UnitId == unitId);
+                AssignedReward? assignedReward = await _db.AssignedRewards
+                    .FirstOrDefaultAsync(ar => ar.RewardId == rewardId && ar.UnitId == unitId);
 
                 if (assignedReward == null)
-                {
-                    action.Value = null;
-                    action.FormSuccess($"Unit with ID {unitId} not assigned to reward {rewardId}");
-                    return action;
-                }
+                    return action.FormFailure($"Unit with ID {unitId} not assigned to reward {rewardId}", eventId: EventIds.NotFound);
 
                 action.Value = assignedReward;
-                action.FormSuccess("Assignment retrieved");
+                action.FormSuccess($"Unit {assignedReward.Unit.Nickname}'s reward {assignedReward.Reward.Name} assignment retrieved", eventId: EventIds.Read);
             }
             catch (Exception ex)
             {
@@ -317,5 +253,53 @@ namespace accs.Services
 
             return action;
         }
-    }
+
+        public async Task<ActionResult<Reward>> CheckCanAssignReward(int rewardId)
+        {
+			ActionResult<Reward> action = new ActionResult<Reward>(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Permission check failed. Unauthorized", eventId: EventIds.Unauthorized);
+
+				if (!Actor.HasPermission(PermissionType.AssignRewards))
+					return action.FormFailure($"Permission check failed. {Actor.Nickname} doesn't have AssignRewards permission", eventId: EventIds.Forbidden);
+
+                action.Value = await _db.Rewards.FindAsync(rewardId);
+                if (action.Value == null)
+                    return action.FormFailure($"Permission check failed. Reward with ID {rewardId} not found", eventId: EventIds.NotFound);
+
+				action.FormSuccess($"{Actor.Nickname} can assign {action.Value.Name} reward", eventId: EventIds.Accessed);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<EmptyAction> CheckCanManageRewards()
+		{
+			EmptyAction action = new EmptyAction(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Permission check failed. Unauthorized", eventId: EventIds.Unauthorized);
+
+				if (!Actor.HasPermission(PermissionType.ManageRewards))
+					return action.FormFailure($"Permission check failed. {Actor.Nickname} doesn't have ManageRewards permission", eventId: EventIds.Forbidden);
+
+				action.FormSuccess($"{Actor.Nickname} can manage rewards", eventId: EventIds.Accessed);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+	}
 }

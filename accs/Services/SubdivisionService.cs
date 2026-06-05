@@ -3,6 +3,7 @@ using accs.Logging;
 using accs.Models;
 using accs.Models.Enums;
 using accs.Models.Util;
+using accs.Services.Abstraction;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Services
@@ -95,7 +96,9 @@ namespace accs.Services
             try
             {
                 action.Value = await _db.Subdivisions.ToListAsync();
-                action.FormSuccess("Subdivision list formed, length: " + action.Value.Count());
+
+                action.FormSuccess("Subdivision list formed, length: " + action.Value.Count(),
+					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
             }
             catch (Exception ex)
             {
@@ -127,9 +130,12 @@ namespace accs.Services
                 if (headId.HasValue)
 					result.Value.HeadId = headId.Value;
 
-                _db.Subdivisions.Update(result.Value);
+				result.Value.UpdateRole();
+
+				_db.Subdivisions.Update(result.Value);
                 await _db.SaveChangesAsync();
-                action.FormSuccess("Subdivision updated");
+
+                action.FormSuccess($"Subdivision {result.Value} updated", eventId: EventIds.Updated);
             }
             catch (Exception ex)
             {
@@ -156,10 +162,11 @@ namespace accs.Services
 					return action.FormFailure("Permission check failed");
 
 			    result.Value.UpdateRole();
-                _db.Subdivisions.Update(result.Value);
-                await _db.SaveChangesAsync();
-                action.Value = result.Value.DiscordRoleId;
-                action.FormSuccess("Subdivision Discord role updated");
+				action.Value = result.Value.DiscordRoleId;
+
+				await _db.SaveChangesAsync();
+                
+                action.FormSuccess($"Subdivision {result.Value.GetFullName()} Discord role updated");
             }
             catch (Exception ex)
             {

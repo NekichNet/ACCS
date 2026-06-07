@@ -25,11 +25,12 @@ namespace accs.Database
 		public DbSet<Reward> Rewards { get; set; }
 		public DbSet<AssignedReward> AssignedRewards { get; set; }
 
+		public DbSet<FavoriteKit> FavoriteKits { get; set; }
+
 		public DbSet<Doc> Docs { get; set; }
 		public DbSet<Activity> Activities { get; set; }
 
 		public DbSet<UnitState> UnitStates { get; set; }
-		public DbSet<StateWithDoc> StatesWithDoc { get; set; }
 		public DbSet<Status> Statuses { get; set; }
 		public DbSet<Gratitude> Gratitudes { get; set; }
 		public DbSet<NoStatus> NoStatuses { get; set; }
@@ -60,7 +61,6 @@ namespace accs.Database
 		{
 			/* Разрешения */
 			List<Permission> permissions = new List<Permission>();
-
 			foreach (var permissionType in typeof(PermissionType).GetEnumValues())
 			{
 				foreach (Attribute attribute in permissionType.GetType().GetCustomAttributes(false))
@@ -71,6 +71,7 @@ namespace accs.Database
 					}
 				}
 			}
+			modelBuilder.Entity<Permission>().HasData(permissions);
 
 			/* Звания */
 			List<Rank> ranks = new List<Rank>()
@@ -507,6 +508,7 @@ namespace accs.Database
 					HeadId = 18
 				}
 			};
+			modelBuilder.Entity<Post>().HasData(posts);
 		}
 	}
 }

@@ -1,10 +1,13 @@
-﻿using accs.Models.SingleDayEvents;
+﻿using accs.Models.Configurations;
+using accs.Models.SingleDayEvents;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
-    public class AssignedReward
+	[EntityTypeConfiguration(typeof(AssignedRewardConfiguration))]
+	public class AssignedReward
     {
         public int RewardId { get; set; }
 		public bool Display { get; set; }

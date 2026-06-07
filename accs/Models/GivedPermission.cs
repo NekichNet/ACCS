@@ -1,5 +1,4 @@
 ﻿using accs.Models.Enums;
-using accs.Models.Interfaces;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
@@ -11,7 +10,7 @@ namespace accs.Models
         public PermissionType PermissionType { get; set; }
         [ForeignKey("PermissionType")]
         [JsonIgnore] public virtual Permission Permission { get; set; }
-        [JsonIgnore] public virtual IEntityWithPermissions Entity { get; set; }
+        public int EntityId { get; set; }
         public bool Inherit { get; set; } = true;
     }
 }

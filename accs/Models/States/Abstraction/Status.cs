@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace accs.Models.States.Abstraction
 {
-    [Table("Statuses")]
+	[Table("Statuses")]
     public abstract class Status : UnitState, IEntityWithDiscordRole
     {
         public string Color { get; set; }

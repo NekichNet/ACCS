@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace accs.Models.SingleDayEvents.Abstraction
 {
@@ -6,6 +7,7 @@ namespace accs.Models.SingleDayEvents.Abstraction
     public abstract class EventWithDoc : SingleDayEvent
     {
         public int DocId { get; set; }
-        public virtual Doc Doc { get; set; }
+        [ForeignKey("DocId")]
+        [JsonIgnore] public virtual Doc Doc { get; set; }
     }
 }

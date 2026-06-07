@@ -1,6 +1,5 @@
-﻿using accs.Models.Configurations;
-using accs.Models.SingleDayEvents.Abstraction;
-using Microsoft.EntityFrameworkCore;
+﻿using accs.Models.SingleDayEvents.Abstraction;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -13,6 +12,7 @@ namespace accs.Models
 		public ulong AuthorId { get; set; }
 		[JsonIgnore] public virtual Unit Author { get; set; }
 		public int EventId { get; set; }
+		[ForeignKey("EventId")]
 		[JsonIgnore] public virtual EventWithDoc Event { get; set; }
 
         public override string ToString()

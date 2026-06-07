@@ -21,19 +21,20 @@ namespace accs.Models
 		public ulong? SteamId { get; set; }
 		public ushort RankUpCounter { get; set; } = 0;
 		public int RegistrationEventId { get; set; }
+		[ForeignKey("RegistrationEventId")]
 		[JsonIgnore] public virtual UnitRegistrationEvent RegistrationEvent { get; set; }
 		public int FavoriteKitId { get; set; } = 1;
 		[JsonIgnore] public virtual FavoriteKit FavoriteKit { get; set; }
 		public int BackgroundPictureId { get; set; }
 		[JsonIgnore] public virtual BackgroundPicture BackgroundPicture { get; set; }
 		[JsonIgnore] public virtual List<Doc> OwnDocs { get; set; }
-		[JsonIgnore] public virtual List<Doc> AssignedDocs { get; set; }
 		[JsonIgnore] public virtual List<AssignedReward> AssignedRewards { get; set; } = new List<AssignedReward>();
 		[JsonIgnore] public virtual List<Activity> Activities { get; set; } = new List<Activity>();
 		[JsonIgnore] public virtual List<AssignedRank> AssignedRanks { get; set; } = new List<AssignedRank>();
 		[JsonIgnore] public virtual List<AssignedPost> AssignedPosts { get; set; } = new List<AssignedPost>();
 		[JsonIgnore] public virtual List<Retirement> Retirements { get; set; }
 		[JsonIgnore] public virtual List<Status> Statuses { get; set; } = new List<Status>();
+		[ForeignKey("UnitId")]
 		[JsonIgnore] public virtual List<UnitState> UnitStates { get; set; } = new List<UnitState>();
 		[JsonIgnore] public virtual List<SingleDayEvent> SingleDayEvents { get; set; } = new List<SingleDayEvent>();
         

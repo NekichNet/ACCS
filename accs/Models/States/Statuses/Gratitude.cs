@@ -1,7 +1,9 @@
 ﻿using accs.Models.States.Abstraction;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace accs.Models.States.Statuses
 {
+	[Table("Gratitudes")]
     public class Gratitude : Status
     {
 		public override string GetText()

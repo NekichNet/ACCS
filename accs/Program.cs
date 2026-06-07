@@ -29,16 +29,18 @@ namespace accs
 			builder.Logging.AddCustomConsole();
 			builder.Logging.AddFile();
 
-			string skey = "usr-256";
-            //var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(skey));
-            //var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
-            //Console.WriteLine("Key: " + key);
+			string secretKeyString = Env.GetString("JWT_SECRET_STRING");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKeyString));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
 
+            /*
             var jwtSecret = Env.GetString("JWT_SECRET")
                 ?? builder.Configuration["Jwt:Secret"]
                 ?? throw new InvalidOperationException("JWT Secret is not configured");
+			var key = Encoding.ASCII.GetBytes(jwtSecret);
+            */
 
-            var jwtIssuer = Env.GetString("JWT_ISSUER")
+			var jwtIssuer = Env.GetString("JWT_ISSUER")
                 ?? builder.Configuration["Jwt:Issuer"];
 
             var jwtAudience = Env.GetString("JWT_AUDIENCE")
@@ -48,8 +50,6 @@ namespace accs
                 ?? builder.Configuration["Jwt:ExpiryMinutes"]
                 ?? "60";
             var jwtExpiryMinutes = int.Parse(jwtExpiryString);
-
-            var key = Encoding.ASCII.GetBytes(jwtSecret);
 
             builder.Services.AddAuthentication(options =>
             {
@@ -61,7 +61,7 @@ namespace accs
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    IssuerSigningKey = new SymmetricSecurityKey(key.Key),
                     ValidateIssuer = true,
                     ValidIssuer = jwtIssuer,
                     ValidateAudience = true,
@@ -85,7 +85,14 @@ namespace accs
             builder.Services.AddDbContext<AppDbContext>(options =>
 				options.UseNpgsql(connectionString));
 
-            builder.Services.AddHttpClient();
+            builder.Services.AddTransient<PostService>();
+            builder.Services.AddTransient<RankService>();
+            builder.Services.AddTransient<RewardService>();
+            builder.Services.AddTransient<StructureService>();
+            builder.Services.AddTransient<SubdivisionService>();
+			builder.Services.AddTransient<UnitService>();
+
+			builder.Services.AddHttpClient();
             builder.Services.AddScoped<IDiscordOAuthService, DiscordOAuthService>();
             builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
             builder.Services.AddControllers();

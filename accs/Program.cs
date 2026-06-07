@@ -30,16 +30,24 @@ namespace accs
 			builder.Logging.AddFile();
 
 			string skey = "usr-256";
-			//var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(skey));
-			//var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
-			//Console.WriteLine("Key: " + key);
+            //var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(skey));
+            //var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
+            //Console.WriteLine("Key: " + key);
 
-			var jwtSecret = Env.GetString("JWT_SECRET")
-               ?? throw new InvalidOperationException("'JWT_SECRET' not configured in .env file");
+            var jwtSecret = Env.GetString("JWT_SECRET")
+                ?? builder.Configuration["Jwt:Secret"]
+                ?? throw new InvalidOperationException("JWT Secret is not configured");
 
-            var jwtIssuer = Env.GetString("JWT_ISSUER") ?? "https://localhost:6001";
-            var jwtAudience = Env.GetString("JWT_AUDIENCE") ?? "https://localhost:6001";
-            var jwtExpiryMinutes = int.Parse(Env.GetString("JWT_EXPIRY_MINUTES") ?? "60");
+            var jwtIssuer = Env.GetString("JWT_ISSUER")
+                ?? builder.Configuration["Jwt:Issuer"];
+
+            var jwtAudience = Env.GetString("JWT_AUDIENCE")
+                ?? builder.Configuration["Jwt:Audience"];
+
+            var jwtExpiryString = Env.GetString("JWT_EXPIRY_MINUTES")
+                ?? builder.Configuration["Jwt:ExpiryMinutes"]
+                ?? "60";
+            var jwtExpiryMinutes = int.Parse(jwtExpiryString);
 
             var key = Encoding.ASCII.GetBytes(jwtSecret);
 

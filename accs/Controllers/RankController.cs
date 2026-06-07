@@ -1,12 +1,8 @@
-﻿using accs.Database;
-using accs.Models;
+﻿using accs.Models;
 using accs.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using static System.Collections.Specialized.BitVector32;
 
 namespace accs.Controllers
 {
@@ -128,13 +124,13 @@ namespace accs.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> CreateNewRank([FromBody] RankDto dto)
+        public async Task<IActionResult> CreateNewRank([FromBody] Rank dto)
         {
             try
             {
                 _rankService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var newRank = await _rankService.CreateAsync(dto.Id, dto.Name);
+                var newRank = await _rankService.CreateAsync(dto.Name, dto.CounterToReach, dto.Color, dto.LowerId);
                 if (!newRank.IsSuccess)
                 {
                     return BadRequest(new { error = newRank.Message });
@@ -174,13 +170,15 @@ namespace accs.Controllers
 
         [HttpPatch("{rankId}")]
         [Authorize]
-        public async Task<IActionResult> UpdateRank([FromRoute] int rankId, [FromBody] string name)
+        public async Task<IActionResult> UpdateRank(
+            [FromRoute] int rankId,
+            [FromBody] Rank rank)
         {
             try
             {
                 _rankService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _rankService.UpdateAsync(rankId, name);
+                var action = await _rankService.UpdateAsync(rankId, rank.Name, rank.CounterToReach, rank.Color, rank.LowerId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -241,15 +239,17 @@ namespace accs.Controllers
             }
         }
 
-        [HttpPost("{rankId}/assign")]
+        [HttpPost("{rankId}/assign/{unitId}")]
         [Authorize]
-        public async Task<IActionResult> AssignRank([FromRoute] int rankId, [FromBody] RankDto dto)
+        public async Task<IActionResult> AssignRank(
+            [FromRoute] int rankId,
+            [FromRoute] ulong unitId)
         {
             try
             {
                 _rankService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _rankService.AssignAsync(rankId, dto.DiscordId);
+                var action = await _rankService.AssignAsync(rankId, unitId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -263,12 +263,12 @@ namespace accs.Controllers
             }
         }
 
-        [HttpGet("{rankId}/assign/{discordId}")]
-        public async Task<IActionResult> GetAssignedUnit([FromRoute] int rankId, [FromRoute] ulong discordId)
+        [HttpGet("{rankId}/assign/{unitId}")]
+        public async Task<IActionResult> GetAssignedUnit([FromRoute] int rankId, [FromRoute] ulong unitId)
         {
             try
             {
-                var action = await _rankService.GetAssignedRankAsync(rankId, discordId);
+                var action = await _rankService.GetAssignedRankAsync(rankId, unitId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -285,12 +285,5 @@ namespace accs.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
-    }
-
-    public class RankDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public ulong DiscordId { get; set; }
     }
 }

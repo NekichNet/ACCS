@@ -2,15 +2,10 @@ using accs.Database;
 using accs.Logging.Extensions;
 using accs.Services;
 using accs.Services.Interfaces;
-using AspNet.Security.OAuth.Discord;
-using DiscordOauth;
 using DotNetEnv;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Globalization;
 using System.Security.Claims;
 using System.Text;
 
@@ -34,7 +29,12 @@ namespace accs
 			builder.Logging.AddCustomConsole();
 			builder.Logging.AddFile();
 
-            var jwtSecret = Env.GetString("JWT_SECRET")
+			string skey = "usr-256";
+			//var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(skey));
+			//var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
+			//Console.WriteLine("Key: " + key);
+
+			var jwtSecret = Env.GetString("JWT_SECRET")
                ?? throw new InvalidOperationException("'JWT_SECRET' not configured in .env file");
 
             var jwtIssuer = Env.GetString("JWT_ISSUER") ?? "https://localhost:6001";

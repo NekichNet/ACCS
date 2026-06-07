@@ -21,7 +21,7 @@ namespace accs.Services
             string name,
 			ushort counterToReach,
 			string color,
-			int lowerId
+			int? lowerId
         )
         {
             ActionResult<Rank> action = new ActionResult<Rank>(_logger);
@@ -31,6 +31,9 @@ namespace accs.Services
                 EmptyAction result = await CheckCanManageAsync();
                 if (!result.IsSuccess)
                     return action.FormFailure("Creating rank restricted. Permission check failed", eventId: EventIds.Forbidden);
+
+                if (lowerId == null)
+                    return action.FormFailure("Creating rank failed. Lower rank ID is not provided", eventId: EventIds.InvalidData);
 
                 Rank? lowerRank = await _db.Ranks.FindAsync(lowerId);
                 if (lowerRank == null)
@@ -135,7 +138,7 @@ namespace accs.Services
             string name,
             ushort counterToReach,
             string color,
-            int lowerId
+            int? lowerId
         )
         {
             EmptyAction action = new EmptyAction(_logger);
@@ -149,6 +152,9 @@ namespace accs.Services
                 Rank? rank = await _db.Ranks.FindAsync(rankId);
                 if (rank == null)
                     return action.FormFailure("Rank updating failed. Rank not found", eventId: EventIds.NotFound);
+
+                if (lowerId == null && rank.LowerId != null)
+                    return action.FormFailure("Rank updating failed. Lower ID is not provided", eventId: EventIds.InvalidData);
 
                 Rank? lowerRank = await _db.Ranks.FindAsync(lowerId);
                 if (lowerRank == null)

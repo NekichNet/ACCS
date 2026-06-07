@@ -95,7 +95,7 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> UpdateAsync(int rewardId, string name, string color, string conditions, string privileges, string? imagePath)
+        public async Task<EmptyAction> UpdateAsync(int rewardId, string name, string color, string conditions, string privileges)
         {
             EmptyAction action = new EmptyAction(_logger);
 

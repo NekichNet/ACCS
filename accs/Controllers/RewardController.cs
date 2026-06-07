@@ -1,8 +1,6 @@
-﻿using accs.Database;
-using accs.Models;
+﻿using accs.Models;
 using accs.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -108,11 +106,9 @@ namespace accs.Controllers
 
                 var newReward = await _rewardService.CreateAsync(
                     dto.Name,
-                    dto.Id,
                     dto.Color,
                     dto.Conditions,
-                    dto.Privileges,
-                    dto.ImagePath
+                    dto.Privileges
                 );
                 if (!newReward.IsSuccess)
                 {
@@ -141,8 +137,7 @@ namespace accs.Controllers
                     dto.Name,
                     dto.Color,
                     dto.Conditions,
-                    dto.Privileges,
-                    dto.ImagePath
+                    dto.Privileges
                 );
                 if (!action.IsSuccess)
                 {

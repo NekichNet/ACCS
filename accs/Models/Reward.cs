@@ -1,6 +1,7 @@
 ﻿using accs.Models.Abstraction;
 using accs.Models.Interfaces;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
@@ -11,7 +12,7 @@ namespace accs.Models
 		public string Color { get; set; } = "#FFFFFF";
 		public string Conditions { get; set; } = string.Empty;
 		public string Privileges { get; set; } = string.Empty;
-		public virtual List<AssignedReward> Assigned { get; set; } = new List<AssignedReward>();
+		[JsonIgnore] public virtual List<AssignedReward> Assigned { get; set; } = new List<AssignedReward>();
 		
 		public ulong? DiscordRoleId { get; set; }
 

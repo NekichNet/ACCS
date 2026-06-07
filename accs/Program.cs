@@ -25,7 +25,18 @@ namespace accs
 
             var builder = WebApplication.CreateBuilder(args);
 
-			builder.Logging.ClearProviders();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend",
+                    policy =>
+                    {
+                        policy.WithOrigins("http://localhost:3000")  // Your frontend URL
+                              .AllowAnyHeader()
+                              .AllowAnyMethod();
+                    });
+            });
+
+            builder.Logging.ClearProviders();
 			builder.Logging.AddCustomConsole();
 			builder.Logging.AddFile();
 
@@ -80,10 +91,19 @@ namespace accs
                 };
             });
 
+            
+
+
             builder.Services.AddAuthorization();
 
             builder.Services.AddDbContext<AppDbContext>(options =>
 				options.UseNpgsql(connectionString));
+
+            builder.Services.AddSingleton<ILoggerFactory, LoggerFactory>();
+            builder.Services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
+            // И явная регистрация нетипизированного ILogger
+            builder.Services.AddSingleton<ILogger>(sp =>
+                sp.GetRequiredService<ILoggerFactory>().CreateLogger("Global"));
 
             builder.Services.AddTransient<PostService>();
             builder.Services.AddTransient<RankService>();
@@ -98,7 +118,7 @@ namespace accs
             builder.Services.AddControllers();
 
             _app = builder.Build();
-
+            _app.UseCors("AllowFrontend");
             _app.UseAuthentication();
             _app.UseAuthorization();
 

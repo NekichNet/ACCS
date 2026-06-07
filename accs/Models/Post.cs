@@ -16,8 +16,8 @@ namespace accs.Models
 		public bool AppendSubdivisionName { get; set; } = false;
 		public string Description { get; set; } = string.Empty;
 		public string Color { get; set; }
-		public int? SubdivisionId { get; set; }
 		public ulong? DiscordRoleId { get; set; }
+		public int? SubdivisionId { get; set; }
 		[JsonIgnore] public virtual Subdivision? Subdivision { get; set; }
 		public int MaxRankId { get; set; }
 		[JsonIgnore] public virtual Rank MaxRank { get; set; }

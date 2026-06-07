@@ -6,7 +6,8 @@ using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
-	public class Permission
+	[AttributeUsage(AttributeTargets.Field)]
+	public class Permission : Attribute
 	{
 		[Key]
 		[DatabaseGenerated(DatabaseGeneratedOption.None)]

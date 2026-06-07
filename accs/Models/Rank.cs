@@ -24,7 +24,7 @@ namespace accs.Models
 		[JsonIgnore] public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
 		[JsonIgnore] public virtual List<AssignedRank> AssignedRanks { get; set; } = new List<AssignedRank>();
 
-		public void InsertPrevious(Rank rank)
+		public void InsertLower(Rank rank)
 		{
 			if (Lower != null)
 			{
@@ -35,7 +35,7 @@ namespace accs.Models
 			LowerId = rank.Id;
 		}
 
-		public void InsertNext(Rank rank)
+		public void InsertHigher(Rank rank)
 		{
 			if (Higher != null)
 			{

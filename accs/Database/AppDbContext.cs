@@ -8,6 +8,7 @@ using accs.Models.States.Statuses;
 using accs.Models.Statuses;
 using accs.Models.Statuses.Abstraction;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace accs.Database
 {
@@ -57,60 +58,455 @@ namespace accs.Database
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
-			///* Разрешения */
-			//Permission confirmActivity = new Permission { Type = PermissionType.ConfirmActivity, Name = "Подтверждение активности", Description = "Подтверждение своей и чужой активности." };
-			//Permission vacationAccess = new Permission { Type = PermissionType.VacationAccess, Name = "Выход в отпуск", Description = "Разрешение на выход в отпуск." };
-			//Permission giveReprimandGratitude = new Permission { Type = PermissionType.GiveReprimandGratitude, Name = "Выдача выговоров/благодарностей", Description = "Возможность выдавать выговора и благодарности нижестоящим бойцам." };
-			//Permission forceVacation = new Permission { Type = PermissionType.ForceVacation, Name = "Отправка других в отпуск", Description = "Возможность отправлять в отпуск нижестоящих бойцов." };
-			//Permission changeRanks = new Permission { Type = PermissionType.AssignRanks, Name = "Присваивание званий", Description = "Возможность повышать и понижать в звании нижестоящих бойцов." };
-			//Permission changePosts = new Permission { Type = PermissionType.AssignPosts, Name = "Назначение на должности", Description = "Возможность менять должность нижестоящих бойцов." };
-			//Permission assignRewards = new Permission { Type = PermissionType.AssignRewards, Name = "Присваивание наград", Description = "Возможность присваивать награды у нижестоящим бойцам." };
-			//Permission manageStructure = new Permission { Type = PermissionType.ManageStructure, Name = "Управление структурой", Description = "Возможность управлять нижестоящей структурой клана." };
-			//Permission manageRewards = new Permission { Type = PermissionType.ManageRewards, Name = "Управление наградами", Description = "Создание и редактирование существующих наград." };
-			//Permission manageDocTypes = new Permission { Type = PermissionType.ManageDocTypes, Name = "Управление шаблонами документов", Description = "Создание и редактирование шаблонов документов." };
-			//Permission administrator = new Permission { Type = PermissionType.Administrator, Name = "Администратор", Description = "Все права без ограничений." };
-			//Permission moderateNicknames = new Permission { Type = PermissionType.ModerateNicknames, Name = "Изменение чужих никнеймов", Description = "Право изменять чужие никнеймы." };
-			//Permission autoReprimandImmune = new Permission { Type = PermissionType.AutoReprimandImmune, Name = "Освобождение от сборов", Description = "Иммунитет к автоматической выдаче выговора за отстутствие на сборах." };
+			/* Разрешения */
+			List<Permission> permissions = new List<Permission>();
 
-			//modelBuilder.Entity<Permission>().HasData(
-			//	confirmActivity, vacationAccess, giveReprimandGratitude, forceVacation, changeRanks,
-			//	changePosts, assignRewards, manageStructure, manageRewards, manageDocTypes, administrator,
-			//	autoReprimandImmune
-			//);
+			foreach (var permissionType in typeof(PermissionType).GetEnumValues())
+			{
+				foreach (Attribute attribute in permissionType.GetType().GetCustomAttributes(false))
+				{
+					if (attribute is Permission permission)
+					{
+						permission.Type = (PermissionType)permissionType;
+					}
+				}
+			}
 
-			///* Звания */
-			//List<Rank> ranks = new List<Rank>()
-			//{
-			//	new Rank(1, "Рекрут"),
-			//	new Rank(2, "Рядовой"),
-			//	new Rank(3, "Ефрейтор"),
-			//	new Rank(4, "Мл. Сержант"),
-			//	new Rank(5, "Сержант"),
-			//	new Rank(6, "Ст. Сержант"),
-			//	new Rank(7, "Старшина"),
-			//	new Rank(8, "Прапорщик"),
-			//	new Rank(9, "Мл. Лейтенант"),
-			//	new Rank(10, "Лейтенант"),
-			//	new Rank(11, "Ст. Лейтенант"),
-			//	new Rank(12, "Капитан"),
-			//	new Rank(13, "Майор"),
-			//	new Rank(14, "Подполковник"),
-			//	new Rank(15, "Полковник"),
-			//	new Rank(16, "Генерал-Майор"),
-			//	new Rank(17, "Генерал-Лейтенант"),
-			//	new Rank(18, "Генерал-Полковник")
-			//};
-			//for (int i = 1; i < 18; i++)
-			//	ranks[i].InsertPrevious(ranks[i - 1]);
+			/* Звания */
+			List<Rank> ranks = new List<Rank>()
+			{
+				new Rank
+				{
+					Id = 1,
+					Name = "Рекрут",
+					CounterToReach = 0,
+					Color = "#098100",
+				},
+				new Rank
+				{
+					Id = 2,
+					Name = "Рядовой",
+					CounterToReach = 7,
+					Color = "#098100",
+					LowerId = 1
+				},
+				new Rank
+				{
+					Id = 3,
+					Name = "Ефрейтор",
+					CounterToReach = 3,
+					Color = "#098100",
+					LowerId = 2
+				},
+				new Rank
+				{
+					Id = 4,
+					Name = "Младший Сержант",
+					CounterToReach = 3,
+					Color = "#0ba300",
+					LowerId = 3
+				},
+				new Rank
+				{
+					Id = 5,
+					Name = "Сержант",
+					CounterToReach = 5,
+					Color = "#0ba300",
+					LowerId = 4
+				},
+				new Rank
+				{
+					Id = 6,
+					Name = "Старший Сержант",
+					CounterToReach = 5,
+					Color = "#0ba300",
+					LowerId = 5
+				},
+				new Rank
+				{
+					Id = 7,
+					Name = "Старшина",
+					CounterToReach = 5,
+					Color = "#0ba300",
+					LowerId = 6
+				},
+				new Rank
+				{
+					Id = 8,
+					Name = "Прапорщик",
+					CounterToReach = 7,
+					Color = "#0ba300",
+					LowerId = 7
+				},
+				new Rank
+				{
+					Id = 9,
+					Name = "Старший Прапорщик",
+					CounterToReach = 7,
+					Color = "#0ba300",
+					LowerId = 8
+				},
+				new Rank
+				{
+					Id = 10,
+					Name = "Младший Лейтенант",
+					CounterToReach = 7,
+					Color = "#00db3a",
+					LowerId = 9
+				},
+				new Rank
+				{
+					Id = 11,
+					Name = "Лейтенант",
+					CounterToReach = 7,
+					Color = "#00db3a",
+					LowerId = 10
+				},
+				new Rank
+				{
+					Id = 12,
+					Name = "Старший Лейтенант",
+					CounterToReach = 7,
+					Color = "#00db3a",
+					LowerId = 11
+				},
+				new Rank
+				{
+					Id = 13,
+					Name = "Капитан",
+					CounterToReach = 10,
+					Color = "#00db3a",
+					LowerId = 12
+				},
+				new Rank
+				{
+					Id = 14,
+					Name = "Майор",
+					CounterToReach = 20,
+					Color = "#00ff88",
+					LowerId = 13
+				},
+				new Rank
+				{
+					Id = 15,
+					Name = "Подполковник",
+					CounterToReach = 30,
+					Color = "#00ff88",
+					LowerId = 14
+				},
+				new Rank
+				{
+					Id = 16,
+					Name = "Полковник",
+					CounterToReach = 30,
+					Color = "#00ff88",
+					LowerId = 15
+				},
+				new Rank
+				{
+					Id = 17,
+					Name = "Генерал-Майор",
+					CounterToReach = 30,
+					Color = "#00ffc0",
+					LowerId = 16
+				},
+				new Rank
+				{
+					Id = 18,
+					Name = "Генерал-Лейтенант",
+					CounterToReach = 30,
+					Color = "#00ffc0",
+					LowerId = 17
+				},
+				new Rank
+				{
+					Id = 19,
+					Name = "Генерал-Полковник",
+					CounterToReach = 30,
+					Color = "#00ffc0",
+					LowerId = 18
+				}
+			};
+			modelBuilder.Entity<Rank>().HasData(ranks);
 
-			//modelBuilder.Entity<UnitState>().HasData(
-			//	new UnitState() { Type = StatusType.Vacation, Name = "Отпуск" },
-			//	new UnitState() { Type = StatusType.TemporaryPost, Name = "ВрИО" },
-			//	new UnitState() { Type = StatusType.Gratitude, Name = "Благодарность" },
-			//	new UnitState() { Type = StatusType.Reprimand, Name = "Выговор" },
-			//	new UnitState() { Type = StatusType.SevereReprimand, Name = "Строгий выговор" },
-			//	new UnitState() { Type = StatusType.Retirement, Name = "Отставка" }
-			//);
+			List<Subdivision> subdivisions = new List<Subdivision>
+			{
+				new Subdivision
+				{
+					Id = 1,
+					Name = "Военная полиция",
+					Description = "Следит за порядком и прилежным исполнением офицерами своих обязательств",
+					Color = "#1721b8"
+				},
+				new Subdivision
+				{
+					Id = 2,
+					Name = "Штаб",
+					Description = "Координирует и повышает эффективность всех нижестоящих подразделений",
+					Color = "#ad210c"
+				},
+				new Subdivision
+				{
+					Id = 3,
+					Name = "Служба связи",
+					Description = "Отвечает за Discord-сервер клана, за бота, сайт и АСБУ в целом",
+					Color = "#7b8b00"
+				},
+				new Subdivision
+				{
+					Id = 4,
+					Name = "1 Рота",
+					Description = "1 Рота личного состава РХБЗ",
+					Color = "#546e7a"
+				},
+				new Subdivision
+				{
+					Id = 5,
+					Name = "Командование",
+					AppendHeadName = true,
+					Description = "Командование роты следит за поддержанием активности всех взводов",
+					Color = "#a5553f",
+					HeadId = 4
+				},
+				new Subdivision
+				{
+					Id = 6,
+					Name = "1 Пехотный взвод",
+					AppendHeadName = true,
+					Description = "Пехотный взвод личного состава РХБЗ",
+					Color = "#95a5a6",
+					HeadId = 4
+				},
+				new Subdivision
+				{
+					Id = 7,
+					Name = "2 Пехотный взвод",
+					AppendHeadName = true,
+					Description = "Пехотный взвод личного состава РХБЗ",
+					Color = "#95a5a6",
+					HeadId = 4
+				},
+				new Subdivision
+				{
+					Id = 8,
+					Name = "3 Механизированный взвод",
+					AppendHeadName = true,
+					Description = "Механизированный взвод личного состава РХБЗ",
+					Color = "#95a5a6",
+					HeadId = 4
+				},
+				new Subdivision
+				{
+					Id = 9,
+					Name = "4 Рекрутский взвод",
+					AppendHeadName = true,
+					Description = "Рекрутский взвод, состав которого проходит Курс Молодого Бойца",
+					Color = "#95a5a6",
+					HeadId = 4
+				},
+			};
+			modelBuilder.Entity<Subdivision>().HasData(subdivisions);
+
+			List<Post> posts = new List<Post>
+			{
+				new Post
+				{
+					Id = 1,
+					Name = "Командир РХБЗ",
+					Description = "Главнокомандующий клана",
+					Color = "#f1c40f",
+					MaxRankId = 19
+				},
+				new Post
+				{
+					Id = 2,
+					Name = "Заместитель командира РХБЗ",
+					Description = "Заместитель главнокомандующий клана",
+					Color = "#f1c40f",
+					MaxRankId = 19,
+					HeadId = 1
+				},
+				new Post
+				{
+					Id = 3,
+					Name = "Начальник военной полиции",
+					Description = "Управляет военной полицией и исполняет должностные обязанности в высшем командовании",
+					Color = "#003eeb",
+					SubdivisionId = 1,
+					MaxRankId = 19,
+					HeadId = 2
+				},
+				new Post
+				{
+					Id = 4,
+					Name = "ОУп военной полиции",
+					Description = "Особо уполномоченный военный полицейский, способный кикать и банить участников Discord сервера",
+					Color = "#005ad3",
+					SubdivisionId = 1,
+					MaxRankId = 19,
+					HeadId = 3
+				},
+				new Post
+				{
+					Id = 5,
+					Name = "Военный полицейский",
+					Description = "Офицер военной полиции, следящий за порядком в клане",
+					Color = "#0071c9",
+					SubdivisionId = 1,
+					MaxRankId = 19,
+					HeadId = 4
+				},
+				new Post
+				{
+					Id = 6,
+					Name = "Начальник штаба",
+					Description = "Управляет всеми нижестоящими подразделениями",
+					Color = "#e92b0e",
+					SubdivisionId = 2,
+					MaxRankId = 19,
+					HeadId = 2
+				},
+				new Post
+				{
+					Id = 7,
+					Name = "Заместитель начальника штаба",
+					Description = "Управляет всеми нижестоящими подразделениями",
+					Color = "#e92b0e",
+					SubdivisionId = 2,
+					MaxRankId = 19,
+					HeadId = 6
+				},
+				new Post
+				{
+					Id = 8,
+					Name = "Командир",
+					AppendSubdivisionName = true,
+					Description = "Командир роты следит за исполнением взводных своих должностных обязанностей",
+					Color = "#df6544",
+					SubdivisionId = 5,
+					MaxRankId = 19,
+					HeadId = 7
+				},
+				new Post
+				{
+					Id = 9,
+					Name = "Замполит",
+					AppendSubdivisionName = true,
+					Description = "Заместитель командира роты следит за исполнением взводных своих должностных обязанностей",
+					Color = "#c05e42",
+					SubdivisionId = 5,
+					MaxRankId = 19,
+					HeadId = 8
+				},
+				new Post
+				{
+					Id = 10,
+					Name = "Командир",
+					AppendSubdivisionName = true,
+					Description = "Командир взвода поддерживает активность своего взвода и повышает своих бойцов",
+					Color = "#9b59b6",
+					SubdivisionId = 6,
+					MaxRankId = 19,
+					HeadId = 9
+				},
+				new Post
+				{
+					Id = 11,
+					Name = "Заместитель командира",
+					AppendSubdivisionName = true,
+					Description = "Заместитель командира взвода поддерживает активность своего взвода и повышает своих бойцов",
+					Color = "#71368a",
+					SubdivisionId = 6,
+					MaxRankId = 19,
+					HeadId = 10
+				},
+				new Post
+				{
+					Id = 12,
+					Name = "Командир",
+					AppendSubdivisionName = true,
+					Description = "Командир взвода поддерживает активность своего взвода и повышает своих бойцов",
+					Color = "#9b59b6",
+					SubdivisionId = 7,
+					MaxRankId = 19,
+					HeadId = 9
+				},
+				new Post
+				{
+					Id = 13,
+					Name = "Заместитель командира",
+					AppendSubdivisionName = true,
+					Description = "Заместитель командира взвода поддерживает активность своего взвода и повышает своих бойцов",
+					Color = "#71368a",
+					SubdivisionId = 7,
+					MaxRankId = 19,
+					HeadId = 12
+				},
+				new Post
+				{
+					Id = 14,
+					Name = "Командир",
+					AppendSubdivisionName = true,
+					Description = "Командир взвода поддерживает активность своего взвода и повышает своих бойцов",
+					Color = "#9b59b6",
+					SubdivisionId = 8,
+					MaxRankId = 19,
+					HeadId = 9
+				},
+				new Post
+				{
+					Id = 15,
+					Name = "Заместитель командира",
+					AppendSubdivisionName = true,
+					Description = "Заместитель командира взвода поддерживает активность своего взвода и повышает своих бойцов",
+					Color = "#71368a",
+					SubdivisionId = 8,
+					MaxRankId = 19,
+					HeadId = 14
+				},
+				new Post
+				{
+					Id = 16,
+					Name = "Командир",
+					AppendSubdivisionName = true,
+					Description = "Командир взвода поддерживает активность своего взвода и повышает своих бойцов",
+					Color = "#9b59b6",
+					SubdivisionId = 9,
+					MaxRankId = 19,
+					HeadId = 9
+				},
+				new Post
+				{
+					Id = 17,
+					Name = "Заместитель командира",
+					AppendSubdivisionName = true,
+					Description = "Заместитель командира взвода поддерживает активность своего взвода и повышает своих бойцов",
+					Color = "#71368a",
+					SubdivisionId = 9,
+					MaxRankId = 19,
+					HeadId = 16
+				},
+				new Post
+				{
+					Id = 18,
+					Name = "Начальник службы связи",
+					Description = "Отвечает за всю техническую составляющую клана",
+					Color = "#a2b800",
+					SubdivisionId = 3,
+					MaxRankId = 14,
+					HeadId = 7
+				},
+				new Post
+				{
+					Id = 19,
+					Name = "Офицер службы связи",
+					Description = "Отвечает за всю техническую составляющую клана",
+					Color = "#8c9e00",
+					SubdivisionId = 3,
+					MaxRankId = 14,
+					HeadId = 18
+				}
+			};
 		}
 	}
 }

@@ -3,6 +3,7 @@ using accs.Models;
 using accs.Models.SingleDayEvents;
 using accs.Services.Interfaces;
 using Discord;
+using DotNetEnv;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +32,6 @@ namespace accs.Controllers
         }
 
         [HttpGet("discord-callback")]
-        [AllowAnonymous]
         public async Task<IActionResult> DiscordCallback([FromQuery] string code, [FromQuery] string? state)
         {
             try
@@ -130,13 +130,15 @@ namespace accs.Controllers
         }
 
         [HttpGet("discord-login-url")]
-        [AllowAnonymous]
         public IActionResult GetDiscordLoginUrl()
         {
             try
             {
-                var clientId = Environment.GetEnvironmentVariable("DISCORD_CLIENT_ID");
-                var redirectUri = Environment.GetEnvironmentVariable("DISCORD_REDIRECT_URI");
+                var clientId = Env.GetString("DISCORD_CLIENT_ID") 
+                    ?? throw new InvalidOperationException("DISCORD_CLIENT_ID undefined");
+
+                var redirectUri = Env.GetString("DISCORD_REDIRECT_URI") 
+                    ?? throw new InvalidOperationException("DISCORD_REDIRECT_URI undefined");
 
                 if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(redirectUri))
                 {
@@ -169,7 +171,6 @@ namespace accs.Controllers
         }
 
         [HttpGet("me")]
-        [Authorize]
         public async Task<IActionResult> GetCurrentUser()
         {
             try

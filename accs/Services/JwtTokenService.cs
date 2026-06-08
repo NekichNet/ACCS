@@ -5,32 +5,35 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Configuration;
 
 namespace accs.Services
 {
     public class JwtTokenService : IJwtTokenService
     {
         private readonly ILogger<JwtTokenService> _logger;
+        private readonly IConfiguration _configuration;
         private readonly string _jwtSecret;
         private readonly string _jwtIssuer;
         private readonly string _jwtAudience;
         private readonly int _jwtExpiryMinutes;
 
-        public JwtTokenService(ILogger<JwtTokenService> logger)
+        public JwtTokenService(ILogger<JwtTokenService> logger, IConfiguration configuration)
         {
             _logger = logger;
+            _configuration = configuration;
 
-            _jwtSecret = Env.GetString("JWT_SECRET")
-                ?? throw new InvalidOperationException("'JWT_SECRET' not configured in .env");
+            _jwtSecret = Env.GetString("JWT_SECRET_STRING")
+                ?? throw new InvalidOperationException("'JWT_SECRET_STRING' not configured in .env");
 
-            _jwtIssuer = Env.GetString("JWT_ISSUER") ?? "https://localhost:6001";
-            _jwtAudience = Env.GetString("JWT_AUDIENCE") ?? "https://localhost:6001";
+            _jwtIssuer = _configuration["Jwt:Issuer"] ?? "https://localhost:3000";
+            _jwtAudience = _configuration["Jwt:Audience"] ?? "https://localhost:6061";
             _jwtExpiryMinutes = int.Parse(Env.GetString("JWT_EXPIRY_MINUTES") ?? "60");
         }
 
         public string GenerateToken(Unit user)
         {
-            var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_jwtSecret));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSecret));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new List<Claim>

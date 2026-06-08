@@ -51,11 +51,11 @@ namespace accs
 			var key = Encoding.ASCII.GetBytes(jwtSecret);
             */
 
-			var jwtIssuer = Env.GetString("JWT_ISSUER")
-                ?? builder.Configuration["Jwt:Issuer"];
+            var jwtIssuer = builder.Configuration["Jwt:Issuer"]
+    ?? throw new InvalidOperationException("'Jwt:Issuer' не настроен в appsettings.json");
 
-            var jwtAudience = Env.GetString("JWT_AUDIENCE")
-                ?? builder.Configuration["Jwt:Audience"];
+            var jwtAudience = builder.Configuration["Jwt:Audience"]
+                ?? throw new InvalidOperationException("'Jwt:Audience' не настроен в appsettings.json");
 
             var jwtExpiryString = Env.GetString("JWT_EXPIRY_MINUTES")
                 ?? builder.Configuration["Jwt:ExpiryMinutes"]

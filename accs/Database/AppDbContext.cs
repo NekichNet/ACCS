@@ -59,22 +59,52 @@ namespace accs.Database
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
-			/* Разрешения */
-			List<Permission> permissions = new List<Permission>();
-			foreach (var permissionType in typeof(PermissionType).GetEnumValues())
-			{
-				foreach (Attribute attribute in permissionType.GetType().GetCustomAttributes(false))
-				{
-					if (attribute is Permission permission)
-					{
-						permission.Type = (PermissionType)permissionType;
-					}
-				}
-			}
-			modelBuilder.Entity<Permission>().HasData(permissions);
+            modelBuilder.Entity<EventWithInitiator>().ToTable("EventsWithInitiator");
 
-			/* Звания */
-			List<Rank> ranks = new List<Rank>()
+            modelBuilder.Entity<SingleDayEvent>()
+				.HasOne(e => e.Unit)
+				.WithMany()
+				.HasForeignKey(e => e.UnitId)
+				.OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<EventWithInitiator>()
+                .HasOne(e => e.Initiator)
+                .WithMany()
+                .HasForeignKey(e => e.InitiatorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Unit>()
+                .HasOne(u => u.RegistrationEvent)
+                .WithOne()
+                .HasForeignKey<UnitRegistrationEvent>(e => e.UnitId);
+
+            modelBuilder.Entity<EventWithDoc>()
+				.HasOne(e => e.Doc)
+				.WithOne(d => d.Event)
+				.HasForeignKey<Doc>(d => d.EventId);
+
+
+            /* Разрешения */
+            List<Permission> permissions = new List<Permission>();
+            foreach (var permissionType in typeof(PermissionType).GetEnumValues())
+            {
+                var fieldInfo = typeof(PermissionType).GetField(permissionType.ToString());
+                if (fieldInfo != null)
+                {
+                    foreach (Attribute attribute in fieldInfo.GetCustomAttributes(false))
+                    {
+                        if (attribute is Permission permission)
+                        {
+                            permission.Type = (PermissionType)permissionType;
+                            permissions.Add(permission);
+                        }
+                    }
+                }
+            }
+            modelBuilder.Entity<Permission>().HasData(permissions);
+
+            /* Звания */
+            List<Rank> ranks = new List<Rank>()
 			{
 				new Rank
 				{

@@ -4,6 +4,7 @@ using accs.Services;
 using accs.Services.Interfaces;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
@@ -125,18 +126,43 @@ namespace accs
 
             _app.Use(async (context, next) =>
             {
-                var discordIdClaim = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                bool userExistsInDb = false;
 
-                if (!string.IsNullOrEmpty(discordIdClaim) &&
-                    ulong.TryParse(discordIdClaim, out var discordId))
+                if (context.User?.Identity?.IsAuthenticated == true)
                 {
-                    using var scope = _app.Services.CreateScope();
-                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    var unit = await db.Units.FindAsync(discordId);
+                    var discordIdClaim = context.User.FindFirst("discord_id")?.Value
+                        ?? context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                    if (unit != null)
+                    if (!string.IsNullOrEmpty(discordIdClaim) && ulong.TryParse(discordIdClaim, out var discordId))
                     {
-                        context.Items["Actor"] = unit;
+                        using var scope = _app.Services.CreateScope();
+                        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                        var unit = await db.Units.FindAsync(discordId);
+
+                        if (unit != null)
+                        {
+                            context.Items["Actor"] = unit;
+                            userExistsInDb = true;
+                        }
+                    }
+
+                    if (!userExistsInDb)
+                    {
+                        var endpoint = context.GetEndpoint();
+                        var authorizeAttribute = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>();
+                        var allowAnonymousAttribute = endpoint?.Metadata.GetMetadata<AllowAnonymousAttribute>();
+
+                        if (authorizeAttribute != null && allowAnonymousAttribute == null)
+                        {
+                            context.Response.StatusCode = 403;
+                            context.Response.ContentType = "application/json";
+                            await context.Response.WriteAsJsonAsync(new
+                            {
+                                error = "Forbidden",
+                                message = "Доступ ограничен. Ваш Discord ID отсутствует в базе данных клана."
+                            });
+                            return;
+                        }
                     }
                 }
 

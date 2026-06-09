@@ -129,6 +129,7 @@ namespace accs.Controllers
             }
         }
 
+        // не нужно авторизовывать, так как юзер может не быть в базе, а мы хотим вернуть 404, а не 401
         [HttpGet("discord-login-url")]
         public IActionResult GetDiscordLoginUrl()
         {
@@ -170,6 +171,7 @@ namespace accs.Controllers
             }
         }
 
+        // не нужно авторизовывать, так как юзер может не быть в базе, а мы хотим вернуть 404, а не 401
         [HttpGet("me")]
         public async Task<IActionResult> GetCurrentUser()
         {

@@ -116,7 +116,11 @@ namespace accs
 			builder.Services.AddHttpClient();
             builder.Services.AddScoped<IDiscordOAuthService, DiscordOAuthService>();
             builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+                });
 
             _app = builder.Build();
             _app.UseCors("AllowFrontend");

@@ -1,5 +1,6 @@
 ﻿using accs.Logging;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace accs.Models.Util
 {
@@ -9,7 +10,8 @@ namespace accs.Models.Util
 
 		public string Message { get; set; } = "Not stated";
 		public bool IsSuccess { get; set; }
-		public Exception? Exception { get; set; }
+        [JsonIgnore]
+        public Exception? Exception { get; set; }
 		public DateTime Start { get; set; }
 		public DateTime End { get; set; }
 

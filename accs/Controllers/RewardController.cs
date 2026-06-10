@@ -177,7 +177,6 @@ namespace accs.Controllers
         }
 
         [HttpGet("{rewardId}/assign")]
-        [Authorize]
         public async Task<IActionResult> GetAssignedUnits([FromRoute] int rewardId)
         {
             try

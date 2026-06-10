@@ -42,7 +42,7 @@ namespace accs.Controllers
 
                 var res = subdivisions;
 
-                return Ok(res);
+                return Ok(res.Value);
             }
             catch (Exception ex)
             {
@@ -61,7 +61,7 @@ namespace accs.Controllers
                 {
                     return BadRequest(new { error = subdivision.Message });
                 }
-                return Ok(subdivision);
+                return Ok(subdivision.Value);
             }
             catch (Exception ex)
             {
@@ -188,7 +188,7 @@ namespace accs.Controllers
                 {
                     return BadRequest(new { error = subdivision.Message });
                 }
-                return Ok(subdivision);
+                return Ok(subdivision.Value);
             }
             catch (Exception ex)
             {

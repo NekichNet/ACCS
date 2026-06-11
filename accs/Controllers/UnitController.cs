@@ -87,12 +87,12 @@ namespace accs.Controllers
 
                 var unitResult = new
                 {
-                    result.Value.Nickname,
+                    Name = result.Value.Nickname,
                     SteamId = result.Value.SteamId.ToString() ?? "",
                     RankUpCounter = $"{result.Value.RankUpCounter}/15",
                     Joined = result.Value.RegistrationEvent.DateTime.ToString("dd.MM.yyyy HH:mm"),
-                    RankId = result.Value.AssignedRanks.Select(r => r.Id),
-                    PostsIds = result.Value.AssignedPosts.Select(p => p.Id).ToList(),
+                    Rank = result.Value.GetRank(),
+                    Posts = result.Value.GetPosts(),
                     AssignedRewardsIds = result.Value.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
                 };
 

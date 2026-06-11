@@ -121,12 +121,21 @@ namespace accs
                 {
                     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
                 });
+            
 
             _app = builder.Build();
             _app.UseCors("AllowFrontend");
             _app.UseAuthentication();
             _app.UseAuthorization();
 
+
+            #region RequestDebugging
+            _app.Use(async (context, next) =>
+            {
+                context.Request.EnableBuffering();
+                await next();
+            });
+            #endregion RequestDebugging
 
             _app.Use(async (context, next) =>
             {

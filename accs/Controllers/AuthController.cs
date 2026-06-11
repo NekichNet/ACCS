@@ -76,7 +76,7 @@ namespace accs.Controllers
                     expires_in = 3600,
                     user = new
                     {
-                        discord_id = discordId,
+                        discord_id = discordUser.Id,
                         username = temporaryUser.Nickname
                     }
                 };

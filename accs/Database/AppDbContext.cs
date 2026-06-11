@@ -197,9 +197,95 @@ namespace accs.Database
             List<Reward> rewards = new List<Reward>
             {
                 new Reward { Id = 1, Name = "Орден Мужества", Conditions = "За героическое спасение отряда в хардкорной операции", Privileges = "Иммунитет к первому выговору", Color = "#ff4500" },
-                new Reward { Id = 2, Name = "Почетный Связист", Conditions = "За безупречную отладку АСБУ клана без падений прода", Privileges = "Доступ в закрытую комнату разработчиков", Color = "#7b8b00" }
+                new Reward { Id = 2, Name = "Почетный Связист", Conditions = "За безупречную отладку АСБУ клана без падений прода", Privileges = "Доступ в закрытую комнату разработчиков", Color = "#7b8b00" },
+                new Reward { Id = 3, Name = "Почетный пекарь", Conditions = "За мужественное выпекание булочек с корицей", Privileges = "Безлимитный доступ в полевую кухню", Color = "#b923de" }
             };
             modelBuilder.Entity<Reward>().HasData(rewards);
+
+
+            modelBuilder.Entity<FavoriteKit>().HasData(
+                new FavoriteKit { Id = 1, Name = "Стрелок" },
+                new FavoriteKit { Id = 2, Name = "Марксмен" },
+                new FavoriteKit { Id = 3, Name = "Пилот" }
+            );
+
+            modelBuilder.Entity<BackgroundPicture>().HasData(
+                new BackgroundPicture { Id = 1, Name = "Default Background" }
+            );
+
+
+            ulong myDiscordId = 1257757034821193865;
+
+            var units = new List<Unit>
+            {
+
+                new Unit
+                {
+                    DiscordId = myDiscordId,
+                    Nickname = "Администратор (Я)",
+                    SteamId = 76561198000000000,
+                    RankUpCounter = 0,
+                    FavoriteKitId = 1,
+                    BackgroundPictureId = 1,
+                    RegistrationEventId = null
+                },
+
+                new Unit
+                {
+                    DiscordId = 632641236412378,
+                    Nickname = "Дениска",
+                    SteamId = 632641236412378,
+                    RankUpCounter = 0,
+                    FavoriteKitId = 1,
+                    BackgroundPictureId = 1,
+                    RegistrationEventId = null
+                },
+
+                new Unit
+                {
+                    DiscordId = 345678901234567890,
+                    Nickname = "NikitaNet",
+                    SteamId = 76561198000000002,
+                    RankUpCounter = 0,
+                    FavoriteKitId = 2,
+                    BackgroundPictureId = 1,
+                    RegistrationEventId = null
+                },
+
+                new Unit
+                {
+                    DiscordId = 456789012345678901,
+                    Nickname = "Ярек",
+                    SteamId = 76561198000000003,
+                    RankUpCounter = 0,
+                    FavoriteKitId = 3,
+                    BackgroundPictureId = 1,
+                    RegistrationEventId = null
+                }
+            };
+            modelBuilder.Entity<Unit>().HasData(units);
+
+            modelBuilder.Entity<AssignedRank>().HasData(
+                new AssignedRank { Id = 1, UnitId = myDiscordId, RankId = 19, Start = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new AssignedRank { Id = 2, UnitId = 632641236412378, RankId = 17, Start = new DateTime(2024, 4, 12, 0, 0, 0, DateTimeKind.Utc) },
+                new AssignedRank { Id = 3, UnitId = 345678901234567890, RankId = 12, Start = new DateTime(2024, 9, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new AssignedRank { Id = 4, UnitId = 456789012345678901, RankId = 16, Start = new DateTime(2023, 11, 24, 0, 0, 0, DateTimeKind.Utc) }
+            );
+
+            modelBuilder.Entity<AssignedPost>().HasData(
+                new AssignedPost { Id = 5, UnitId = myDiscordId, PostId = 1, Start = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new AssignedPost { Id = 6, UnitId = 632641236412378, PostId = 6, Start = new DateTime(2024, 4, 12, 0, 0, 0, DateTimeKind.Utc) },
+                new AssignedPost { Id = 7, UnitId = 345678901234567890, PostId = 18, Start = new DateTime(2024, 9, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new AssignedPost { Id = 8, UnitId = 456789012345678901, PostId = 10, Start = new DateTime(2023, 11, 24, 0, 0, 0, DateTimeKind.Utc) }
+            );
+
+
+            modelBuilder.Entity<Activity>().HasData(
+                new Activity { UnitId = myDiscordId, Date = DateOnly.FromDateTime(DateTime.Today) },
+                new Activity { UnitId = 632641236412378, Date = DateOnly.FromDateTime(DateTime.Today) },
+                new Activity { UnitId = 345678901234567890, Date = DateOnly.FromDateTime(DateTime.Today) },
+                new Activity { UnitId = 456789012345678901, Date = DateOnly.FromDateTime(DateTime.Today) }
+            );
         }
 	}
 }

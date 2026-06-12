@@ -16,31 +16,72 @@ namespace accs.Services
             _db = db;
         }
 
-        public async Task<ActionResult<Dictionary<string, object>>> GetStructureAsync()
+        public async Task<ActionResult<List<object>>> GetStructureAsync()
         {
-            ActionResult<Dictionary<string, object>> action = new ActionResult<Dictionary<string, object>>(_logger);
+            ActionResult<List<object>> action = new ActionResult<List<object>>(_logger);
 
             try
             {
                 var posts = await _db.Posts.ToListAsync();
-                var units = await _db.Units
+                var subdivisions = await _db.Subdivisions.ToListAsync();
+                var subdivisionsDict = subdivisions.ToDictionary(s => s.Id);
+
+                var allUnits = await _db.Units
                     .Include(u => u.AssignedPosts)
                         .ThenInclude(ap => ap.Post)
+                    .Include(u => u.AssignedRanks)
+                        .ThenInclude(ar => ar.Rank)
                     .ToListAsync();
 
-                var rootPost = posts.FirstOrDefault(p => p.HeadId == null);
+                var activeUnits = allUnits.Where(u => u.IsActive()).ToList();
 
-                if (rootPost == null)
+                var result = posts.Select(post =>
                 {
-                    action.FormFailure("Root post not found");
-                    return action;
-                }
+                    subdivisionsDict.TryGetValue(post.SubdivisionId ?? 0, out var sub);
 
-                action.Value = new Dictionary<string, object>
-                {
-                    { rootPost.Name, BuildPostStructure(rootPost, posts, units) }
-                };
+                    var assignedUnits = activeUnits
+                        .Where(u => u.GetPosts().Any(p => p.Id == post.Id))
+                        .Select(u =>
+                        {
+                            var currentRank = u.GetRank();
+                            return new
+                            {
+                                DiscordId = u.DiscordId.ToString(),
+                                Nickname = u.Nickname,
+                                SteamId = u.SteamId?.ToString(),
+                                RankUpCounter = u.RankUpCounter,
+                                FavoriteKitId = u.FavoriteKitId,
+                                BackgroundPictureId = u.BackgroundPictureId,
+                                Color = currentRank?.Color ?? "#FFFFFF",
+                                Rank = currentRank != null ? new
+                                {
+                                    Name = currentRank.Name,
+                                    Color = currentRank.Color ?? "#FFFFFF"
+                                } : null
+                            };
+                        })
+                        .ToList();
 
+                    return new
+                    {
+                        Id = post.Id.ToString(),
+                        Name = post.GetFullName(),
+                        Description = post.Description,
+                        Color = post.Color ?? "#FFFFFF",
+                        HeadId = post.HeadId,
+                        SubdivisionId = post.SubdivisionId,
+                        AppendSubdivisionName = post.AppendSubdivisionName,
+                        Subdivision = sub != null ? new
+                        {
+                            Id = sub.Id,
+                            Name = sub.Name,
+                            Color = sub.Color ?? "#4b5563"
+                        } : null,
+                        Units = assignedUnits
+                    };
+                }).ToList<object>();
+
+                action.Value = result;
                 action.FormSuccess("Structure formed");
             }
             catch (Exception ex)

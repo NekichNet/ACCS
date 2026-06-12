@@ -42,7 +42,7 @@ namespace accs.Controllers
 
                 var res = subdivisions;
 
-                return Ok(res);
+                return Ok(res.Value);
             }
             catch (Exception ex)
             {
@@ -61,7 +61,7 @@ namespace accs.Controllers
                 {
                     return BadRequest(new { error = subdivision.Message });
                 }
-                return Ok(subdivision);
+                return Ok(subdivision.Value);
             }
             catch (Exception ex)
             {
@@ -130,7 +130,7 @@ namespace accs.Controllers
 
                 var subdivision = await _subdivisionService.CreateAsync(
                     dto.Name,
-                    dto.AppendSubdivisionName,
+                    dto.AppendHeadName,
                     dto.Description,
                     dto.Color,
                     dto.DiscordRoleId,
@@ -188,7 +188,7 @@ namespace accs.Controllers
                 {
                     return BadRequest(new { error = subdivision.Message });
                 }
-                return Ok(subdivision);
+                return Ok(subdivision.Value);
             }
             catch (Exception ex)
             {
@@ -224,10 +224,10 @@ namespace accs.Controllers
     public class SubdivisionDto
     {
         public string Name { get; set; } = string.Empty;
-        public bool AppendSubdivisionName { get; set; } = false;
-        public int? HeadId { get; set; } = null;
-        public string? Color { get; set; } = null;
-        public string? Description { get; set; } = null;
-        public ulong? DiscordRoleId { get; set; } = null;
+        public bool AppendHeadName { get; set; } = false;
+        public string Description { get; set; } = string.Empty;
+        public string Color { get; set; } = "#AAAAAA";
+        public ulong? DiscordRoleId { get; set; } = 1;
+        public int? HeadId { get; set; } = 1;
     }
 }

@@ -2,6 +2,7 @@
 using accs.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Controllers
@@ -177,7 +178,6 @@ namespace accs.Controllers
         }
 
         [HttpGet("{rewardId}/assign")]
-        [Authorize]
         public async Task<IActionResult> GetAssignedUnits([FromRoute] int rewardId)
         {
             try
@@ -209,7 +209,12 @@ namespace accs.Controllers
             {
                 _rewardService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _rewardService.AssignAsync(rewardId, dto.DiscordId);
+                if (!ulong.TryParse(dto.DiscordId, out ulong discordId))
+                {
+                    return BadRequest(new { error = "Передан некорректный формат Discord ID." });
+                }
+
+                var action = await _rewardService.AssignAsync(rewardId, discordId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -259,6 +264,6 @@ namespace accs.Controllers
         public string Color { get; set; } = "#FFFFFF";
         public string? ImagePath { get; set; }
         public ulong? DiscordRoleId { get; set; }
-        public ulong DiscordId { get; set; }
+        public string DiscordId { get; set; }
     }
 }

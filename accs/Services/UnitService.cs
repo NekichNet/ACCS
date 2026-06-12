@@ -46,7 +46,7 @@ namespace accs.Services
 				UnitRegistrationEvent registrationEvent = new UnitRegistrationEvent
 				{
 					Initiator = Actor,
-					Unit = action.Value
+					UnitId = discordId
 				};
 
 				await _db.Units.AddAsync(action.Value);

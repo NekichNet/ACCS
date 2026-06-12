@@ -3,6 +3,7 @@ using accs.Models;
 using accs.Models.SingleDayEvents;
 using accs.Services.Interfaces;
 using Discord;
+using DotNetEnv;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +32,6 @@ namespace accs.Controllers
         }
 
         [HttpGet("discord-callback")]
-        [AllowAnonymous]
         public async Task<IActionResult> DiscordCallback([FromQuery] string code, [FromQuery] string? state)
         {
             try
@@ -52,8 +52,7 @@ namespace accs.Controllers
                     return BadRequest(new { error = "Failed to authenticate with Discord" });
                 }
 
-                _logger.LogInformation(
-                    $"Received Discord user: {discordUser.Username} (ID: {discordUser.Id})");
+                _logger.LogInformation($"Received Discord user: {discordUser.Username} (ID: {discordUser.Id})");
 
                 if (!ulong.TryParse(discordUser.Id, out var discordId))
                 {
@@ -61,48 +60,13 @@ namespace accs.Controllers
                     return BadRequest(new { error = "Invalid Discord ID format" });
                 }
 
-                var existingUser = await _dbContext.Units.FirstOrDefaultAsync(u => u.DiscordId == discordId);
-
-                Unit user;
-
-                if (existingUser != null)
+                var temporaryUser = new Unit
                 {
-                    _logger.LogInformation(
-                        $"User already exists in database: {existingUser.Nickname}");
+                    DiscordId = discordId,
+                    Nickname = discordUser.Username
+                };
 
-                    if (existingUser.Nickname != discordUser.Username)
-                    {
-                        existingUser.Nickname = discordUser.Username;
-                        _dbContext.Units.Update(existingUser);
-                    }
-
-                    user = existingUser;
-                }
-                else
-                {
-                    _logger.LogInformation(
-                        $"Creating new user in database: {discordUser.Username}");
-
-                    var registrationEvent = new UnitRegistrationEvent
-                    {
-                        DateTime = DateTime.UtcNow
-                    };
-
-                    user = new Unit
-                    {
-                        DiscordId = discordId,
-                        Nickname = discordUser.Username,
-                        RegistrationEvent = registrationEvent
-                    };
-
-                    registrationEvent.Initiator = user;
-                    _dbContext.Units.Add(user);
-                }
-
-                await _dbContext.SaveChangesAsync();
-                _logger.LogInformation($"User saved to database. Discord ID: {discordId}");
-
-                var jwtToken = _jwtTokenService.GenerateToken(user);
+                var jwtToken = _jwtTokenService.GenerateToken(temporaryUser);
 
                 var response = new
                 {
@@ -112,13 +76,12 @@ namespace accs.Controllers
                     expires_in = 3600,
                     user = new
                     {
-                        discord_id = discordId,
-                        username = user.Nickname
+                        discord_id = discordUser.Id,
+                        username = temporaryUser.Nickname
                     }
                 };
 
-                _logger.LogInformation(
-                    $"Authentication successful for {user.Nickname}");
+                _logger.LogInformation($"Authentication successful for temporary context of {temporaryUser.Nickname}");
 
                 return Ok(response);
             }
@@ -129,14 +92,17 @@ namespace accs.Controllers
             }
         }
 
+
         [HttpGet("discord-login-url")]
-        [AllowAnonymous]
         public IActionResult GetDiscordLoginUrl()
         {
             try
             {
-                var clientId = Environment.GetEnvironmentVariable("DISCORD_CLIENT_ID");
-                var redirectUri = Environment.GetEnvironmentVariable("DISCORD_REDIRECT_URI");
+                var clientId = Env.GetString("DISCORD_CLIENT_ID")
+                    ?? throw new InvalidOperationException("DISCORD_CLIENT_ID undefined");
+
+                var redirectUri = Env.GetString("DISCORD_REDIRECT_URI")
+                    ?? throw new InvalidOperationException("DISCORD_REDIRECT_URI undefined");
 
                 if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(redirectUri))
                 {
@@ -168,8 +134,9 @@ namespace accs.Controllers
             }
         }
 
-        [HttpGet("me")]
+
         [Authorize]
+        [HttpGet("me")]
         public async Task<IActionResult> GetCurrentUser()
         {
             try
@@ -178,8 +145,7 @@ namespace accs.Controllers
 
                 if (string.IsNullOrEmpty(discordIdClaim) || !ulong.TryParse(discordIdClaim, out var discordId))
                 {
-                    _logger.LogWarning("Invalid discord_id claim in JWT token");
-                    return Unauthorized(new { error = "Invalid token" });
+                    return Unauthorized(new { error = "Invalid token claims" });
                 }
 
                 var user = await _dbContext.Units
@@ -190,8 +156,7 @@ namespace accs.Controllers
 
                 if (user == null)
                 {
-                    _logger.LogWarning($"User not found: Discord ID {discordId}");
-                    return NotFound(new { error = "User not found" });
+                    return StatusCode(403, new { error = "Доступ запрещен. Вы не зарегистрированы в системе." });
                 }
 
                 var activeAssignedRank = user.GetAssignedRank();
@@ -201,7 +166,7 @@ namespace accs.Controllers
                 {
                     discord_id = user.DiscordId,
                     username = user.Nickname,
-                    joined = user.RegistrationEvent.DateTime,
+                    joined = user.RegistrationEvent?.DateTime ?? DateTime.UtcNow,
                     rank = rankName,
                     steam_id = user.SteamId
                 });

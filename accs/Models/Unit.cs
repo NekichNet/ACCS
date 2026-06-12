@@ -20,12 +20,12 @@ namespace accs.Models
 		public string Nickname { get; set; }
 		public ulong? SteamId { get; set; }
 		public ushort RankUpCounter { get; set; } = 0;
-		public int RegistrationEventId { get; set; }
-		[ForeignKey("RegistrationEventId")]
-		[JsonIgnore] public virtual UnitRegistrationEvent RegistrationEvent { get; set; }
+		public int? RegistrationEventId { get; set; }
+		//[ForeignKey("RegistrationEventId")]
+		[JsonIgnore] public virtual UnitRegistrationEvent? RegistrationEvent { get; set; }
 		public int FavoriteKitId { get; set; } = 1;
 		[JsonIgnore] public virtual FavoriteKit FavoriteKit { get; set; }
-		public int BackgroundPictureId { get; set; }
+		public int? BackgroundPictureId { get; set; }
 		[JsonIgnore] public virtual BackgroundPicture BackgroundPicture { get; set; }
 		[JsonIgnore] public virtual List<Doc> OwnDocs { get; set; }
 		[JsonIgnore] public virtual List<AssignedReward> AssignedRewards { get; set; } = new List<AssignedReward>();
@@ -76,9 +76,9 @@ namespace accs.Models
 
 			AssignedRank? assignedRank = GetAssignedRank();
 			if (assignedRank != null)
-				permissions.Concat(assignedRank.Rank.GetPermissionsRecursive());
+				permissions.UnionWith(assignedRank.Rank.GetPermissionsRecursive());
 
-			permissions.Concat(GetAssignedPosts().SelectMany(ap => ap.Post.GetPermissionsRecursive()));
+			permissions.UnionWith(GetAssignedPosts().SelectMany(ap => ap.Post.GetPermissionsRecursive()));
 			return permissions;
 		}
 

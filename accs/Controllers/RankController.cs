@@ -226,11 +226,11 @@ namespace accs.Controllers
                 {
                     return BadRequest(new { error = action.Message });
                 }
-                if (action == null)
+                if (action.Value == null)
                 {
                     return NotFound(new { error = "Rank not found" });
                 }
-                return Ok(action);
+                return Ok(action.Value);
             }
             catch (Exception ex)
             {

@@ -4,6 +4,7 @@ using accs.Services;
 using accs.Services.Interfaces;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
@@ -25,7 +26,18 @@ namespace accs
 
             var builder = WebApplication.CreateBuilder(args);
 
-			builder.Logging.ClearProviders();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend",
+                    policy =>
+                    {
+                        policy.WithOrigins("http://localhost:3000")  // Your frontend URL
+                              .AllowAnyHeader()
+                              .AllowAnyMethod();
+                    });
+            });
+
+            builder.Logging.ClearProviders();
 			builder.Logging.AddCustomConsole();
 			builder.Logging.AddFile();
 
@@ -40,11 +52,11 @@ namespace accs
 			var key = Encoding.ASCII.GetBytes(jwtSecret);
             */
 
-			var jwtIssuer = Env.GetString("JWT_ISSUER")
-                ?? builder.Configuration["Jwt:Issuer"];
+            var jwtIssuer = builder.Configuration["Jwt:Issuer"]
+    ?? throw new InvalidOperationException("'Jwt:Issuer' не настроен в appsettings.json");
 
-            var jwtAudience = Env.GetString("JWT_AUDIENCE")
-                ?? builder.Configuration["Jwt:Audience"];
+            var jwtAudience = builder.Configuration["Jwt:Audience"]
+                ?? throw new InvalidOperationException("'Jwt:Audience' не настроен в appsettings.json");
 
             var jwtExpiryString = Env.GetString("JWT_EXPIRY_MINUTES")
                 ?? builder.Configuration["Jwt:ExpiryMinutes"]
@@ -80,10 +92,19 @@ namespace accs
                 };
             });
 
+            
+
+
             builder.Services.AddAuthorization();
 
             builder.Services.AddDbContext<AppDbContext>(options =>
 				options.UseNpgsql(connectionString));
+
+            builder.Services.AddSingleton<ILoggerFactory, LoggerFactory>();
+            builder.Services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
+            // И явная регистрация нетипизированного ILogger
+            builder.Services.AddSingleton<ILogger>(sp =>
+                sp.GetRequiredService<ILoggerFactory>().CreateLogger("Global"));
 
             builder.Services.AddTransient<PostService>();
             builder.Services.AddTransient<RankService>();
@@ -95,28 +116,77 @@ namespace accs
 			builder.Services.AddHttpClient();
             builder.Services.AddScoped<IDiscordOAuthService, DiscordOAuthService>();
             builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+                });
+            
 
             _app = builder.Build();
-
+            _app.UseCors("AllowFrontend");
             _app.UseAuthentication();
             _app.UseAuthorization();
 
 
+            #region RequestDebugging
             _app.Use(async (context, next) =>
             {
-                var discordIdClaim = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                context.Request.EnableBuffering();
+                await next();
+            });
+            #endregion RequestDebugging
 
-                if (!string.IsNullOrEmpty(discordIdClaim) &&
-                    ulong.TryParse(discordIdClaim, out var discordId))
+            _app.Use(async (context, next) =>
+            {
+                bool userExistsInDb = false;
+
+                if (context.User?.Identity?.IsAuthenticated == true)
                 {
-                    using var scope = _app.Services.CreateScope();
-                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    var unit = await db.Units.FindAsync(discordId);
+                    var discordIdClaim = context.User.FindFirst("discord_id")?.Value
+                        ?? context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                    if (unit != null)
+                    if (!string.IsNullOrEmpty(discordIdClaim) && ulong.TryParse(discordIdClaim, out var discordId))
                     {
-                        context.Items["Actor"] = unit;
+                        var db = context.RequestServices.GetRequiredService<AppDbContext>();
+
+                        var unit = await db.Units
+                            .Include(u => u.AssignedRanks)
+                                .ThenInclude(ar => ar.Rank)
+
+                            .Include(u => u.AssignedPosts)
+                                .ThenInclude(ap => ap.Post)
+                            .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+
+                        if (unit != null)
+                        {
+                            context.Items["Actor"] = unit;
+                            userExistsInDb = true;
+                        }
+                        else
+                        {
+                            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+                            logger.LogWarning($"Пользователь с Discord ID {discordId} аутентифицирован JWT, но отсутствует в таблице Units.");
+                        }
+                    }
+
+                    if (!userExistsInDb)
+                    {
+                        var endpoint = context.GetEndpoint();
+                        var authorizeAttribute = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>();
+                        var allowAnonymousAttribute = endpoint?.Metadata.GetMetadata<AllowAnonymousAttribute>();
+
+                        if (authorizeAttribute != null && allowAnonymousAttribute == null)
+                        {
+                            context.Response.StatusCode = 403;
+                            context.Response.ContentType = "application/json";
+                            await context.Response.WriteAsJsonAsync(new
+                            {
+                                error = "Forbidden",
+                                message = "Доступ ограничен. Ваш Discord ID отсутствует в базе данных клана."
+                            });
+                            return;
+                        }
                     }
                 }
 

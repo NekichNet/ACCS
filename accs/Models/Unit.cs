@@ -76,9 +76,9 @@ namespace accs.Models
 
 			AssignedRank? assignedRank = GetAssignedRank();
 			if (assignedRank != null)
-				permissions.Concat(assignedRank.Rank.GetPermissionsRecursive());
+				permissions.UnionWith(assignedRank.Rank.GetPermissionsRecursive());
 
-			permissions.Concat(GetAssignedPosts().SelectMany(ap => ap.Post.GetPermissionsRecursive()));
+			permissions.UnionWith(GetAssignedPosts().SelectMany(ap => ap.Post.GetPermissionsRecursive()));
 			return permissions;
 		}
 

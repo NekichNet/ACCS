@@ -148,14 +148,25 @@ namespace accs
 
                     if (!string.IsNullOrEmpty(discordIdClaim) && ulong.TryParse(discordIdClaim, out var discordId))
                     {
-                        using var scope = _app.Services.CreateScope();
-                        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                        var unit = await db.Units.FindAsync(discordId);
+                        var db = context.RequestServices.GetRequiredService<AppDbContext>();
+
+                        var unit = await db.Units
+                            .Include(u => u.AssignedRanks)
+                                .ThenInclude(ar => ar.Rank)
+
+                            .Include(u => u.AssignedPosts)
+                                .ThenInclude(ap => ap.Post)
+                            .FirstOrDefaultAsync(u => u.DiscordId == discordId);
 
                         if (unit != null)
                         {
                             context.Items["Actor"] = unit;
                             userExistsInDb = true;
+                        }
+                        else
+                        {
+                            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+                            logger.LogWarning($"Пользователь с Discord ID {discordId} аутентифицирован JWT, но отсутствует в таблице Units.");
                         }
                     }
 

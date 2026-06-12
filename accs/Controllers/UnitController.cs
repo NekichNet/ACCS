@@ -32,6 +32,15 @@ namespace accs.Controllers
                     return BadRequest(new { error = result.Message });
                 }
 
+                var unitsDto = result.Value.Select(u => new
+                {
+                    DiscordId = u.DiscordId.ToString(),
+                    Nickname = u.Nickname,
+                    SteamId = u.SteamId?.ToString(),
+                    Rank = u.GetRank() != null ? new { Name = u.GetRank().Name } : null,
+                    Posts = u.GetPosts().Select(p => new { Name = p.GetFullName() }).ToList()
+                });
+
                 var units = result.Value;
 
                 return Ok(units);
@@ -52,7 +61,12 @@ namespace accs.Controllers
             {
                 _unitService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var result = await _unitService.RegisterAsync(dto.DiscordId, dto.Nickname);
+                if (!ulong.TryParse(dto.DiscordId, out ulong discordId))
+                {
+                    return BadRequest(new { error = "Передан некорректный формат Discord ID." });
+                }
+
+                var result = await _unitService.RegisterAsync(discordId, dto.Nickname);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -362,7 +376,7 @@ namespace accs.Controllers
 
     public class UnitDto
     {
-        public ulong DiscordId { get; set; }
+        public string DiscordId { get; set; }
         public string Nickname { get; set; }
         public int? Post { get; set; } = null;
         public int? Subdivision { get; set; } = null;

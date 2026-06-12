@@ -9,6 +9,7 @@ using accs.Models.Statuses;
 using accs.Models.Statuses.Abstraction;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging;
 using System;
 
 namespace accs.Database
@@ -63,6 +64,9 @@ namespace accs.Database
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Unit>()
+                .HasKey(u => u.DiscordId);
+
             modelBuilder.Entity<EventWithInitiator>().ToTable("EventsWithInitiator");
             modelBuilder.Entity<UnitRegistrationEvent>().ToTable("UnitRegistrationEvents");
             modelBuilder.Entity<UnitDismissingEvent>().ToTable("UnitDismissingEvents");
@@ -84,10 +88,10 @@ namespace accs.Database
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<EventWithInitiator>()
-                .HasOne(e => e.Initiator)
-                .WithMany()
-                .HasForeignKey(e => e.InitiatorId)
-                .OnDelete(DeleteBehavior.Restrict);
+                 .HasOne(e => e.Initiator)
+                 .WithMany()
+                 .HasForeignKey(e => e.InitiatorId)
+                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Unit>()
                 .HasOne(u => u.RegistrationEvent)
@@ -101,7 +105,7 @@ namespace accs.Database
                 .HasForeignKey<Doc>(d => d.EventId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<AssignedReward>().HasKey(ar => new { ar.RewardId, ar.UnitId });
+            modelBuilder.Entity<Activity>().HasKey(a => new { a.UnitId, a.Date });
             //modelBuilder.Entity<AssignedPost>().HasKey(ap => new { ap.PostId, ap.UnitId });
 
             modelBuilder.Entity<AssignedPost>()
@@ -265,6 +269,8 @@ namespace accs.Database
             };
             modelBuilder.Entity<Unit>().HasData(units);
 
+
+
             modelBuilder.Entity<AssignedRank>().HasData(
                 new AssignedRank { Id = 1, UnitId = myDiscordId, RankId = 19, Start = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
                 new AssignedRank { Id = 2, UnitId = 632641236412378, RankId = 17, Start = new DateTime(2024, 4, 12, 0, 0, 0, DateTimeKind.Utc) },
@@ -286,6 +292,25 @@ namespace accs.Database
                 new Activity { UnitId = 345678901234567890, Date = DateOnly.FromDateTime(DateTime.Today) },
                 new Activity { UnitId = 456789012345678901, Date = DateOnly.FromDateTime(DateTime.Today) }
             );
+
+            modelBuilder.Entity<GivedPermission>().HasData(
+                new
+                {
+                    Id = 1,
+                    PermissionType = PermissionType.Administrator,
+                    EntityId = 1,
+                    Inherit = true,
+                    PostId = 1
+                },
+                new
+                {
+                    Id = 2,
+                    PermissionType = PermissionType.Administrator,
+                    EntityId = 1,
+                    Inherit = true,
+                    RankId = 19
+                }
+            );
         }
-	}
+    }
 }

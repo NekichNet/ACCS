@@ -69,16 +69,6 @@ namespace accs.DiscordBot.Interactions
                         Name = "Награды:", Value = "```ansi\r\n\u001b[2;33m" + String.Join(", ",
                         unit.Rewards.Select(r => r.Name)) + "\u001b[0m\r\n```"
                     });
-                embed.AddField(new EmbedFieldBuilder() {
-                    Name = "Благодарности:", Value = unit.UnitStatuses.Where(
-                        x => x.Status.Type == StatusType.Gratitude).Count(),
-					IsInline = true
-				});
-                embed.AddField(new EmbedFieldBuilder() {
-                    Name = "Выговоров:", Value = unit.UnitStatuses.Where(
-                    x => x.Status.Type == StatusType.Reprimand || x.Status.Type == StatusType.SevereReprimand).Count(),
-                    IsInline = true
-                });
 				embed.AddField(new EmbedFieldBuilder()
 				{
 					Name = "Активность за четыре недели:",
@@ -116,6 +106,7 @@ namespace accs.DiscordBot.Interactions
 			}
         }
 
+        /*
 		[SlashCommand("nickname", "Изменить никнейм пользователя")]
 		public async Task ChangeNicknameCommand(
             [Summary(description: "Никнейм в Steam без приписки")]
@@ -183,9 +174,8 @@ namespace accs.DiscordBot.Interactions
 				await RespondAsync("Не удалось изменить никнейм.", ephemeral: true);
 				_log.LogError(ex, $"Nickname change error: {ex.Message}");
 			}
-
-
         }
+        */
 
 		[IsUnit()]
 		[SlashCommand("steam", "Привязать свой Steam ID")]

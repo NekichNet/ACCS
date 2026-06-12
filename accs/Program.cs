@@ -67,13 +67,13 @@ namespace accs
 
 			DiscordSocketClient client = _app.Services.GetRequiredService<DiscordSocketClient>();
 
-			client.Log += DiscordLog<DiscordSocketClient>;
+			//client.Log += DiscordLog<DiscordSocketClient>;
 
 			client.LoginAsync(TokenType.Bot, token).Wait();
 			
 			InteractionService interaction = new InteractionService(client.Rest);
 
-			interaction.Log += DiscordLog<InteractionService>;
+			//interaction.Log += DiscordLog<InteractionService>;
 
 			client.InteractionCreated += async (msg) =>
 			{
@@ -112,11 +112,13 @@ namespace accs
 			_app.Run();
 		}
 
+		/*
 		private async static Task DiscordLog<TCategoryName>(LogMessage message)
 		{
 			LogLevel logLevel = (LogLevel)(5 - message.Severity);
 			_app.Services.GetRequiredService<ILogger<TCategoryName>>()
 				.Log(logLevel, message.Exception, message.Message);
 		}
+		*/
 	}
 }

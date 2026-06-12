@@ -7,6 +7,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
+using System.Net.NetworkInformation;
 
 namespace accs.DiscordBot.Interactions
 {
@@ -25,22 +26,21 @@ namespace accs.DiscordBot.Interactions
         }
 
         [HasPermission(PermissionType.GiveReprimandGratitude)]
-        [SlashCommand("give", "Установить благодарность, выговор, строгий выговор или завершить все")]
+        [SlashCommand("give", "Выдать благодарность, выговор или строгий выговор")]
         public async Task GiveCommandAsync(
             [Summary(description: "Боец, которому Вы присваиваете статус")]
             IUser user,
             [Choice("Благодарность", "gratitude"),
-            Choice("Без статуса", "nothing"),
             Choice("Выговор", "reprimand"),
             Choice("Строгий выговор", "severe-reprimand")]
             [Summary(description: "Вид статуса")]
             string statusType,
             [Summary(description: "Количество дней")]
-            int? amountOfDays = null)
+            int? amountOfDays = 7)
         {
             try
             {
-                StatusType? givenType;
+                StatusType givenType;
                 if (statusType == "gratitude")
                 {
                     givenType = StatusType.Gratitude;
@@ -53,19 +53,18 @@ namespace accs.DiscordBot.Interactions
                 {
                     givenType = StatusType.SevereReprimand;
                 }
-                else if (statusType == "nothing")
-                {
-                    givenType = null;
-                }
                 else
                 {
                     throw new Exception("Ошибка: Не удалось спарсить статус!");
                 }
 
-                Unit? unit = await _db.Units.FindAsync(user.Id);
+				Status status = await _db.Statuses.FindAsync(givenType);
+				Unit? unit = await _db.Units.FindAsync(user.Id);
 
                 if (unit != null)
                 {
+                    StatusType finalStatusType;
+
                     UnitStatus? prevUnitStatus = unit.UnitStatuses.FirstOrDefault(us =>
                     (us.Status.Type == StatusType.Gratitude
                     || us.Status.Type == StatusType.Reprimand
@@ -73,31 +72,44 @@ namespace accs.DiscordBot.Interactions
                     && !us.IsCompleted());
                     if (prevUnitStatus != null)
                     {
-                        prevUnitStatus.EndDate = DateTime.UtcNow;
-                        prevUnitStatus.RemoveRole(_guildProvider);
-                    }
+                        Dictionary<StatusType, int> statusMath = new Dictionary<StatusType, int>();
+                        
+                        statusMath.Add(StatusType.Gratitude, 1);
+						statusMath.Add(StatusType.Reprimand, -1);
+						statusMath.Add(StatusType.SevereReprimand, -2);
 
-                    if (givenType != null)
-                    {
-                        Status? status = await _db.Statuses.FindAsync(givenType);
-                        if (status != null)
+						prevUnitStatus.EndDate = DateTime.UtcNow;
+                        prevUnitStatus.RemoveRole(_guildProvider);
+
+                        int sum = statusMath[prevUnitStatus.Status.Type] + statusMath[givenType];
+
+                        if (sum > 0)
+                            finalStatusType = StatusType.Gratitude;
+                        else if (sum == -1)
+                            finalStatusType = StatusType.Reprimand;
+                        else if (sum < -1)
+                            finalStatusType = StatusType.SevereReprimand;
+                        else
                         {
-                            DateTime? endDate = amountOfDays == null ? null : DateTime.UtcNow.AddDays((double)amountOfDays);
-                            UnitStatus unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.UtcNow, EndDate = endDate, Status = status };
-                            await _db.UnitStatuses.AddAsync(unitStatus);
-                            await _db.SaveChangesAsync();
-                            unitStatus.SetRole(_guildProvider);
-                            await RespondAsync(
-                                $"Бойцу {unit.GetOnlyNickname()} установлен(а) {status.Name}"
-                                + (endDate == null ? " беcсрочно" : $" до {DateOnly.FromDateTime((DateTime)endDate).ToShortDateString()}"
-                                ));
-                        }
+							await RespondAsync($"Бойцу {unit.GetOnlyNickname()} выдан(а) {status.Name}. Текущий статус: отсутствует");
+                            return;
+						}
                     }
                     else
                     {
-                        await RespondAsync($"С бойца {unit.GetOnlyNickname()} сняты все благодарности и выговора");
-                        await _db.SaveChangesAsync();
+                        finalStatusType = givenType;
                     }
+
+                    DateTime endDate = DateTime.UtcNow.AddDays((double)amountOfDays);
+                    Status finalStatus = await _db.Statuses.FindAsync(finalStatusType);
+					UnitStatus unitStatus = new UnitStatus() { Unit = unit, StartDate = DateTime.UtcNow, EndDate = endDate, Status = finalStatus };
+                    await _db.UnitStatuses.AddAsync(unitStatus);
+                    await _db.SaveChangesAsync();
+                    unitStatus.SetRole(_guildProvider);
+                    await RespondAsync(
+                        $"Бойцу {unit.GetOnlyNickname()} выдан(а) {status.Name}. " +
+                        $"Текущий статус: {finalStatus.Name} до {DateOnly.FromDateTime((DateTime)endDate).ToShortDateString()}"
+                        );
                 }
                 else
                 {
@@ -111,7 +123,8 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-        [HasPermission(PermissionType.VacationAccess)]
+		[InChannels("ACTIVITY_CHANNEL_ID")]
+		[HasPermission(PermissionType.VacationAccess)]
         [SlashCommand("vacation", "Выход в отпуск")]
         public async Task VacationCommand(
             [MinValue(1), MaxValue(7)]
@@ -164,8 +177,8 @@ namespace accs.DiscordBot.Interactions
             }
         }
 
-
-        [SlashCommand("end-vacation", "Выход из отпуска")]
+		[InChannels("ACTIVITY_CHANNEL_ID")]
+		[SlashCommand("end-vacation", "Выход из отпуска")]
         public async Task EndVacationCommand()
         {
             try

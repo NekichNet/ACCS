@@ -13,7 +13,7 @@ namespace accs.Models
         public ulong UnitId { get; set; }
         [JsonIgnore] public virtual Unit Unit { get; set; }
 		public int? AssignmentEventId { get; set; }
-		[JsonIgnore] public virtual RewardAssignmentEvent AssignmentEvent { get; set; }
+		[JsonIgnore] public virtual RewardAssignmentEvent? AssignmentEvent { get; set; }
 		public bool Display { get; set; }
 
 		public override string ToString()

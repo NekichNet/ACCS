@@ -37,7 +37,7 @@ namespace accs.Controllers
                     DiscordId = u.DiscordId.ToString(),
                     Nickname = u.Nickname,
                     SteamId = u.SteamId?.ToString(),
-                    Rank = u.GetRank() != null ? u.GetRank()?.Id : null,
+                    RankId = u.GetRank() != null ? u.GetRank()?.Id : null,
                     Posts = u.GetPosts().Select(p => p.Id ).ToList()
                 });
 

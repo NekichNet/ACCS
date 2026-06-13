@@ -99,14 +99,14 @@ namespace accs.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> CreateNewReward([FromBody] RewardDto dto)
+        public async Task<IActionResult> CreateNewReward([FromBody] RewardDto dto, [FromBody] AssignRewardDto dto1)
         {
             try
             {
                 _rewardService.Actor = HttpContext.Items["Actor"] as Unit;
 
                 var newReward = await _rewardService.CreateAsync(
-                    dto.DiscordId ?? string.Empty,
+                    dto1.DiscordId ?? string.Empty,
                     dto.Name,
                     dto.Color,
                     dto.Conditions,
@@ -204,7 +204,7 @@ namespace accs.Controllers
 
         [HttpPost("{rewardId}/assign")]
         [Authorize]
-        public async Task<IActionResult> AssignReward([FromRoute] int rewardId, [FromBody] RewardDto dto)
+        public async Task<IActionResult> AssignReward([FromRoute] int rewardId, [FromBody] AssignRewardDto dto)
         {
             try
             {
@@ -265,6 +265,11 @@ namespace accs.Controllers
         public string Color { get; set; } = "#FFFFFF";
         public string? ImagePath { get; set; }
         public ulong? DiscordRoleId { get; set; }
-        public string? DiscordId { get; set; }
+    }
+
+    public class AssignRewardDto
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "DiscordId field is required.")]
+        public string DiscordId { get; set; } = string.Empty;
     }
 }

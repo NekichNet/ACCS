@@ -23,8 +23,8 @@ namespace accs.Database
 
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<GivedPermission<Post>> PostPermissions { get; set; }
-		public DbSet<GivedPermission<Post>> RankPermissions { get; set; }
-		public DbSet<GivedPermission<Post>> SubdivisionPermissions { get; set; }
+		public DbSet<GivedPermission<Rank>> RankPermissions { get; set; }
+		public DbSet<GivedPermission<Subdivision>> SubdivisionPermissions { get; set; }
 
 		public DbSet<Reward> Rewards { get; set; }
         public DbSet<AssignedReward> AssignedRewards { get; set; }

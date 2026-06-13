@@ -34,7 +34,7 @@ namespace accs.Services
 					return action.FormFailure("Unit registration restricted. Unauthorized", eventId: EventIds.Unauthorized);
                 if (!Actor.HasPermission(PermissionType.RegisterNewUnits))
                     return action.FormFailure("Unit registration restricted", eventId: EventIds.Forbidden);
-                if ((await _db.Units.FindAsync(discordId)) == null)
+                if ((await _db.Units.FindAsync(discordId)) != null)
 					return action.FormFailure($"Unit with ID {discordId} already registered", eventId: EventIds.ImpossibleAction);
                 
 				action.Value = new Unit

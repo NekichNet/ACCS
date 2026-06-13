@@ -100,9 +100,11 @@ namespace accs.Services
             try
             {
 				action.Value = await _db.Posts.FindAsync(id);
-
-				if (action.Value != null)
-					action.FormSuccess("Post found", eventId: EventIds.Read);
+                if (action.Value != null)
+                {
+                    action.Value.Name = action.Value.GetFullName();
+                    action.FormSuccess("Post found", eventId: EventIds.Read);
+                }
 				else
 					action.FormFailure("Post not found", eventId: EventIds.NotFound);
 			}
@@ -122,7 +124,12 @@ namespace accs.Services
 			{
 				action.Value = await _db.Posts.ToListAsync();
 
-				action.FormSuccess("Post list formed, length: " + action.Value.Count(),
+                foreach (var post in action.Value)
+                {
+                    post.Name = post.GetFullName();
+                }
+
+                action.FormSuccess("Post list formed, length: " + action.Value.Count(),
 					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
 			}
 			catch (Exception ex)

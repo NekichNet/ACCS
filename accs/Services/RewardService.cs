@@ -18,6 +18,7 @@ namespace accs.Services
         }
 
         public async Task<ActionResult<Reward>> CreateAsync(
+            string discordId,
             string name,
             string color,
             string conditions,
@@ -41,10 +42,9 @@ namespace accs.Services
                 };
 
                 await _db.Rewards.AddAsync(action.Value);
-                await _db.SaveChangesAsync();
 
 				action.Value.UpdateRole();
-
+                await _db.SaveChangesAsync();
 				action.FormSuccess($"Reward {action.Value.Name} created");
             }
             catch (Exception ex)
@@ -169,8 +169,13 @@ namespace accs.Services
                 Reward? reward = await _db.Rewards.FindAsync(rewardId);
                 if (reward == null)
                     return action.FormFailure($"Getting assigned units failed. Reward with ID {rewardId} not found", eventId: EventIds.NotFound);
-                
-                action.Value = reward.Assigned;
+
+                var assigned = await _db.AssignedRewards
+                    .Where(ar => ar.RewardId == rewardId)
+                    .Include(ar => ar.Unit)
+                    .ToListAsync();
+
+                action.Value = assigned;
                 action.FormSuccess($"Assigned {reward.Name} rewards retrieved, length: " + action.Value.Count,
 					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
             }
@@ -221,7 +226,7 @@ namespace accs.Services
 
 				action.Value = newAssignedReward;
 
-				action.FormSuccess($"Unit {unit.Nickname} assigned to reward {result.Value.Name}");
+				action.FormSuccess($"Unit {unit.Nickname} assigned to reward {newAssignedReward.Reward.Name}");
             }
             catch (Exception ex)
             {

@@ -1,15 +1,14 @@
-﻿using accs.Models.Configurations;
-using accs.Models.Enums;
+﻿using accs.Models.Enums;
 using accs.Models.Interfaces;
 using accs.Models.Statuses;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
-	[EntityTypeConfiguration(typeof(PostConfiguration))]
-	public class Post : IEntityWithPermissions, IEntityWithDiscordRole
+	public class Post : IEntityWithDiscordRole
 	{
 		public int Id { get; set; }
 		public string Name { get; set; }
@@ -24,7 +23,7 @@ namespace accs.Models
 		public int? HeadId { get; set; }
 		[JsonIgnore] public virtual Post? Head { get; set; }
 		[JsonIgnore] public virtual List<Post> Subordinates { get; set; } = new List<Post>();
-		[JsonIgnore] public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
+		[JsonIgnore] public virtual HashSet<GivedPermission<Post>> GivedPermissions { get; set; } = new HashSet<GivedPermission<Post>>();
 		[JsonIgnore] public virtual List<AssignedPost> AssignedPosts { get; set; } = new List<AssignedPost>();
 
 		public string GetFullName()
@@ -92,37 +91,40 @@ namespace accs.Models
 
 		public HashSet<Permission> GetPermissionsRecursive()
 		{
-			HashSet<Permission> permissions = [.. GetPermissions()];
+			HashSet<Permission> permissions = [.. GivedPermissions.Select(gp => gp.Permission)];
 			if (Subdivision != null)
 				permissions.Concat(Subdivision.GetPermissionsRecursive());
 			permissions.Concat(Subordinates.SelectMany(
-				s => s.GetGivedPermissionsRecursive()
-					.Where(gp => gp.Inherit)
-					.Select(gp => gp.Permission)
+				s => s.GetInheritedPermissionsRecursive()
 				));
 			return permissions;
 		}
 
-		public HashSet<GivedPermission> GetGivedPermissionsRecursive()
+		private HashSet<Permission> GetInheritedPermissionsRecursive()
 		{
-			HashSet<GivedPermission> givedPermissions = [.. GivedPermissions];
+			HashSet<Permission> permissions = [.. GivedPermissions.Where(gp => gp.Inherit).Select(gp => gp.Permission)];
 			if (Subdivision != null)
-				givedPermissions.Concat(Subdivision.GetGivedPermissionsRecursive());
-			givedPermissions.Concat(Subordinates.SelectMany(
-				s => s.GetGivedPermissionsRecursive()
-					.Where(gp => gp.Inherit)
-				));
-			return givedPermissions;
+				permissions.Concat(Subdivision.GetGivedPermissionsRecursive().Where(gp => gp.Inherit).Select(gp => gp.Permission));
+			foreach (Post sub in Subordinates)
+				permissions.Concat(sub.GetInheritedPermissionsRecursive());
+			return permissions;
 		}
 
-		public HashSet<Permission> GetPermissions()
-        {
-            return GivedPermissions.Select(gp => gp.Permission).ToHashSet();
-        }
-
-        public bool HasPermission(PermissionType permissionType)
+		public bool HasPermission(PermissionType permissionType)
         {
 			return GetPermissionsRecursive().Any(p => p.Type == permissionType);
         }
     }
+
+	public class PostConfiguration : IEntityTypeConfiguration<Post>
+	{
+		public void Configure(EntityTypeBuilder<Post> builder)
+		{
+			builder.HasOne(p => p.Head).WithMany(ph => ph.Subordinates).HasForeignKey(p => p.HeadId).OnDelete(DeleteBehavior.SetNull);
+			builder.HasOne(p => p.Subdivision).WithMany(s => s.Posts).HasForeignKey(p => p.SubdivisionId).OnDelete(DeleteBehavior.SetNull);
+			builder.HasOne(p => p.MaxRank).WithMany().HasForeignKey(p => p.MaxRankId).OnDelete(DeleteBehavior.NoAction);
+			builder.HasMany(p => p.GivedPermissions).WithOne().OnDelete(DeleteBehavior.Cascade);
+			builder.HasMany(p => p.AssignedPosts).WithOne(ap => ap.Post).OnDelete(DeleteBehavior.Cascade);
+		}
+	}
 }

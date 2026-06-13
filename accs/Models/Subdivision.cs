@@ -1,14 +1,13 @@
-﻿using accs.Models.Configurations;
-using accs.Models.Enums;
+﻿using accs.Models.Enums;
 using accs.Models.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
-	[EntityTypeConfiguration(typeof(SubdivisionConfiguration))]
-	public class Subdivision : IEntityWithPermissions, IEntityWithDiscordRole
+	public class Subdivision : IEntityWithDiscordRole
 	{
 		public int Id { get; set; }
 		public string Name { get; set; } = string.Empty;
@@ -18,9 +17,9 @@ namespace accs.Models
 		public ulong? DiscordRoleId { get; set; }
 		public int? HeadId { get; set; }
 		[JsonIgnore] public virtual Subdivision? Head { get; set; }
-		[JsonIgnore] public virtual List<Post> Posts { get; set; } = new List<Post>();
 		[JsonIgnore] public virtual List<Subdivision> Subordinates { get; set; } = new List<Subdivision>();
-		[JsonIgnore] public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
+		[JsonIgnore] public virtual List<Post> Posts { get; set; } = new List<Post>();
+		[JsonIgnore] public virtual HashSet<GivedPermission<Subdivision>> GivedPermissions { get; set; } = new HashSet<GivedPermission<Subdivision>>();
 		
 		public string GetFullName()
 		{
@@ -41,9 +40,9 @@ namespace accs.Models
 			return permissions;
 		}
 
-		public HashSet<GivedPermission> GetGivedPermissionsRecursive()
+		public HashSet<GivedPermission<Subdivision>> GetGivedPermissionsRecursive()
 		{
-			HashSet<GivedPermission> givedPermissions = [.. GivedPermissions];
+			HashSet<GivedPermission<Subdivision>> givedPermissions = [.. GivedPermissions];
 			if (Head != null)
 				givedPermissions.Concat(Head.GetGivedPermissionsRecursive()
 					.Where(gp => gp.Inherit));
@@ -76,4 +75,14 @@ namespace accs.Models
             }
         }
     }
+
+	public class SubdivisionConfiguration : IEntityTypeConfiguration<Subdivision>
+	{
+		public void Configure(EntityTypeBuilder<Subdivision> builder)
+		{
+			builder.HasOne(s => s.Head).WithMany(sh => sh.Subordinates).HasForeignKey(s => s.HeadId).OnDelete(DeleteBehavior.SetNull);
+			builder.HasMany(s => s.Posts).WithOne(p => p.Subdivision).OnDelete(DeleteBehavior.SetNull);
+			builder.HasMany(s => s.GivedPermissions).WithOne().OnDelete(DeleteBehavior.Cascade);
+		}
+	}
 }

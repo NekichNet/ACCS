@@ -1,9 +1,11 @@
 ﻿using accs.Models.SingleDayEvents.Abstraction;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace accs.Models.SingleDayEvents
 {
-    [Table("CustomEvents")]
+	[Table("CustomEvents")]
     public class CustomEvent : SingleDayEvent
     {
         public override string GetHexColor()

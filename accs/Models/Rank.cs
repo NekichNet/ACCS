@@ -1,16 +1,15 @@
 ﻿using accs.Models.Abstraction;
-using accs.Models.Configurations;
 using accs.Models.Enums;
 using accs.Models.Interfaces;
 using accs.Models.Statuses;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
-	[EntityTypeConfiguration(typeof(RankConfiguration))]
-	public class Rank : IEntityWithPermissions, IEntityWithDiscordRole, IEntityWithFiles
+	public class Rank : IEntityWithDiscordRole, IEntityWithFiles
 	{
 		public int Id { get; set; }
 		public string Name { get; set; } = string.Empty;
@@ -21,7 +20,7 @@ namespace accs.Models
 		[JsonIgnore] public virtual Rank? Lower { get; set; }
 		public int? HigherId { get; set; }
 		[JsonIgnore] public virtual Rank? Higher { get; set; }
-		[JsonIgnore] public virtual HashSet<GivedPermission> GivedPermissions { get; set; } = new HashSet<GivedPermission>();
+		[JsonIgnore] public virtual HashSet<GivedPermission<Rank>> GivedPermissions { get; set; } = new HashSet<GivedPermission<Rank>>();
 		[JsonIgnore] public virtual List<AssignedRank> AssignedRanks { get; set; } = new List<AssignedRank>();
 
 		public void InsertLower(Rank rank)
@@ -51,11 +50,11 @@ namespace accs.Models
             return JsonSerializer.Serialize(this);
         }
 
-		public HashSet<GivedPermission> GetGivedPermissionsRecursive()
+		public HashSet<GivedPermission<Rank>> GetGivedPermissionsRecursive()
 		{
-			HashSet<GivedPermission> givedPermissions = [.. GivedPermissions];
+			HashSet<GivedPermission<Rank>> givedPermissions = [.. GivedPermissions];
 			if (Lower != null)
-				foreach (GivedPermission givedPermission in
+				foreach (GivedPermission<Rank> givedPermission in
 					Lower.GetGivedPermissionsRecursive().Where(gp => gp.Inherit))
 					givedPermissions.Add(givedPermission);
 			return givedPermissions;
@@ -65,7 +64,7 @@ namespace accs.Models
         {
 			HashSet<Permission> permissions = [.. GetPermissions()];
 			if (Lower != null)
-				foreach (GivedPermission givedPermission in
+				foreach (GivedPermission<Rank> givedPermission in
 					Lower.GetGivedPermissionsRecursive().Where(gp => gp.Inherit))
 					permissions.Add(givedPermission.Permission);
 			return permissions;
@@ -124,4 +123,14 @@ namespace accs.Models
 			return higherRanks;
 		}
     }
+
+	public class RankConfiguration : IEntityTypeConfiguration<Rank>
+	{
+		public void Configure(EntityTypeBuilder<Rank> builder)
+		{
+			builder.HasOne(r => r.Lower).WithOne(rp => rp.Higher).OnDelete(DeleteBehavior.SetNull);
+			builder.HasMany(r => r.GivedPermissions).WithOne().OnDelete(DeleteBehavior.Cascade);
+			builder.HasMany(r => r.AssignedRanks).WithOne().OnDelete(DeleteBehavior.Cascade);
+		}
+	}
 }

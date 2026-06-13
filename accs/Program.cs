@@ -53,7 +53,7 @@ namespace accs
             */
 
             var jwtIssuer = builder.Configuration["Jwt:Issuer"]
-    ?? throw new InvalidOperationException("'Jwt:Issuer' не настроен в appsettings.json");
+                ?? throw new InvalidOperationException("'Jwt:Issuer' не настроен в appsettings.json");
 
             var jwtAudience = builder.Configuration["Jwt:Audience"]
                 ?? throw new InvalidOperationException("'Jwt:Audience' не настроен в appsettings.json");
@@ -91,9 +91,6 @@ namespace accs
                     }
                 };
             });
-
-            
-
 
             builder.Services.AddAuthorization();
 

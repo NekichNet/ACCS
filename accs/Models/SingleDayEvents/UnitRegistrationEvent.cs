@@ -1,10 +1,11 @@
 ﻿using accs.Models.SingleDayEvents.Abstraction;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 
 namespace accs.Models.SingleDayEvents
 {
-    [Table("UnitRegistrationEvents")]
+	[Table("UnitRegistrationEvents")]
     public class UnitRegistrationEvent : EventWithInitiator
     {
         public override string GetHexColor()

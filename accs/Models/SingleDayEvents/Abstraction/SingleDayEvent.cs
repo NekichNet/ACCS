@@ -1,10 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using accs.Models.Statuses;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace accs.Models.SingleDayEvents.Abstraction
 {
-    [Table("Events")]
+	[Table("Events")]
     public abstract class SingleDayEvent
     {
         public int Id { get; set; }
@@ -26,4 +29,12 @@ namespace accs.Models.SingleDayEvents.Abstraction
             return JsonSerializer.Serialize(this);
         }
     }
+
+	public class SingleDayEventConfiguration : IEntityTypeConfiguration<SingleDayEvent>
+	{
+		public void Configure(EntityTypeBuilder<SingleDayEvent> builder)
+		{
+			builder.HasOne(e => e.Unit).WithMany(u => u.SingleDayEvents).HasForeignKey(e => e.UnitId).OnDelete(DeleteBehavior.NoAction);
+		}
+	}
 }

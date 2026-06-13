@@ -1,5 +1,7 @@
 ﻿using accs.Models.SingleDayEvents.Abstraction;
 using accs.Models.Statuses;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace accs.Models.SingleDayEvents
@@ -19,4 +21,12 @@ namespace accs.Models.SingleDayEvents
             return "#994444";
         }
     }
+
+	public class UnitDismissingEventConfiguration : IEntityTypeConfiguration<UnitDismissingEvent>
+	{
+		public void Configure(EntityTypeBuilder<UnitDismissingEvent> builder)
+		{
+
+		}
+	}
 }

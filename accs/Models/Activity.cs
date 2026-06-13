@@ -1,18 +1,28 @@
-﻿using accs.Models.Configurations;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
-    [EntityTypeConfiguration(typeof(ActivityConfiguration))]
     public class Activity
 	{
 		public ulong UnitId { get; set; }
-		public virtual Unit Unit { get; set; }
+		[JsonIgnore] public virtual Unit Unit { get; set; }
 		public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.Today);
 
         public override string ToString()
         {
-            return UnitId + " " + Date.ToShortDateString();
+            return JsonSerializer.Serialize(this);
         }
+	}
+
+	public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
+	{
+		public void Configure(EntityTypeBuilder<Activity> builder)
+		{
+			builder.HasKey(a => new { a.UnitId, a.Date });
+			builder.HasOne(a => a.Unit).WithMany(u => u.Activities).HasForeignKey(u => u.UnitId).OnDelete(DeleteBehavior.NoAction);
+		}
 	}
 }

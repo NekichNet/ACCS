@@ -1,9 +1,11 @@
-﻿using System.Text.Json;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace accs.Models.Statuses.Abstraction
 {
-    public abstract class UnitState
+	public abstract class UnitState
     {
 		public int Id { get; set; }
 		public DateTime Start { get; set; } = DateTime.UtcNow;
@@ -36,5 +38,13 @@ namespace accs.Models.Statuses.Abstraction
         {
             return JsonSerializer.Serialize(this);
         }
+	}
+
+	public class UnitStateConfiguration : IEntityTypeConfiguration<UnitState>
+	{
+		public void Configure(EntityTypeBuilder<UnitState> builder)
+		{
+			builder.HasOne(us => us.Unit).WithMany(u => u.UnitStates).HasForeignKey(us => us.UnitId).OnDelete(DeleteBehavior.Cascade);
+		}
 	}
 }

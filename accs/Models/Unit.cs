@@ -5,6 +5,8 @@ using accs.Models.States;
 using accs.Models.States.Abstraction;
 using accs.Models.Statuses;
 using accs.Models.Statuses.Abstraction;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
@@ -21,12 +23,11 @@ namespace accs.Models
 		public ulong? SteamId { get; set; }
 		public ushort RankUpCounter { get; set; } = 0;
 		public int? RegistrationEventId { get; set; }
-		//[ForeignKey("RegistrationEventId")]
 		[JsonIgnore] public virtual UnitRegistrationEvent? RegistrationEvent { get; set; }
-		public int FavoriteKitId { get; set; } = 1;
-		[JsonIgnore] public virtual FavoriteKit FavoriteKit { get; set; }
+		public int? FavoriteKitId { get; set; } = 1;
+		[JsonIgnore] public virtual FavoriteKit? FavoriteKit { get; set; }
 		public int? BackgroundPictureId { get; set; }
-		[JsonIgnore] public virtual BackgroundPicture BackgroundPicture { get; set; }
+		[JsonIgnore] public virtual BackgroundPicture? BackgroundPicture { get; set; }
 		[JsonIgnore] public virtual List<Doc> OwnDocs { get; set; }
 		[JsonIgnore] public virtual List<AssignedReward> AssignedRewards { get; set; } = new List<AssignedReward>();
 		[JsonIgnore] public virtual List<Activity> Activities { get; set; } = new List<Activity>();
@@ -34,7 +35,6 @@ namespace accs.Models
 		[JsonIgnore] public virtual List<AssignedPost> AssignedPosts { get; set; } = new List<AssignedPost>();
 		[JsonIgnore] public virtual List<Retirement> Retirements { get; set; }
 		[JsonIgnore] public virtual List<Status> Statuses { get; set; } = new List<Status>();
-		[ForeignKey("UnitId")]
 		[JsonIgnore] public virtual List<UnitState> UnitStates { get; set; } = new List<UnitState>();
 		[JsonIgnore] public virtual List<SingleDayEvent> SingleDayEvents { get; set; } = new List<SingleDayEvent>();
         
@@ -150,5 +150,19 @@ namespace accs.Models
         {
             return JsonSerializer.Serialize(this);
         }
+	}
+
+	public class UnitConfiguration : IEntityTypeConfiguration<Unit>
+	{
+		public void Configure(EntityTypeBuilder<Unit> builder)
+		{
+			builder.HasOne(u => u.FavoriteKit).WithMany(fk => fk.Units).OnDelete(DeleteBehavior.NoAction);
+			builder.HasOne(u => u.BackgroundPicture).WithMany().HasForeignKey(u => u.BackgroundPictureId).OnDelete(DeleteBehavior.SetNull);
+			builder.HasMany(u => u.OwnDocs).WithOne(d => d.Author).OnDelete(DeleteBehavior.SetNull);
+			builder.HasMany(u => u.AssignedRewards).WithOne(ar => ar.Unit).OnDelete(DeleteBehavior.Cascade);
+			builder.HasMany(u => u.Activities).WithOne(a => a.Unit).OnDelete(DeleteBehavior.Cascade);
+			builder.HasMany(u => u.UnitStates).WithOne(us => us.Unit).OnDelete(DeleteBehavior.Cascade);
+			builder.HasMany(u => u.SingleDayEvents).WithOne(e => e.Unit).OnDelete(DeleteBehavior.Cascade);
+		}
 	}
 }

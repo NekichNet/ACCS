@@ -1,5 +1,6 @@
 ﻿using accs.Models;
 using accs.Models.Enums;
+using accs.Models.Interfaces;
 using accs.Models.SingleDayEvents;
 using accs.Models.SingleDayEvents.Abstraction;
 using accs.Models.States;
@@ -9,8 +10,7 @@ using accs.Models.Statuses;
 using accs.Models.Statuses.Abstraction;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Logging;
-using System;
+using System.Reflection;
 
 namespace accs.Database
 {
@@ -22,9 +22,11 @@ namespace accs.Database
         public DbSet<Subdivision> Subdivisions { get; set; }
 
         public DbSet<Permission> Permissions { get; set; }
-        public DbSet<GivedPermission> GivedPermissions { get; set; }
+        public DbSet<GivedPermission<Post>> PostPermissions { get; set; }
+		public DbSet<GivedPermission<Post>> RankPermissions { get; set; }
+		public DbSet<GivedPermission<Post>> SubdivisionPermissions { get; set; }
 
-        public DbSet<Reward> Rewards { get; set; }
+		public DbSet<Reward> Rewards { get; set; }
         public DbSet<AssignedReward> AssignedRewards { get; set; }
 
         public DbSet<FavoriteKit> FavoriteKits { get; set; }
@@ -35,7 +37,6 @@ namespace accs.Database
         public DbSet<UnitState> UnitStates { get; set; }
         public DbSet<Status> Statuses { get; set; }
         public DbSet<Gratitude> Gratitudes { get; set; }
-        public DbSet<NoStatus> NoStatuses { get; set; }
         public DbSet<Reprimand> Reprimands { get; set; }
         public DbSet<SevereReprimand> SevereReprimands { get; set; }
         public DbSet<AssignedPost> AssignedPosts { get; set; }
@@ -43,7 +44,7 @@ namespace accs.Database
         public DbSet<Retirement> Retirements { get; set; }
 
         public DbSet<SingleDayEvent> SingleDayEvents { get; set; }
-        public DbSet<EventWithDoc> EventsWithDoc { get; set; }
+        //public DbSet<EventWithDoc> EventsWithDoc { get; set; }
         public DbSet<CustomEvent> CustomEvents { get; set; }
         public DbSet<CustomEventWithDoc> CustomEventsWithDoc { get; set; }
         public DbSet<RewardAssignmentEvent> RewardAssignmentEvents { get; set; }
@@ -64,57 +65,11 @@ namespace accs.Database
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Unit>()
-                .HasKey(u => u.DiscordId);
+			modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-            modelBuilder.Entity<EventWithInitiator>().ToTable("EventsWithInitiator");
-            modelBuilder.Entity<UnitRegistrationEvent>().ToTable("UnitRegistrationEvents");
-            modelBuilder.Entity<UnitDismissingEvent>().ToTable("UnitDismissingEvents");
+			/* 1. Разрешения */
 
-            modelBuilder.Entity<UnitState>().ToTable("UnitStates");
-            modelBuilder.Entity<Status>().ToTable("UnitStates");
-            modelBuilder.Entity<Gratitude>().ToTable("UnitStates");
-            modelBuilder.Entity<NoStatus>().ToTable("UnitStates");
-            modelBuilder.Entity<Reprimand>().ToTable("UnitStates");
-            modelBuilder.Entity<SevereReprimand>().ToTable("UnitStates");
-            modelBuilder.Entity<AssignedPost>().ToTable("UnitStates");
-            modelBuilder.Entity<AssignedRank>().ToTable("UnitStates");
-            modelBuilder.Entity<Retirement>().ToTable("UnitStates");
-
-            modelBuilder.Entity<SingleDayEvent>()
-                .HasOne(e => e.Unit)
-                .WithMany()
-                .HasForeignKey(e => e.UnitId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<EventWithInitiator>()
-                 .HasOne(e => e.Initiator)
-                 .WithMany()
-                 .HasForeignKey(e => e.InitiatorId)
-                 .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<Unit>()
-                .HasOne(u => u.RegistrationEvent)
-                .WithOne()
-                .HasForeignKey<UnitRegistrationEvent>(e => e.UnitId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<EventWithDoc>()
-                .HasOne(e => e.Doc)
-                .WithOne(d => d.Event)
-                .HasForeignKey<Doc>(d => d.EventId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Activity>().HasKey(a => new { a.UnitId, a.Date });
-            //modelBuilder.Entity<AssignedPost>().HasKey(ap => new { ap.PostId, ap.UnitId });
-
-            modelBuilder.Entity<AssignedPost>()
-                .HasIndex(ap => new { ap.PostId, ap.UnitId })
-                .IsUnique();
-            modelBuilder.Entity<Activity>().HasKey(a => new { a.UnitId, a.Date });
-
-            /* 1. Разрешения */
-            List<Permission> permissions = new List<Permission>();
+			List<Permission> permissions = new List<Permission>();
             foreach (var permissionType in typeof(PermissionType).GetEnumValues())
             {
                 var fieldInfo = typeof(PermissionType).GetField(permissionType.ToString());
@@ -216,13 +171,11 @@ namespace accs.Database
             modelBuilder.Entity<BackgroundPicture>().HasData(
                 new BackgroundPicture { Id = 1, Name = "Default Background" }
             );
-
-
+            
             ulong myDiscordId = 1257757034821193865;
 
             var units = new List<Unit>
             {
-
                 new Unit
                 {
                     DiscordId = myDiscordId,
@@ -269,8 +222,6 @@ namespace accs.Database
             };
             modelBuilder.Entity<Unit>().HasData(units);
 
-
-
             modelBuilder.Entity<AssignedRank>().HasData(
                 new AssignedRank { Id = 1, UnitId = myDiscordId, RankId = 19, Start = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
                 new AssignedRank { Id = 2, UnitId = 632641236412378, RankId = 17, Start = new DateTime(2024, 4, 12, 0, 0, 0, DateTimeKind.Utc) },
@@ -285,7 +236,6 @@ namespace accs.Database
                 new AssignedPost { Id = 8, UnitId = 456789012345678901, PostId = 10, Start = new DateTime(2023, 11, 24, 0, 0, 0, DateTimeKind.Utc) }
             );
 
-
             modelBuilder.Entity<Activity>().HasData(
                 new Activity { UnitId = myDiscordId, Date = DateOnly.FromDateTime(DateTime.Today) },
                 new Activity { UnitId = 632641236412378, Date = DateOnly.FromDateTime(DateTime.Today) },
@@ -293,24 +243,25 @@ namespace accs.Database
                 new Activity { UnitId = 456789012345678901, Date = DateOnly.FromDateTime(DateTime.Today) }
             );
 
-            modelBuilder.Entity<GivedPermission>().HasData(
-                new
+            modelBuilder.Entity<GivedPermission<Post>>().HasData(
+                new GivedPermission<Post>
                 {
                     Id = 1,
                     PermissionType = PermissionType.Administrator,
                     EntityId = 1,
-                    Inherit = true,
-                    PostId = 1
-                },
-                new
-                {
-                    Id = 2,
-                    PermissionType = PermissionType.Administrator,
-                    EntityId = 1,
-                    Inherit = true,
-                    RankId = 19
+                    Inherit = true
                 }
             );
-        }
+
+			modelBuilder.Entity<GivedPermission<Rank>>().HasData(
+				new GivedPermission<Rank>
+				{
+					Id = 1,
+					PermissionType = PermissionType.Administrator,
+					EntityId = 5,
+					Inherit = true
+				}
+			);
+		}
     }
 }

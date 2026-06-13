@@ -106,7 +106,7 @@ namespace accs.Controllers
                 _rewardService.Actor = HttpContext.Items["Actor"] as Unit;
 
                 var newReward = await _rewardService.CreateAsync(
-                    dto.DiscordId,
+                    dto.DiscordId ?? string.Empty,
                     dto.Name,
                     dto.Color,
                     dto.Conditions,
@@ -265,6 +265,6 @@ namespace accs.Controllers
         public string Color { get; set; } = "#FFFFFF";
         public string? ImagePath { get; set; }
         public ulong? DiscordRoleId { get; set; }
-        public string DiscordId { get; set; }
+        public string? DiscordId { get; set; }
     }
 }

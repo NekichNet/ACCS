@@ -37,13 +37,12 @@ namespace accs.Controllers
                     DiscordId = u.DiscordId.ToString(),
                     Nickname = u.Nickname,
                     SteamId = u.SteamId?.ToString(),
-                    Rank = u.GetRank() != null ? new { Name = u.GetRank().Name } : null,
-                    Posts = u.GetPosts().Select(p => new { Name = p.GetFullName() }).ToList()
+                    Rank = u.GetRank() != null ? new { Id = u.GetRank().Id } : null,
+                    Posts = u.GetPosts().Select(p => new { Id = p.Id }).ToList()
                 });
 
-                var units = result.Value;
 
-                return Ok(units);
+                return Ok(unitsDto);
             }
             catch (Exception ex)
             {
@@ -104,7 +103,7 @@ namespace accs.Controllers
                     Name = result.Value.Nickname,
                     SteamId = result.Value.SteamId.ToString() ?? "",
                     RankUpCounter = $"{result.Value.RankUpCounter}/15",
-                    Joined = result.Value.RegistrationEvent.DateTime.ToString("dd.MM.yyyy HH:mm"),
+                    Joined = result.Value.RegistrationEvent?.DateTime.ToString("dd.MM.yyyy HH:mm") ?? "Неизвестна дата регистрации",
                     Rank = result.Value.GetRank(),
                     Posts = result.Value.GetPosts(),
                     AssignedRewardsIds = result.Value.AssignedRewards.Select(ar => ar.Reward.Id).ToList()

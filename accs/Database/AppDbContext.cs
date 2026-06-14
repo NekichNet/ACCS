@@ -226,10 +226,10 @@ namespace accs.Database
             );
 
             modelBuilder.Entity<AssignedPost>().HasData(
-                new AssignedPost { Id = 5, UnitId = myDiscordId, Post = 1, Start = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new AssignedPost { Id = 6, UnitId = 632641236412378, Post = 6, Start = new DateTime(2024, 4, 12, 0, 0, 0, DateTimeKind.Utc) },
-                new AssignedPost { Id = 7, UnitId = 345678901234567890, Post = 18, Start = new DateTime(2024, 9, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new AssignedPost { Id = 8, UnitId = 456789012345678901, Post = 10, Start = new DateTime(2023, 11, 24, 0, 0, 0, DateTimeKind.Utc) }
+                new AssignedPost { Id = 5, UnitId = myDiscordId, PostId = 1, Start = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new AssignedPost { Id = 6, UnitId = 632641236412378, PostId = 6, Start = new DateTime(2024, 4, 12, 0, 0, 0, DateTimeKind.Utc) },
+                new AssignedPost { Id = 7, UnitId = 345678901234567890, PostId = 18, Start = new DateTime(2024, 9, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new AssignedPost { Id = 8, UnitId = 456789012345678901, PostId = 10, Start = new DateTime(2023, 11, 24, 0, 0, 0, DateTimeKind.Utc) }
             );
 
             modelBuilder.Entity<Activity>().HasData(

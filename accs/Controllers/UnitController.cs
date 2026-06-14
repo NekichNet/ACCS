@@ -32,11 +32,13 @@ namespace accs.Controllers
 
                 var unitsDto = result.Value.Select(u => new
                 {
-                    DiscordId = u.DiscordId.ToString(),
-                    Nickname = u.Nickname,
-                    SteamId = u.SteamId?.ToString(),
-                    RankId = u.GetRank() != null ? u.GetRank()?.Id : null,
-                    PostsId = u.GetPosts().Select(p=>p.Id).ToList()
+                    Name = u.Nickname,
+                    SteamId = u.SteamId.ToString() ?? "",
+                    RankUpCounter = u.GetRankUpCounterString(),
+                    Joined = u.GetRegistrationDateTimeString(),
+                    RankId = u.GetRank()?.Id,
+                    PostsIds = u.GetPosts().Select(p => p.Id),
+                    AssignedRewardsIds = u.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
                 });
 
                 return Ok(unitsDto);
@@ -97,10 +99,10 @@ namespace accs.Controllers
                 {
                     Name = result.Value.Nickname,
                     SteamId = result.Value.SteamId.ToString() ?? "",
-                    RankUpCounter = $"{result.Value.RankUpCounter}/15",
-                    Joined = result.Value.RegistrationEvent?.DateTime.ToString("dd.MM.yyyy HH:mm") ?? "Неизвестна дата регистрации",
-                    RankId = result.Value.GetRank() != null? result.Value.GetRank().Id : -1,
-                    PostsIds = result.Value.GetPosts().Select(u=>u.Id).ToList(),
+                    RankUpCounter = result.Value.GetRankUpCounterString(),
+                    Joined = result.Value.GetRegistrationDateTimeString(),
+                    RankId = result.Value.GetRank()?.Id,
+                    PostsIds = result.Value.GetPosts().Select(p => p.Id),
                     AssignedRewardsIds = result.Value.AssignedRewards.Select(ar => ar.Reward.Id).ToList()
                 };
 

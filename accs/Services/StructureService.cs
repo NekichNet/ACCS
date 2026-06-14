@@ -26,9 +26,9 @@ namespace accs.Services
                 var subdivisions = await _db.Subdivisions.ToListAsync();
                 var subdivisionsDict = subdivisions.ToDictionary(s => s.Id);
 
-                List<Unit> units = await _db.Units
-				    .Where(u => u.IsActive())
-					.ToListAsync();
+                List<Unit> units = (await _db.Units
+                    .ToListAsync())
+                    .Where(u => u.IsActive()).ToList();
 
                 var result = posts.Select(post =>
                 {

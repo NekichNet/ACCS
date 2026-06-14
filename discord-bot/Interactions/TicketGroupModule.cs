@@ -241,7 +241,7 @@ namespace discord_bot.Interactions
 					await post.NotifyOnAssignAsync(Context.Guild, _db, unit);
 				}
 				else
-					_log.LogError($"ReturnFromRetirenmentHandler: Post с id {id} не найден");
+					_log.LogError($"ReturnFromRetirenmentHandler: PostId с id {id} не найден");
 			}
 
 			ticket.Status = TicketStatus.Accepted;

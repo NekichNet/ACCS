@@ -56,14 +56,14 @@ namespace accs.Services
 
 				Rank? rank = Actor.GetMaxRank();
 				if (rank == null)
-					return action.FormFailure("Post creation failed. Can't get user's max available rank", eventId: EventIds.NotFound);
+					return action.FormFailure("PostId creation failed. Can't get user's max available rank", eventId: EventIds.NotFound);
 				
 				ActionResult<Rank> rankResult = await _rankService.GetAsync(maxRankId);
 				if (!rankResult.IsSuccess)
-					return action.FormFailure($"Post creation failed. Rank with ID {maxRankId} not found", eventId: EventIds.NotFound);
+					return action.FormFailure($"PostId creation failed. Rank with ID {maxRankId} not found", eventId: EventIds.NotFound);
 
 				if (rank.GetAllHigherRecursive().Contains(rankResult.Value))
-					return action.FormFailure($"Post creation failed. Max rank is higher, than user's max rank", eventId: EventIds.Forbidden);
+					return action.FormFailure($"PostId creation failed. Max rank is higher, than user's max rank", eventId: EventIds.Forbidden);
 
 				action.Value = new Post
 				{
@@ -81,7 +81,7 @@ namespace accs.Services
 				await _db.Posts.AddAsync(action.Value);
 				await _db.SaveChangesAsync();
 
-				action.FormSuccess($"Post {action.Value.GetFullName()} created", eventId: EventIds.Created);
+				action.FormSuccess($"PostId {action.Value.GetFullName()} created", eventId: EventIds.Created);
 			}
             catch (Exception ex)
             {
@@ -100,13 +100,11 @@ namespace accs.Services
             try
             {
 				action.Value = await _db.Posts.FindAsync(id);
-                if (action.Value != null)
-                {
-                    action.Value.Name = action.Value.GetFullName();
-                    action.FormSuccess("Post found", eventId: EventIds.Read);
-                }
+
+				if (action.Value != null)
+					action.FormSuccess("PostId found", eventId: EventIds.Read);
 				else
-					action.FormFailure("Post not found", eventId: EventIds.NotFound);
+					action.FormFailure("PostId not found", eventId: EventIds.NotFound);
 			}
 			catch (Exception ex)
 			{
@@ -124,12 +122,7 @@ namespace accs.Services
 			{
 				action.Value = await _db.Posts.ToListAsync();
 
-                foreach (var post in action.Value)
-                {
-                    post.Name = post.GetFullName();
-                }
-
-                action.FormSuccess("Post list formed, length: " + action.Value.Count(),
+				action.FormSuccess("PostId list formed, length: " + action.Value.Count(),
 					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
 			}
 			catch (Exception ex)
@@ -161,7 +154,7 @@ namespace accs.Services
 
 				ActionResult<Post> headResult = await CheckCanManageAsync(headId);
 				if (!headResult.IsSuccess)
-					return action.FormFailure($"Post updating failed. Can't set head with ID {postId}", eventId: EventIds.Forbidden);
+					return action.FormFailure($"PostId updating failed. Can't set head with ID {postId}", eventId: EventIds.Forbidden);
 
 				if (subdivisionId != null)
 				{
@@ -173,14 +166,14 @@ namespace accs.Services
 
 				Rank? rank = Actor.GetMaxRank();
 				if (rank == null)
-					return action.FormFailure("Post updating failed. Can't get user's max available rank", eventId: EventIds.NotFound);
+					return action.FormFailure("PostId updating failed. Can't get user's max available rank", eventId: EventIds.NotFound);
 
 				ActionResult<Rank> rankResult = await _rankService.GetAsync(maxRankId);
 				if (!rankResult.IsSuccess)
-					return action.FormFailure($"Post updating failed. Rank with ID {maxRankId} not found", eventId: EventIds.NotFound);
+					return action.FormFailure($"PostId updating failed. Rank with ID {maxRankId} not found", eventId: EventIds.NotFound);
 
 				if (rank.GetAllHigherRecursive().Contains(rankResult.Value))
-					return action.FormFailure($"Post updating failed. Max rank is higher, than user's max rank", eventId: EventIds.Forbidden);
+					return action.FormFailure($"PostId updating failed. Max rank is higher, than user's max rank", eventId: EventIds.Forbidden);
 
 				result.Value.Name = name;
 				result.Value.Description = description;
@@ -195,7 +188,7 @@ namespace accs.Services
 				_db.Posts.Update(result.Value);
 				await _db.SaveChangesAsync();
 
-				action.FormSuccess("Post updated", eventId: EventIds.Updated);
+				action.FormSuccess("PostId updated", eventId: EventIds.Updated);
 			}
 			catch (Exception ex)
 			{
@@ -219,14 +212,14 @@ namespace accs.Services
 				ActionResult<Post> result = await CheckCanManageAsync(postId);
 
 				if (!result.IsSuccess)
-					return action.FormFailure("Post updating. Permission check failed", eventId: EventIds.Forbidden);
+					return action.FormFailure("PostId updating. Permission check failed", eventId: EventIds.Forbidden);
 
 				result.Value.UpdateRole();
 				action.Value = result.Value.DiscordRoleId;
 
 				await _db.SaveChangesAsync();
 
-				action.FormSuccess($"Post {result.Value.GetFullName()} Discord role updated", eventId: EventIds.Updated);
+				action.FormSuccess($"PostId {result.Value.GetFullName()} Discord role updated", eventId: EventIds.Updated);
 			}
 			catch (Exception ex)
 			{
@@ -251,7 +244,7 @@ namespace accs.Services
 
 				await _db.SaveChangesAsync();
 
-				action.FormSuccess($"Post {result.Value.Name} deleted", eventId: EventIds.Deleted);
+				action.FormSuccess($"PostId {result.Value.Name} deleted", eventId: EventIds.Deleted);
 			}
 			catch (Exception ex)
 			{
@@ -324,12 +317,12 @@ namespace accs.Services
 			{
 				ActionResult<Post> result = await CheckCanAssignAsync(postId);
 				if (!result.IsSuccess)
-					return action.FormFailure("Post assigning restricted. Permission check failed", eventId: EventIds.Forbidden);
+					return action.FormFailure("PostId assigning restricted. Permission check failed", eventId: EventIds.Forbidden);
 
 				if (unit == null)
 					unit = await _db.Units.FindAsync(unitDiscordId);
 				if (unit == null)
-					return action.FormFailure($"Post assigning failed. Unit with ID {unitDiscordId} not found", eventId: EventIds.NotFound);
+					return action.FormFailure($"PostId assigning failed. Unit with ID {unitDiscordId} not found", eventId: EventIds.NotFound);
 
                 AssignedPost assignedPost = new AssignedPost
 				{
@@ -411,12 +404,12 @@ namespace accs.Services
 				action.Value = post;
 
 				if (action.Value == null)
-					return action.FormFailure($"Can't check permissions. Post with ID {postId} not found", eventId: EventIds.NotFound);
+					return action.FormFailure($"Can't check permissions. PostId with ID {postId} not found", eventId: EventIds.NotFound);
 
 				List<Post> actorControllablePosts = Actor.GetPosts().SelectMany(p => p.GetAllSubordinatesRecursive()).ToList();
 				
 				if (!Actor.IsAdmin() && !actorControllablePosts.Contains(action.Value))
-					return action.FormFailure($"Post {action.Value.GetFullName()} isn't under {Actor.Nickname}'s control", eventId: EventIds.Forbidden);
+					return action.FormFailure($"PostId {action.Value.GetFullName()} isn't under {Actor.Nickname}'s control", eventId: EventIds.Forbidden);
 
 				action.FormSuccess($"{Actor.Nickname} can manage post {action.Value.GetFullName()}");
 			}
@@ -442,14 +435,14 @@ namespace accs.Services
 				action.Value = post;
 
 				if (action.Value == null)
-					return action.FormFailure($"Can't check permissions. Post with ID {postId} not found", eventId: EventIds.NotFound);
+					return action.FormFailure($"Can't check permissions. PostId with ID {postId} not found", eventId: EventIds.NotFound);
 
 				List<Post> actorHeads = Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).ToList();
 
 				if (!Actor.HasPermission(PermissionType.AssignPosts))
 					return action.FormFailure($"{Actor.Nickname} don't have AssignPosts permission", eventId: EventIds.Forbidden);
 				else if (!Actor.IsAdmin() && actorHeads.Contains(action.Value))
-					return action.FormFailure($"Post {action.Value.GetFullName()} is one of {Actor.Nickname}'s heads", eventId: EventIds.Forbidden);
+					return action.FormFailure($"PostId {action.Value.GetFullName()} is one of {Actor.Nickname}'s heads", eventId: EventIds.Forbidden);
 
 				action.FormSuccess($"{Actor.Nickname} can manage post {action.Value.GetFullName()}", eventId: EventIds.Accessed);
 			}

@@ -7,6 +7,7 @@ using accs.Models.Statuses;
 using accs.Models.Statuses.Abstraction;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Sprache;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
@@ -22,8 +23,6 @@ namespace accs.Models
 		public string Nickname { get; set; }
 		public ulong? SteamId { get; set; }
 		public ushort RankUpCounter { get; set; } = 0;
-		public int? RegistrationEventId { get; set; }
-		[JsonIgnore] public virtual UnitRegistrationEvent? RegistrationEvent { get; set; }
 		public int? FavoriteKitId { get; set; } = 1;
 		[JsonIgnore] public virtual FavoriteKit? FavoriteKit { get; set; }
 		public int? BackgroundPictureId { get; set; }
@@ -31,17 +30,23 @@ namespace accs.Models
 		[JsonIgnore] public virtual List<Doc> OwnDocs { get; set; }
 		[JsonIgnore] public virtual List<AssignedReward> AssignedRewards { get; set; } = new List<AssignedReward>();
 		[JsonIgnore] public virtual List<Activity> Activities { get; set; } = new List<Activity>();
-		[JsonIgnore] public virtual List<AssignedRank> AssignedRanks { get; set; } = new List<AssignedRank>();
-		[JsonIgnore] public virtual List<AssignedPost> AssignedPosts { get; set; } = new List<AssignedPost>();
-		[JsonIgnore] public virtual List<Retirement> Retirements { get; set; }
-		[JsonIgnore] public virtual List<Status> Statuses { get; set; } = new List<Status>();
 		[JsonIgnore] public virtual List<UnitState> UnitStates { get; set; } = new List<UnitState>();
 		[JsonIgnore] public virtual List<SingleDayEvent> SingleDayEvents { get; set; } = new List<SingleDayEvent>();
         
+		public UnitRegistrationEvent? GetRegistrationEvent()
+		{
+			return (UnitRegistrationEvent?)SingleDayEvents.FirstOrDefault(e => e is UnitRegistrationEvent);
+		}
+
+		public string GetRegistrationDateTimeString()
+		{
+			return GetRegistrationEvent()?.DateTime.ToString("dd.MM.yyyy HH:mm") ?? "Неизвестна дата регистрации";
+		}
+
         public AssignedRank? GetAssignedRank(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;
-			return AssignedRanks.FirstOrDefault(ar => ar.IsActive(dateTime));
+			return ((IEnumerable<AssignedRank>)UnitStates.Where(us => us is AssignedRank)).FirstOrDefault(ar => ar.IsActive(dateTime));
 		}
 
 		public Rank? GetRank(DateTime? dateTime = null)
@@ -58,16 +63,70 @@ namespace accs.Models
 			return assignedRank == null ? "Без звания" : assignedRank.Rank.Name;
 		}
 
+		/// <summary>
+		/// Получить максимальное звание которое может получить боец с текущими должностями
+		/// </summary>
+		/// <returns>Rank, если есть должности. null, если должностей нет</returns>
+		public Rank? GetMaxRank()
+		{
+			Rank? rank = null;
+			foreach (Post post in GetPosts())
+			{
+				if (rank != null)
+				{
+					if (rank.GetAllHigherRecursive().Contains(post.MaxRank))
+						rank = post.MaxRank;
+				}
+				else
+					rank = post.MaxRank;
+			}
+			return rank;
+		}
+
+		/// <summary>
+		/// Получить значение счётчика, при котором бойца нужно будет повысить в звании
+		/// </summary>
+		/// <returns>int, если есть возможность повыситься, иначе - null</returns>
+		public int? GetCounterToReach()
+		{
+			Rank? rank = GetRank();
+			if (rank != null)
+			{
+				Rank? maxRank = GetMaxRank();
+				if (maxRank != null)
+				{
+					if (rank.GetAllHigherRecursive().Contains(maxRank))
+					{
+						Rank? higherRank = rank.Higher;
+						if (higherRank != null)
+						{
+							return higherRank.CounterToReach;
+						}
+					}
+				}
+			}
+			return null;
+		}
+
+		public string GetRankUpCounterString()
+		{
+			int? counterToReach = GetCounterToReach();
+			if (counterToReach != null)
+				return $"{RankUpCounter}/{counterToReach}";
+			else
+				return RankUpCounter.ToString();
+		}
+
 		public List<AssignedPost> GetAssignedPosts(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;
-			return AssignedPosts.Where(ap => ap.IsActive(dateTime)).ToList();
+			return ((IEnumerable<AssignedPost>)UnitStates.Where(us => us is AssignedPost)).Where(ap => ap.IsActive(dateTime)).ToList();
 		}
 
 		public List<Post> GetPosts(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;
-			return AssignedPosts.Where(ap => ap.IsActive(dateTime)).Select(ap => ap.Post).ToList();
+			return ((IEnumerable<AssignedPost>)UnitStates.Where(us => us is AssignedPost)).Where(ap => ap.IsActive(dateTime)).Select(ap => ap.Post).ToList();
 		}
 
 		public HashSet<Permission> GetPermissions()
@@ -94,11 +153,11 @@ namespace accs.Models
 
 		public void CheckRoles()
 		{
-			AssignedRank? assignedRank = GetAssignedRank();
-			if (assignedRank != null)
-				assignedRank.Rank.CheckRoleOnUser(DiscordId);
-			foreach (AssignedPost assignedPost in AssignedPosts)
-				assignedPost.Post.CheckRoleOnUser(DiscordId);
+			Rank? rank = GetRank();
+			if (rank != null)
+				rank.CheckRoleOnUser(DiscordId);
+			foreach (Post post in GetPosts())
+				post.CheckRoleOnUser(DiscordId);
 		}
 
 		/// <summary>
@@ -109,7 +168,7 @@ namespace accs.Models
 		/// </returns>
 		public bool IsActive()
 		{
-			return AssignedRanks.Any(ar => ar.IsActive()) && AssignedPosts.Any(ap => ap.IsActive());
+			return GetRank() != null && GetPosts().Any();
 		}
 
 		/// <summary>
@@ -118,32 +177,12 @@ namespace accs.Models
 		/// <returns>true, если в отставке</returns>
 		public bool IsInRetirement()
 		{
-			return Retirements.Any(r => r.IsActive());
-		}
-
-		/// <summary>
-		/// Получить максимальное звание которое может получить боец с текущими должностями
-		/// </summary>
-		/// <returns>Rank, если есть должности. null, если должностей нет</returns>
-		public Rank? GetMaxRank()
-		{
-			Rank? rank = null;
-			foreach (Post post in GetPosts())
-			{
-				if (rank != null)
-				{
-					if (rank.GetAllHigherRecursive().Contains(post.MaxRank))
-						rank = post.MaxRank;
-				}
-				else
-					rank = post.MaxRank;
-			}
-			return rank;
+			return UnitStates.Where(us => us is Retirement).Any(r => r.IsActive());
 		}
 
 		public List<Status> GetStatuses()
 		{
-			return Statuses.Where(s => s.IsActive()).ToList();
+			return ((IEnumerable<Status>)UnitStates.Where(us => us is Status && us.IsActive())).ToList();
 		}
 
         public override string ToString()
@@ -156,8 +195,6 @@ namespace accs.Models
 	{
 		public void Configure(EntityTypeBuilder<Unit> builder)
 		{
-			builder.HasOne(u => u.FavoriteKit).WithMany(fk => fk.Units).OnDelete(DeleteBehavior.NoAction);
-			builder.HasOne(u => u.BackgroundPicture).WithMany().HasForeignKey(u => u.BackgroundPictureId).OnDelete(DeleteBehavior.SetNull);
 			builder.HasMany(u => u.OwnDocs).WithOne(d => d.Author).OnDelete(DeleteBehavior.SetNull);
 			builder.HasMany(u => u.AssignedRewards).WithOne(ar => ar.Unit).OnDelete(DeleteBehavior.Cascade);
 			builder.HasMany(u => u.Activities).WithOne(a => a.Unit).OnDelete(DeleteBehavior.Cascade);

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -44,7 +45,7 @@ namespace accs.Models.Statuses.Abstraction
 	{
 		public void Configure(EntityTypeBuilder<UnitState> builder)
 		{
-			builder.HasOne(us => us.Unit).WithMany(u => u.UnitStates).HasForeignKey(us => us.UnitId).OnDelete(DeleteBehavior.Cascade);
+			builder.HasOne(us => us.Unit).WithMany(u => u.UnitStates).HasForeignKey(us => us.UnitId).OnDelete(DeleteBehavior.NoAction);
 		}
 	}
 }

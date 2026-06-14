@@ -48,11 +48,11 @@ namespace accs.Controllers
 
                 if (discordUser == null)
                 {
-                    _logger.LogError("Failed to get user data from Discord");
+                    _logger.LogError("Failed to get unit data from Discord");
                     return BadRequest(new { error = "Failed to authenticate with Discord" });
                 }
 
-                _logger.LogInformation($"Received Discord user: {discordUser.Username} (ID: {discordUser.Id})");
+                _logger.LogInformation($"Received Discord unit: {discordUser.Username} (ID: {discordUser.Id})");
 
                 if (!ulong.TryParse(discordUser.Id, out var discordId))
                 {
@@ -148,27 +148,20 @@ namespace accs.Controllers
                     return Unauthorized(new { error = "Invalid token claims" });
                 }
 
-                var user = await _dbContext.Units
-                    .Include(u => u.RegistrationEvent)
-                    .Include(u => u.AssignedRanks)
-                        .ThenInclude(ar => ar.Rank)
-                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+                Unit? unit = await _dbContext.Units.FindAsync(discordId);
 
-                if (user == null)
+                if (unit == null)
                 {
                     return StatusCode(403, new { error = "Доступ запрещен. Вы не зарегистрированы в системе." });
                 }
 
-                var activeAssignedRank = user.GetAssignedRank();
-                var rankName = activeAssignedRank?.Rank?.Name ?? "Без ранга";
-
                 return Ok(new
                 {
-                    discord_id = user.DiscordId,
-                    username = user.Nickname,
-                    joined = user.RegistrationEvent?.DateTime ?? DateTime.UtcNow,
-                    rank = rankName,
-                    steam_id = user.SteamId
+                    discord_id = unit.DiscordId,
+                    username = unit.Nickname,
+                    joined = unit.GetRegistrationDateTimeString(),
+                    rank = unit.GetRankName(),
+                    steam_id = unit.SteamId
                 });
             }
             catch (Exception ex)

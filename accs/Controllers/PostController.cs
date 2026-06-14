@@ -58,7 +58,7 @@ namespace accs.Controllers
                 }
                 if (action.Value == null)
                 {
-                    return NotFound(new { error = "Post not found" });
+                    return NotFound(new { error = "PostId not found" });
                 }
 
                 return Ok(action.Value);
@@ -83,7 +83,7 @@ namespace accs.Controllers
                 }
                 if (action.Value == null)
                 {
-                    return NotFound(new { error = "Post not found" });
+                    return NotFound(new { error = "PostId not found" });
                 }
 
                 var permissionsIds = action.Value.GetPermissionsRecursive().Select(p => (int)p.Type).ToList();
@@ -109,7 +109,7 @@ namespace accs.Controllers
                 }
                 if (action.Value == null)
                 {
-                    return NotFound(new { error = "Post not found" });
+                    return NotFound(new { error = "PostId not found" });
                 }
 
                 if (action.Value.DiscordRoleId == null)
@@ -174,7 +174,7 @@ namespace accs.Controllers
                 }
                 if (action == null)
                 {
-                    return NotFound(new { error = "Post not found" });
+                    return NotFound(new { error = "PostId not found" });
                 }
 
                 return Ok(new { message = action.Message });
@@ -201,7 +201,7 @@ namespace accs.Controllers
                 }
                 if (action == null)
                 {
-                    return NotFound(new { error = "Post not found" });
+                    return NotFound(new { error = "PostId not found" });
                 }
 
                 return Ok(action);
@@ -228,7 +228,7 @@ namespace accs.Controllers
                 }
                 if (action.Value == null)
                 {
-                    return NotFound(new { error = "Post not found" });
+                    return NotFound(new { error = "PostId not found" });
                 }
 
                 return Ok(action);
@@ -252,7 +252,7 @@ namespace accs.Controllers
                 }
                 if (action.Value == null)
                 {
-                    return NotFound(new { error = "Post not found" });
+                    return NotFound(new { error = "PostId not found" });
                 }
 
                 var assignedPosts = action.Value.AssignedPosts.Where(ap => ap.IsActive()).ToList();
@@ -299,7 +299,7 @@ namespace accs.Controllers
                 }
                 if (action.Value == null)
                 {
-                    return NotFound(new { error = "Post not found" });
+                    return NotFound(new { error = "PostId not found" });
                 }
 
                 var assignedPost = action.Value.AssignedPosts.FirstOrDefault(ap => ap.Unit.DiscordId == discordId && ap.IsActive());

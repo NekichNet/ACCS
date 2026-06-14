@@ -6,7 +6,6 @@ using System.Text.Json.Serialization;
 
 namespace accs.Models.Statuses
 {
-	[EntityTypeConfiguration(typeof(AssignedRankConfiguration))]
 	[Table("AssignedRanks")]
     public class AssignedRank : UnitState
     {

@@ -273,7 +273,12 @@ namespace accs.Controllers
             {
                 _postService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _postService.AssignAsync(dto.DiscordId, postId);
+                if (!ulong.TryParse(dto.DiscordId, out ulong discordId))
+                {
+                    return BadRequest(new { error = "Передан некорректный формат Discord ID." });
+                }
+
+                var action = await _postService.AssignAsync(discordId, postId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -352,6 +357,6 @@ namespace accs.Controllers
         public string Color { get; set; } = string.Empty;
         public bool AppendSubdivisionName { get; set; }
         public List<int> PermissionsId { get; set; } = new List<int>();
-        public ulong DiscordId { get; set; }
+        public string DiscordId { get; set; }
     }
 }

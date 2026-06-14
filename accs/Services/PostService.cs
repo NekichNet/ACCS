@@ -56,14 +56,14 @@ namespace accs.Services
 
 				Rank? rank = Actor.GetMaxRank();
 				if (rank == null)
-					return action.FormFailure("PostId creation failed. Can't get user's max available rank", eventId: EventIds.NotFound);
+					return action.FormFailure("PostId creation failed. Can't get user's max available post", eventId: EventIds.NotFound);
 				
 				ActionResult<Rank> rankResult = await _rankService.GetAsync(maxRankId);
 				if (!rankResult.IsSuccess)
 					return action.FormFailure($"PostId creation failed. Rank with ID {maxRankId} not found", eventId: EventIds.NotFound);
 
 				if (rank.GetAllHigherRecursive().Contains(rankResult.Value))
-					return action.FormFailure($"PostId creation failed. Max rank is higher, than user's max rank", eventId: EventIds.Forbidden);
+					return action.FormFailure($"PostId creation failed. Max post is higher, than user's max post", eventId: EventIds.Forbidden);
 
 				action.Value = new Post
 				{
@@ -166,14 +166,14 @@ namespace accs.Services
 
 				Rank? rank = Actor.GetMaxRank();
 				if (rank == null)
-					return action.FormFailure("PostId updating failed. Can't get user's max available rank", eventId: EventIds.NotFound);
+					return action.FormFailure("PostId updating failed. Can't get user's max available post", eventId: EventIds.NotFound);
 
 				ActionResult<Rank> rankResult = await _rankService.GetAsync(maxRankId);
 				if (!rankResult.IsSuccess)
 					return action.FormFailure($"PostId updating failed. Rank with ID {maxRankId} not found", eventId: EventIds.NotFound);
 
 				if (rank.GetAllHigherRecursive().Contains(rankResult.Value))
-					return action.FormFailure($"PostId updating failed. Max rank is higher, than user's max rank", eventId: EventIds.Forbidden);
+					return action.FormFailure($"PostId updating failed. Max post is higher, than user's max post", eventId: EventIds.Forbidden);
 
 				result.Value.Name = name;
 				result.Value.Description = description;
@@ -220,6 +220,29 @@ namespace accs.Services
 				await _db.SaveChangesAsync();
 
 				action.FormSuccess($"PostId {result.Value.GetFullName()} Discord role updated", eventId: EventIds.Updated);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<ActionResult<List<Unit>>> GetUnitsByPostAsync(int postId)
+		{
+			ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
+
+			try
+			{
+				Post? post = await _db.Posts.FindAsync(postId);
+				if (post == null)
+					return action.FormFailure($"Getting units by post failed. Post with ID {postId} not found", eventId: EventIds.NotFound);
+
+				action.Value = post.AssignedPosts.Where(r => r.IsActive()).Select(ar => ar.Unit).ToList();
+
+				action.FormSuccess($"Units by {post.Name} post retrieved",
+					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
 			}
 			catch (Exception ex)
 			{

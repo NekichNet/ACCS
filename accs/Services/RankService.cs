@@ -219,7 +219,7 @@ namespace accs.Services
             {
                 Rank? rank = await _db.Ranks.FindAsync(rankId);
                 if (rank == null)
-                    return action.FormFailure("Getting units by rank failed. Rank not found", eventId: EventIds.NotFound);
+                    return action.FormFailure($"Getting units by rank failed. Rank with ID {rankId} not found", eventId: EventIds.NotFound);
 
                 action.Value = rank.AssignedRanks.Where(r => r.IsActive()).Select(ar => ar.Unit).ToList();
 

@@ -245,18 +245,13 @@ namespace accs.Controllers
         {
             try
             {
-                var action = await _postService.GetAsync(postId);
+                var action = await _postService.GetUnitsByPostAsync(postId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
                 }
-                if (action.Value == null)
-                {
-                    return NotFound(new { error = "PostId not found" });
-                }
 
-                var assignedPosts = action.Value.AssignedPosts.Where(ap => ap.IsActive()).ToList();
-                return Ok(assignedPosts);
+                return Ok(action.Value);
             }
             catch (Exception ex)
             {

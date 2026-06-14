@@ -26,20 +26,15 @@ namespace accs.Services
                 var subdivisions = await _db.Subdivisions.ToListAsync();
                 var subdivisionsDict = subdivisions.ToDictionary(s => s.Id);
 
-                var allUnits = await _db.Units
-                    .Include(u => u.AssignedPosts)
-                        .ThenInclude(ap => ap.Post)
-                    .Include(u => u.AssignedRanks)
-                        .ThenInclude(ar => ar.Rank)
-                    .ToListAsync();
-
-                var activeUnits = allUnits.Where(u => u.IsActive()).ToList();
+                List<Unit> units = await _db.Units
+				    .Where(u => u.IsActive())
+					.ToListAsync();
 
                 var result = posts.Select(post =>
                 {
                     subdivisionsDict.TryGetValue(post.SubdivisionId ?? 0, out var sub);
 
-                    var assignedUnits = activeUnits
+                    var assignedUnits = units
                         .Where(u => u.GetPosts().Any(p => p.Id == post.Id))
                         .Select(u =>
                         {

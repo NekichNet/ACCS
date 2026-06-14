@@ -149,14 +149,14 @@ namespace accs.Services
 						if (unit != null)
 						{
 							_logger.LogTrace(EventIds.Read, $"Unit found: {unit.ToString()}");
-							foreach (AssignedPost assignedPost in unit.AssignedPosts)
+							foreach (AssignedPost assignedPost in unit.GetAssignedPosts())
 							{
 								_logger.LogTrace(EventIds.Processing, $"Termination AssignedPost: {assignedPost.ToString()}");
 								assignedPost.Terminate();
 								_logger.LogTrace(EventIds.Updated, $"AssignedPost terminated: {assignedPost.ToString()}");
 							}
 
-							foreach (AssignedRank assignedRank in unit.AssignedRanks)
+							foreach (AssignedRank assignedRank in unit.UnitStates.Where(us => us is AssignedRank && us.IsActive()))
 							{
 								_logger.LogTrace(EventIds.Processing, $"Termination AssignedRank: {assignedRank.ToString()}");
 								assignedRank.Terminate();
@@ -295,48 +295,78 @@ namespace accs.Services
 
             return action;
         }
+		public async Task<EmptyAction> FixActivityAsync(ulong discordId)
+		{
+			EmptyAction action = new EmptyAction(_logger);
 
-        public async Task<EmptyAction> UpdateAsync(ulong discordId)
-        {
-            EmptyAction action = new EmptyAction(_logger);
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Activity fixation restricted. Unauthorized", eventId: EventIds.Unauthorized);
+				if (!Actor.HasPermission(PermissionType.FixActivity))
+					return action.FormFailure("Activity fixation restricted", eventId: EventIds.Forbidden);
 
-            try
-            {
-                if (Actor != null)
-                {
-                    if (Actor.HasPermission(PermissionType.Administrator))
-                    {
-                        var unit = await _db.Units.FindAsync(discordId);
-                        if (unit != null)
-                        {
-                            _db.Units.Update(unit);
-                            await _db.SaveChangesAsync();
-                            action.FormSuccess("Unit updated");
-                        }
-                        else
-                        {
-                            action.FormFailure("Unit not found");
-                        }
-                    }
-                    else
-                    {
-                        action.FormFailure("Unit update restricted");
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Unit update restricted. Unauthorized");
-                }
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+				Unit? unit = await _db.Units.FindAsync(discordId);
+				if (unit == null)
+					return action.FormFailure($"Activity fixation failed. Unit with Discord ID {discordId} not found", eventId: EventIds.NotFound);
 
-            return action;
-        }
+				unit.Activities.Add(new Activity
+				{
+					UnitId = discordId,
+					Date = DateOnly.FromDateTime(DateTime.UtcNow)
+				});
 
-        public async Task<EmptyAction> UpdateUnitStatusAsync(ulong discordId, int statusId)
+				await _db.SaveChangesAsync();
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+        /* Говно галимое. Переделать, пока на сайте не реализовали.
+		public async Task<EmptyAction> UpdateAsync(Unit unit)
+		{
+			EmptyAction action = new EmptyAction(_logger);
+
+			try
+			{
+				if (Actor != null)
+				{
+					if (Actor.HasPermission(PermissionType.Administrator))
+					{
+						if (unit != null)
+						{
+							_db.Units.Update(unit);
+							await _db.SaveChangesAsync();
+							action.FormSuccess("Unit updated");
+						}
+						else
+						{
+							action.FormFailure("Unit not found");
+						}
+					}
+					else
+					{
+						action.FormFailure("Unit update restricted");
+					}
+				}
+				else
+				{
+					action.FormFailure("Unit update restricted. Unauthorized");
+				}
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<EmptyAction> UpdateUnitStatusAsync(ulong discordId, int statusId)
         {
             EmptyAction action = new EmptyAction(_logger);
 
@@ -376,46 +406,6 @@ namespace accs.Services
             return action;
         }
 
-        public async Task<EmptyAction> UpdateUnitActivityAsync(ulong discordId)
-        {
-            EmptyAction action = new EmptyAction(_logger);
-
-            try
-            {
-                if (Actor != null)
-                {
-                    if (Actor.HasPermission(PermissionType.Administrator))
-                    {
-                        var unit = await _db.Units.FindAsync(discordId);
-                        if (unit != null)
-                        {
-                            _db.Units.Update(unit);
-                            await _db.SaveChangesAsync();
-                            action.FormSuccess("Unit activity updated");
-                        }
-                        else
-                        {
-                            action.FormFailure("Unit not found");
-                        }
-                    }
-                    else
-                    {
-                        action.FormFailure("Unit activity update restricted");
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Unit activity update restricted. Unauthorized");
-                }
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
-
-            return action;
-        }
-
         public async Task<EmptyAction> DeleteStatusAsync(int statusId)
         {
             EmptyAction action = new EmptyAction(_logger);
@@ -431,16 +421,16 @@ namespace accs.Services
                         {
                             _db.Statuses.Remove(unitStatus);
                             await _db.SaveChangesAsync();
-                            action.FormSuccess("Status deleted");
+                            action.FormSuccess("Status deleted", eventId: EventIds.Deleted);
                         }
                         else
                         {
-                            action.FormFailure("Status not found");
+                            action.FormFailure("Status not found", eventId: EventIds.NotFound);
                         }
                     }
                     else
                     {
-                        action.FormFailure("Status deletion restricted");
+                        action.FormFailure("Status deletion restricted", eventId: EventIds.Forbidden);
                     }
                 }
                 else
@@ -455,6 +445,7 @@ namespace accs.Services
 
             return action;
         }
+        */
 
         public async Task<ActionResult<List<int>>> GetPermissionsAsync(ulong discordId)
         {
@@ -462,19 +453,16 @@ namespace accs.Services
 
             try
             {
-                var unit = await _db.Units
-                    .Include(u => u.AssignedRanks).ThenInclude(ar => ar.Rank)
-                    .Include(u => u.AssignedPosts).ThenInclude(ap => ap.Post)
-                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+                var unit = await _db.Units.FindAsync(discordId);
 
                 if (unit != null)
                 {
                     action.Value = unit.GetPermissions().Select(p => (int)p.Type).ToList();
-                    action.FormSuccess("Permissions retrieved");
+                    action.FormSuccess("Permissions retrieved", eventId: EventIds.Read);
                 }
                 else
                 {
-                    action.FormFailure("Unit not found");
+                    action.FormFailure("Unit not found", eventId: EventIds.NotFound);
                 }
             }
             catch (Exception ex)
@@ -491,22 +479,20 @@ namespace accs.Services
 
             try
             {
-                var unit = await _db.Units
-               .Include(u => u.Statuses)
-                .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+                var unit = await _db.Units.FindAsync(discordId);
 
                 if (unit == null)
                 {
-                    action.FormFailure("Unit not found");
+                    action.FormFailure("Unit not found", eventId: EventIds.NotFound);
                 }
 
-                var unitStatus = unit.Statuses.FirstOrDefault(us => us.Id == statusId);
+                var unitStatus = unit.UnitStates.FirstOrDefault(us => us is Status && us.Id == statusId);
                 if (unitStatus == null)
                 {
-                    action.FormFailure("Status not found");
+                    action.FormFailure("Status not found", eventId: EventIds.NotFound);
                 }
 
-                action.FormSuccess("Status retrieved");
+                action.FormSuccess("Status retrieved", eventId: EventIds.Read);
             }
             catch (Exception ex)
             {

@@ -118,7 +118,6 @@ namespace accs
                 {
                     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
                 });
-            
 
             _app = builder.Build();
             _app.UseCors("AllowFrontend");
@@ -147,13 +146,7 @@ namespace accs
                     {
                         var db = context.RequestServices.GetRequiredService<AppDbContext>();
 
-                        var unit = await db.Units
-                            .Include(u => u.AssignedRanks)
-                                .ThenInclude(ar => ar.Rank)
-
-                            .Include(u => u.AssignedPosts)
-                                .ThenInclude(ap => ap.Post)
-                            .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+                        var unit = await db.Units.FindAsync(discordId);
 
                         if (unit != null)
                         {

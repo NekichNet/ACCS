@@ -686,7 +686,7 @@ namespace accs.DiscordBot.Interactions
             /// Recursive method to find wether unit is able to redact the post or not.
             /// </summary>
             /// <param name="posts"> Posts from unit.Posts </param>
-            /// <param name="postToRedact"> Post that is desired to be changed. </param>
+            /// <param name="postToRedact"> PostId that is desired to be changed. </param>
             /// <returns></returns>
             private async Task<bool> PostHasPermissionToRedactPostAsync(List<Post> posts, Post postToRedact) 
             { 

@@ -189,7 +189,7 @@ namespace discord_bot.Interactions
             }
         }
 
-        [HasPermission(PermissionType.ConfirmActivity)]
+        [HasPermission(PermissionType.FixActivity)]
         [ComponentInteraction("confirm-*", ignoreGroupNames: true)]
         public async Task ConfirmActivityHandler(string unixString)
         {

@@ -315,6 +315,7 @@ namespace accs.Services
 					UnitId = discordId,
 					Date = DateOnly.FromDateTime(DateTime.UtcNow)
 				});
+                unit.RankUpCounter++;
 
 				await _db.SaveChangesAsync();
 			}

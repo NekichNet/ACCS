@@ -46,7 +46,7 @@ namespace accs.Models
         public AssignedRank? GetAssignedRank(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;
-			return ((IEnumerable<AssignedRank>)UnitStates.Where(us => us is AssignedRank)).FirstOrDefault(ar => ar.IsActive(dateTime));
+			return UnitStates.Where(us => us is AssignedRank).Select(us => (AssignedRank)us).FirstOrDefault(ar => ar.IsActive(dateTime));
 		}
 
 		public Rank? GetRank(DateTime? dateTime = null)
@@ -120,13 +120,13 @@ namespace accs.Models
 		public List<AssignedPost> GetAssignedPosts(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;
-			return ((IEnumerable<AssignedPost>)UnitStates.Where(us => us is AssignedPost)).Where(ap => ap.IsActive(dateTime)).ToList();
+			return UnitStates.Where(us => us is AssignedPost).Select(us => (AssignedPost)us).Where(ap => ap.IsActive(dateTime)).ToList();
 		}
 
 		public List<Post> GetPosts(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;
-			return ((IEnumerable<AssignedPost>)UnitStates.Where(us => us is AssignedPost)).Where(ap => ap.IsActive(dateTime)).Select(ap => ap.Post).ToList();
+			return UnitStates.Where(us => us is AssignedPost).Select(us => (AssignedPost)us).Where(ap => ap.IsActive(dateTime)).Select(ap => ap.Post).ToList();
 		}
 
 		public HashSet<Permission> GetPermissions()
@@ -182,7 +182,7 @@ namespace accs.Models
 
 		public List<Status> GetStatuses()
 		{
-			return ((IEnumerable<Status>)UnitStates.Where(us => us is Status && us.IsActive())).ToList();
+			return UnitStates.Where(us => us is Status).Select(us => (Status)us).ToList();
 		}
 
         public override string ToString()

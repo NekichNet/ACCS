@@ -1,6 +1,5 @@
 ﻿using accs.Models;
 using accs.Models.Enums;
-using accs.Models.Interfaces;
 using accs.Models.SingleDayEvents;
 using accs.Models.SingleDayEvents.Abstraction;
 using accs.Models.States;

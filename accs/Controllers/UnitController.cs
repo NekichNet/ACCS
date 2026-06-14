@@ -32,7 +32,7 @@ namespace accs.Controllers
 
                 var unitsDto = result.Value.Select(u => new
                 {
-                    Name = u.Nickname,
+                    Nickname = u.Nickname,
                     SteamId = u.SteamId.ToString() ?? "",
                     RankUpCounter = u.GetRankUpCounterString(),
                     Joined = u.GetRegistrationDateTimeString(),
@@ -97,7 +97,7 @@ namespace accs.Controllers
 
                 var unitResult = new
                 {
-                    Name = result.Value.Nickname,
+                    Nickname = result.Value.Nickname,
                     SteamId = result.Value.SteamId.ToString() ?? "",
                     RankUpCounter = result.Value.GetRankUpCounterString(),
                     Joined = result.Value.GetRegistrationDateTimeString(),

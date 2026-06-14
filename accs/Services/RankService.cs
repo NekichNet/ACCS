@@ -258,7 +258,8 @@ namespace accs.Services
                 var newAssignedRank = new AssignedRank
                 {
                     UnitId = result.Value.DiscordId,
-                    RankId = rankId
+                    RankId = rankId,
+                    Start = DateTime.UtcNow
                 };
 
                 await _db.AssignedRanks.AddAsync(newAssignedRank);

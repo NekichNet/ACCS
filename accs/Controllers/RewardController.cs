@@ -99,14 +99,14 @@ namespace accs.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> CreateNewReward([FromBody] RewardDto dto, [FromBody] AssignRewardDto dto1)
+        public async Task<IActionResult> CreateNewReward([FromBody] RewardDto dto)
         {
             try
             {
                 _rewardService.Actor = HttpContext.Items["Actor"] as Unit;
 
                 var newReward = await _rewardService.CreateAsync(
-                    dto1.DiscordId ?? string.Empty,
+                    dto.DiscordId ?? string.Empty,
                     dto.Name,
                     dto.Color,
                     dto.Conditions,
@@ -265,6 +265,7 @@ namespace accs.Controllers
         public string Color { get; set; } = "#FFFFFF";
         public string? ImagePath { get; set; }
         public ulong? DiscordRoleId { get; set; }
+        public string? DiscordId { get; set; } = string.Empty;
     }
 
     public class AssignRewardDto

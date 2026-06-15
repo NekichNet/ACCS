@@ -34,9 +34,10 @@ namespace accs.Models
 		public HashSet<Permission> GetPermissionsRecursive()
 		{
 			HashSet<Permission> permissions = [.. GetPermissions()];
-			permissions.Concat(Head.GetGivedPermissionsRecursive()
-				.Where(gp => gp.Inherit)
-				.Select(gp => gp.Permission));
+			if (Head != null)
+				permissions.Concat(Head.GetGivedPermissionsRecursive()
+					.Where(gp => gp.Inherit)
+					.Select(gp => gp.Permission));
 			return permissions;
 		}
 

@@ -2,7 +2,7 @@
 {
     public sealed class CustomConsoleLoggerConfiguration
     {
-		public LogLevel LoggingLevel { get; set; } = LogLevel.Debug;
+		public LogLevel LoggingLevel { get; set; } = LogLevel.Trace;
 		public Dictionary<LogLevel, ConsoleColor> ColorMap { get; set; } = new()
 		{
 			[LogLevel.Trace] = ConsoleColor.Gray,

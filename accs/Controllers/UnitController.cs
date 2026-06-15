@@ -98,6 +98,7 @@ namespace accs.Controllers
 
                 var unitResult = new
                 {
+                    DiscordId = result.Value.DiscordId,
                     Nickname = result.Value.Nickname,
                     SteamId = result.Value.SteamId.ToString() ?? "",
                     RankUpCounter = result.Value.GetRankUpCounterString(),

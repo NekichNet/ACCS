@@ -352,6 +352,6 @@ namespace accs.Controllers
         public string Color { get; set; } = string.Empty;
         public bool AppendSubdivisionName { get; set; }
         public List<int> PermissionsId { get; set; } = new List<int>();
-        public string DiscordId { get; set; }
+        public string? DiscordId { get; set; }
     }
 }

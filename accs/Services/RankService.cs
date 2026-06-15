@@ -281,7 +281,7 @@ namespace accs.Services
 
             try
             {
-                AssignedRank? assignedRank = _db.AssignedRanks.FirstOrDefault(ar => ar.UnitId == unitDiscordId && ar.RankId == rankId && ar.IsActive(null));
+                AssignedRank? assignedRank = _db.AssignedRanks.AsEnumerable().FirstOrDefault(ar => ar.UnitId == unitDiscordId && ar.RankId == rankId && ar.IsActive(null));
 
                 if (assignedRank == null)
                     return action.FormFailure($"Unit with Discord ID {unitDiscordId} not assigned to rank {rankId}", eventId: EventIds.NotFound);
@@ -338,7 +338,7 @@ namespace accs.Services
                 if (!unit.IsActive())
                     return action.FormFailure("Permission check failed. Unit is in retirement or dismissed", eventId: EventIds.Forbidden);
 
-                if (Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).Intersect(unit.GetPosts()).Any())
+                if (!Actor.IsAdmin() && Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).Intersect(unit.GetPosts()).Any())
                     return action.FormFailure("Permission check failed. Can't change heads ranks", eventId: EventIds.Forbidden);
 
                 action.FormSuccess($"{Actor.Nickname} can change {action.Value.Nickname}'s rank");

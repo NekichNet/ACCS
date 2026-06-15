@@ -8,8 +8,8 @@ namespace accs.Models.States.Abstraction
 	[Table("Statuses")]
     public abstract class Status : UnitState, IEntityWithDiscordRole
     {
-        public string Color { get; set; }
-        public string Name { get; set; }
+		public string Name { get; set; }
+		public string Color { get; set; }
         public ulong? DiscordRoleId { get; set; }
 
 		public override string ToString()

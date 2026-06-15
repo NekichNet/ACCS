@@ -46,7 +46,7 @@ namespace accs.Models
         public AssignedRank? GetAssignedRank(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;
-			return UnitStates.Where(us => us is AssignedRank).Select(us => (AssignedRank)us).FirstOrDefault(ar => ar.IsActive(dateTime));
+			return UnitStates.Where(us => us is AssignedRank).Select(us => (AssignedRank)us).AsEnumerable().FirstOrDefault(ar => ar.IsActive(dateTime));
 		}
 
 		public Rank? GetRank(DateTime? dateTime = null)

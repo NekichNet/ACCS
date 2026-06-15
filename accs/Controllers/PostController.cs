@@ -260,7 +260,7 @@ namespace accs.Controllers
             }
         }
 
-        [HttpPost("{postId}/assign")]
+        [HttpPost("{postId}/assign")] // Todo: переделать на "{postId}/assign/{unitId}"
         [Authorize]
         public async Task<IActionResult> AssignPost([FromRoute] int postId, [FromBody] PostDto dto)
         {

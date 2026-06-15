@@ -38,7 +38,7 @@ namespace accs.Models
             return JsonSerializer.Serialize(this);
         }
 
-        public string GetImageFolderName()
+        public string GetFolderName()
         {
             return "rewards";
         }

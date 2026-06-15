@@ -16,10 +16,10 @@ namespace accs.Models
 		public string Description { get; set; } = string.Empty;
 		public string Color { get; set; }
 		public ulong? DiscordRoleId { get; set; }
-		public int? SubdivisionId { get; set; }
-		[JsonIgnore] public virtual Subdivision? Subdivision { get; set; }
 		public int MaxRankId { get; set; }
 		[JsonIgnore] public virtual Rank MaxRank { get; set; }
+		public int? SubdivisionId { get; set; }
+		[JsonIgnore] public virtual Subdivision? Subdivision { get; set; }
 		public int? HeadId { get; set; }
 		[JsonIgnore] public virtual Post? Head { get; set; }
 		[JsonIgnore] public virtual List<Post> Subordinates { get; set; } = new List<Post>();

@@ -1,6 +1,7 @@
 ﻿using accs.Models.Abstraction;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace accs.Models
@@ -11,9 +12,14 @@ namespace accs.Models
         public string Name { get; set; }
         [JsonIgnore] public virtual List<Unit> Units { get; set; }
 
-        public string GetImageFolderName()
+        public string GetFolderName()
         {
             return "backgrounds";
+        }
+
+        public override string ToString()
+        {
+            return JsonSerializer.Serialize(this);
         }
     }
 

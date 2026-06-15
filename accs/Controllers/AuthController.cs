@@ -16,7 +16,7 @@ namespace accs.Controllers
     {
         private readonly IDiscordOAuthService _discordOAuthService;
         private readonly IJwtTokenService _jwtTokenService;
-        private readonly AppDbContext _dbContext;
+        private readonly AppDbContext _db;
         private readonly ILogger<AuthController> _logger;
 
         public AuthController(
@@ -27,7 +27,7 @@ namespace accs.Controllers
         {
             _discordOAuthService = discordOAuthService;
             _jwtTokenService = jwtTokenService;
-            _dbContext = dbContext;
+            _db = dbContext;
             _logger = logger;
         }
 
@@ -148,7 +148,7 @@ namespace accs.Controllers
                     return Unauthorized(new { error = "Invalid token claims" });
                 }
 
-                Unit? unit = await _dbContext.Units.FindAsync(discordId);
+                Unit? unit = await _db.Units.FindAsync(discordId);
 
                 if (unit == null)
                 {

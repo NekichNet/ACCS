@@ -32,6 +32,7 @@ namespace accs.Controllers
 
                 var unitsDto = result.Value.Select(u => new
                 {
+                    DiscordId = u.DiscordId,
                     Nickname = u.Nickname,
                     SteamId = u.SteamId.ToString() ?? "",
                     RankUpCounter = u.GetRankUpCounterString(),

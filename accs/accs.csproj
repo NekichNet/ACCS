@@ -36,6 +36,8 @@
 
   <ItemGroup>
     <Folder Include="Migrations\" />
+    <Folder Include="wwwroot\ranks\" />
+    <Folder Include="wwwroot\rewards\" />
   </ItemGroup>
 
 </Project>

@@ -135,6 +135,8 @@ namespace accs
             });
             #endregion RequestDebugging
 
+            _app.UseStaticFiles();
+
             _app.Use(async (context, next) =>
             {
                 bool userExistsInDb = false;

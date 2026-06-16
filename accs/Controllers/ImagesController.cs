@@ -1,0 +1,209 @@
+﻿using accs.Models;
+using accs.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace accs.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ImagesController : ControllerBase
+    {
+        private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<ImagesController> _logger;
+        private readonly RewardService _rewardService;
+        private readonly RankService _rankService;
+        private readonly string[] _allowedExtensions = { ".png", ".jpg", ".jpeg", ".webp" };
+
+        public ImagesController(IWebHostEnvironment environment, ILogger<ImagesController> logger, RewardService rewardService, RankService rankService)
+        {
+            _environment = environment;
+            _logger = logger;
+            _rewardService = rewardService;
+            _rankService = rankService;
+        }
+
+
+        [HttpPost("rewards/{id}")]
+        [Authorize]
+        public async Task<IActionResult> UploadRewardImage([FromRoute] int id, [FromForm] IFormFile file)
+        {
+            try
+            {
+                var actor = HttpContext.Items["Actor"] as Unit;
+                if (actor == null)
+                {
+                    return Unauthorized(new { error = "Пользователь не идентифицирован." });
+                }
+
+                _rewardService.Actor = actor;
+                var permissionCheck = await _rewardService.CheckCanManageRewards();
+                if (!permissionCheck.IsSuccess)
+                {
+                    return StatusCode(403, new { error = permissionCheck.Message });
+                }
+
+                var rewardExistCheck = await _rewardService.GetAsync(id);
+                if (!rewardExistCheck.IsSuccess || rewardExistCheck.Value == null)
+                {
+                    return NotFound(new { error = $"Награда с ID {id} не существует. Некуда привязать картинку." });
+                }
+
+                return await SaveImageAsync("rewards", id, file);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in UploadRewardImage: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+
+        [HttpPost("ranks/{id}")]
+        [Authorize]
+        public async Task<IActionResult> UploadRankImage([FromRoute] int id, [FromForm] IFormFile file)
+        {
+            try
+            {
+                var actor = HttpContext.Items["Actor"] as Unit;
+                if (actor == null)
+                {
+                    return Unauthorized(new { error = "Пользователь не идентифицирован." });
+                }
+
+                _rankService.Actor = actor;
+                var permissionCheck = await _rankService.CheckCanManageAsync();
+                if (!permissionCheck.IsSuccess)
+                {
+                    return StatusCode(403, new { error = permissionCheck.Message });
+                }
+
+                var rankExistCheck = await _rankService.GetAsync(id);
+                if (!rankExistCheck.IsSuccess || rankExistCheck.Value == null)
+                {
+                    return NotFound(new { error = $"Ранг с ID {id} не существует. Некуда привязать картинку." });
+                }
+
+                return await SaveImageAsync("ranks", id, file);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in UploadRankImage: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+
+        [HttpGet("rewards/{id}")]
+        public async Task<IActionResult> GetRewardImage([FromRoute] int id)
+        {
+            try
+            {
+                return await ServeImageAsync("rewards", id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetRewardImage: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+
+        [HttpGet("ranks/{id}")]
+        public async Task<IActionResult> GetRankImage([FromRoute] int id)
+        {
+            try
+            {
+                return await ServeImageAsync("ranks", id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetRankImage: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+
+        private async Task<IActionResult> SaveImageAsync(string folderName, int id, IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new { error = "Файл не передан или пуст." });
+            }
+
+            var extension = Path.GetExtension(file.FileName).ToLowerSuffix();
+            if (!_allowedExtensions.Contains(extension))
+            {
+                return BadRequest(new { error = $"Недопустимый формат файла. Разрешены: {string.Join(", ", _allowedExtensions)}" });
+            }
+
+            var targetFolder = Path.Combine(_environment.WebRootPath, folderName);
+            if (!Directory.Exists(targetFolder))
+            {
+                Directory.CreateDirectory(targetFolder);
+            }
+
+            var directoryInfo = new DirectoryInfo(targetFolder);
+            var existingFiles = directoryInfo.GetFiles($"{id}.*");
+            foreach (var existingFile in existingFiles)
+            {
+                existingFile.Delete();
+            }
+
+            var fileName = $"{id}{extension}";
+            var fullPath = Path.Combine(targetFolder, fileName);
+
+            using (var stream = new FileStream(fullPath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            _logger.LogInformation($"Картинка успешно сохранена: {fullPath}");
+            return Ok(new { message = "Изображение успешно загружено", fileName = fileName });
+        }
+
+
+        private async Task<IActionResult> ServeImageAsync(string folderName, int id)
+        {
+            var targetFolder = Path.Combine(_environment.WebRootPath, folderName);
+            if (!Directory.Exists(targetFolder))
+            {
+                return NotFound(new { error = "Директория статики не найдена на сервере." });
+            }
+
+            var file = await Task.Run(() => Directory.GetFiles(targetFolder, $"{id}.*").FirstOrDefault());
+            if (file != null)
+            {
+                var contentType = GetContentType(file);
+                return PhysicalFile(file, contentType);
+            }
+
+            var defaultFile = await Task.Run(() => Directory.GetFiles(targetFolder, "default.*").FirstOrDefault());
+            if (defaultFile != null)
+            {
+                return PhysicalFile(defaultFile, GetContentType(defaultFile));
+            }
+
+            return NotFound(new { error = "Изображение отсутствует, дефолтный файл не настроен." });
+        }
+
+
+        private string GetContentType(string filePath)
+        {
+            var ext = Path.GetExtension(filePath).ToLowerSuffix();
+            return ext switch
+            {
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".webp" => "image/webp",
+                _ => "application/octet-stream",
+            };
+        }
+    }
+
+
+    public static class StringExtensions
+    {
+        public static string ToLowerSuffix(this string str) => str?.ToLower().Trim() ?? string.Empty;
+    }
+}

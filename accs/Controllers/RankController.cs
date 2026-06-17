@@ -135,7 +135,7 @@ namespace accs.Controllers
                 {
                     return BadRequest(new { error = newRank.Message });
                 }
-                return Ok(newRank);
+                return Ok(newRank.Value);
             }
             catch (Exception ex)
             {

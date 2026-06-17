@@ -362,6 +362,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 *.env
-/accs/Migrations
 /accs/accs-logs
 /accs/temp
+/accs/Migrations

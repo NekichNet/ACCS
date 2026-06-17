@@ -13,14 +13,16 @@ namespace accs.Controllers
         private readonly ILogger<ImagesController> _logger;
         private readonly RewardService _rewardService;
         private readonly RankService _rankService;
+        private readonly UnitService _unitService;
         private readonly string[] _allowedExtensions = { ".png", ".jpg", ".jpeg", ".webp" };
 
-        public ImagesController(IWebHostEnvironment environment, ILogger<ImagesController> logger, RewardService rewardService, RankService rankService)
+        public ImagesController(IWebHostEnvironment environment, ILogger<ImagesController> logger, RewardService rewardService, RankService rankService, UnitService unitService)
         {
             _environment = environment;
             _logger = logger;
             _rewardService = rewardService;
             _rankService = rankService;
+            _unitService = unitService;
         }
 
 
@@ -122,6 +124,94 @@ namespace accs.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+
+
+        [HttpPost("backgrounds/{id}")]
+        [Authorize]
+        public async Task<IActionResult> UploadBackgroundImage([FromRoute] int id, [FromForm] IFormFile file)
+        {
+            try
+            {
+                var actor = HttpContext.Items["Actor"] as Unit;
+                if (actor == null)
+                {
+                    return Unauthorized(new { error = "Пользователь не идентифицирован." });
+                }
+
+                _unitService.Actor = actor;
+                var unitExistCheck = await _unitService.GetAsync(actor.DiscordId);
+                if (!unitExistCheck.IsSuccess || unitExistCheck.Value == null)
+                {
+                    return NotFound(new { error = $"Пользователь с ID {id} не существует. Некуда привязать картинку." });
+                }
+
+                return await SaveImageAsync("backgrounds", id, file);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in UploadBackgroundImage: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+        [HttpGet("backgrounds/{id}")]
+        public async Task<IActionResult> GetBackgroundImage([FromRoute] int id)
+        {
+            try
+            {
+                return await ServeImageAsync("backgrounds", id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetBackgroundImage: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+
+
+        [HttpPost("kits/{id}")]
+        [Authorize]
+        public async Task<IActionResult> UploadKitImage([FromRoute] int id, [FromForm] IFormFile file)
+        {
+            try
+            {
+                var actor = HttpContext.Items["Actor"] as Unit;
+                if (actor == null)
+                {
+                    return Unauthorized(new { error = "Пользователь не идентифицирован." });
+                }
+
+                _unitService.Actor = actor;
+                var unitExistCheck = await _unitService.GetAsync(actor.DiscordId);
+                if (!unitExistCheck.IsSuccess || unitExistCheck.Value == null)
+                {
+                    return NotFound(new { error = $"Пользователь с ID {id} не существует. Некуда привязать картинку." });
+                }
+
+                return await SaveImageAsync("kits", id, file);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in UploadKitImage: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+        [HttpGet("kits/{id}")]
+        public async Task<IActionResult> GetKitImage([FromRoute] int id)
+        {
+            try
+            {
+                return await ServeImageAsync("kits", id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetKitImage: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
 
 
         private async Task<IActionResult> SaveImageAsync(string folderName, int id, IFormFile file)

@@ -38,6 +38,8 @@
     <Folder Include="Migrations\" />
     <Folder Include="wwwroot\ranks\" />
     <Folder Include="wwwroot\rewards\" />
+    <Folder Include="wwwroot\kits\" />
+    <Folder Include="wwwroot\backgrounds\" />
   </ItemGroup>
 
 </Project>

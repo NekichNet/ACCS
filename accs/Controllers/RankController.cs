@@ -44,7 +44,7 @@ namespace accs.Controllers
         }
 
         [HttpGet("{rankId}")]
-        public async Task<IActionResult> GetRankById([FromRoute] int rankId)
+        public async Task<IActionResult> GetRank([FromRoute] int rankId)
         {
             try
             {
@@ -62,7 +62,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in GetRankById: {ex.Message}");
+                _logger.LogError($"Error in GetRank: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -124,7 +124,7 @@ namespace accs.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> CreateNewRank([FromBody] Rank dto)
+        public async Task<IActionResult> CreateRank([FromBody] Rank dto)
         {
             try
             {
@@ -139,7 +139,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in CreateNewRank: {ex.Message}");
+                _logger.LogError($"Error in CreateRank: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
             
@@ -195,7 +195,7 @@ namespace accs.Controllers
 
         [HttpPost("{rankId}/discord-role")]
         [Authorize]
-        public async Task<IActionResult> UpdateDiscordRoleRank([FromRoute] int rankId)
+        public async Task<IActionResult> UpdateRankRole([FromRoute] int rankId)
         {
             try
             {
@@ -211,7 +211,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in UpdateDiscordRoleRank: {ex.Message}");
+                _logger.LogError($"Error in UpdateRankRole: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }

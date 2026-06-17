@@ -18,7 +18,6 @@ namespace accs.Services
         }
 
         public async Task<ActionResult<Reward>> CreateAsync(
-            string discordId,
             string name,
             string color,
             string conditions,

@@ -1,5 +1,4 @@
-﻿
-using accs.Database;
+﻿using accs.Database;
 using accs.Models;
 using accs.Models.Util;
 using accs.Services.Abstraction;

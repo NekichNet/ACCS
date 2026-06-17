@@ -1,6 +1,4 @@
-﻿using accs.Database;
-using accs.Models;
-using accs.Services;
+﻿using accs.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace accs.Controllers

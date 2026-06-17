@@ -51,7 +51,8 @@ namespace accs.Controllers
                     return NotFound(new { error = $"Награда с ID {id} не существует. Некуда привязать картинку." });
                 }
 
-                return await SaveImageAsync("rewards", id, file);
+                string folderName = rewardExistCheck.Value.GetFolderName();
+                return await SaveImageAsync(folderName, id, file);
             }
             catch (Exception ex)
             {
@@ -86,41 +87,12 @@ namespace accs.Controllers
                     return NotFound(new { error = $"Ранг с ID {id} не существует. Некуда привязать картинку." });
                 }
 
-                return await SaveImageAsync("ranks", id, file);
+                string folderName = rankExistCheck.Value.GetFolderName();
+                return await SaveImageAsync(folderName, id, file);
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error in UploadRankImage: {ex.Message}");
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
-
-
-        [HttpGet("rewards/{id}")]
-        public async Task<IActionResult> GetRewardImage([FromRoute] int id)
-        {
-            try
-            {
-                return await ServeImageAsync("rewards", id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetRewardImage: {ex.Message}");
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
-
-
-        [HttpGet("ranks/{id}")]
-        public async Task<IActionResult> GetRankImage([FromRoute] int id)
-        {
-            try
-            {
-                return await ServeImageAsync("ranks", id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetRankImage: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -145,25 +117,13 @@ namespace accs.Controllers
                     return NotFound(new { error = $"Пользователь с ID {id} не существует. Некуда привязать картинку." });
                 }
 
-                return await SaveImageAsync("backgrounds", id, file);
+                BackgroundPicture picture = new BackgroundPicture();
+                string folderName = picture.GetFolderName();
+                return await SaveImageAsync(folderName, id, file);
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error in UploadBackgroundImage: {ex.Message}");
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
-
-        [HttpGet("backgrounds/{id}")]
-        public async Task<IActionResult> GetBackgroundImage([FromRoute] int id)
-        {
-            try
-            {
-                return await ServeImageAsync("backgrounds", id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetBackgroundImage: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -189,7 +149,9 @@ namespace accs.Controllers
                     return NotFound(new { error = $"Пользователь с ID {id} не существует. Некуда привязать картинку." });
                 }
 
-                return await SaveImageAsync("kits", id, file);
+                FavoriteKit kit = new FavoriteKit();
+                string folderName = kit.GetFolderName();
+                return await SaveImageAsync(folderName, id, file);
             }
             catch (Exception ex)
             {
@@ -197,21 +159,6 @@ namespace accs.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
-
-        [HttpGet("kits/{id}")]
-        public async Task<IActionResult> GetKitImage([FromRoute] int id)
-        {
-            try
-            {
-                return await ServeImageAsync("kits", id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetKitImage: {ex.Message}");
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
-
 
 
         private async Task<IActionResult> SaveImageAsync(string folderName, int id, IFormFile file)
@@ -250,44 +197,6 @@ namespace accs.Controllers
 
             _logger.LogInformation($"Картинка успешно сохранена: {fullPath}");
             return Ok(new { message = "Изображение успешно загружено", fileName = fileName });
-        }
-
-
-        private async Task<IActionResult> ServeImageAsync(string folderName, int id)
-        {
-            var targetFolder = Path.Combine(_environment.WebRootPath, folderName);
-            if (!Directory.Exists(targetFolder))
-            {
-                return NotFound(new { error = "Директория статики не найдена на сервере." });
-            }
-
-            var file = await Task.Run(() => Directory.GetFiles(targetFolder, $"{id}.*").FirstOrDefault());
-            if (file != null)
-            {
-                var contentType = GetContentType(file);
-                return PhysicalFile(file, contentType);
-            }
-
-            var defaultFile = await Task.Run(() => Directory.GetFiles(targetFolder, "default.*").FirstOrDefault());
-            if (defaultFile != null)
-            {
-                return PhysicalFile(defaultFile, GetContentType(defaultFile));
-            }
-
-            return NotFound(new { error = "Изображение отсутствует, дефолтный файл не настроен." });
-        }
-
-
-        private string GetContentType(string filePath)
-        {
-            var ext = Path.GetExtension(filePath).ToLowerSuffix();
-            return ext switch
-            {
-                ".png" => "image/png",
-                ".jpg" or ".jpeg" => "image/jpeg",
-                ".webp" => "image/webp",
-                _ => "application/octet-stream",
-            };
         }
     }
 

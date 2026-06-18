@@ -384,7 +384,17 @@ namespace accs.Controllers
                     return NotFound(new { error = "Unit not found" });
                 }
 
-                return Ok(result.Value);
+				List<StateDto> dtos = result.Value.Select(e => new StateDto
+				{
+					Id = e.Id,
+					Text = e.GetText(),
+					Color = e.GetHexColor(),
+					Start = e.Start,
+                    End = e.End,
+					UnitId = unitId
+				}).ToList();
+
+				return Ok(result.Value);
             }
             catch (Exception ex)
             {
@@ -409,6 +419,14 @@ namespace accs.Controllers
                 {
                     return NotFound(new { error = "Unit not found" });
                 }
+
+                List<EventDto> dtos = result.Value.Select(e => new EventDto {
+                    Id = e.Id,
+                    Text = e.GetText(),
+                    Color = e.GetHexColor(),
+                    DateTime = e.DateTime,
+                    UnitId = unitId
+                }).ToList();
 
                 return Ok(result.Value);
             }

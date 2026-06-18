@@ -365,6 +365,57 @@ namespace accs.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+
+        [HttpGet("{id}/states")]
+        public async Task<IActionResult> GetUnitState([FromRoute] ulong id)
+        {
+            try
+            {
+                var result = await _unitService.GetUnitStatesAsync(id);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+
+                if (result.Value == null)
+                {
+                    return NotFound(new { error = "Unit not found" });
+                }
+
+                return Ok(result.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetUnitState: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+
+        [HttpGet("{id}/events")]
+        public async Task<IActionResult> GetSingleDayEvent([FromRoute] ulong id)
+        {
+            try
+            {
+                var result = await _unitService.GetUnitEventsAsync(id);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+
+                if (result.Value == null)
+                {
+                    return NotFound(new { error = "Unit not found" });
+                }
+
+                return Ok(result.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetSingleDayEvent: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
     }
 
     public class UnitDto

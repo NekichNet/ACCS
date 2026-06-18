@@ -3,6 +3,7 @@ using accs.Logging;
 using accs.Models;
 using accs.Models.Enums;
 using accs.Models.SingleDayEvents;
+using accs.Models.SingleDayEvents.Abstraction;
 using accs.Models.States.Abstraction;
 using accs.Models.Statuses;
 using accs.Models.Statuses.Abstraction;
@@ -544,6 +545,64 @@ namespace accs.Services
                 else
                 {
                     action.FormFailure("Unit deletion restricted. Unauthorized", eventId: EventIds.Unauthorized);
+                }
+            }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
+        public async Task<ActionResult<List<UnitState>>> GetUnitStatesAsync(ulong discordId)
+        {
+            ActionResult<List<UnitState>> action = new ActionResult<List<UnitState>>(_logger);
+
+            try
+            {
+                var unit = await _db.Units
+                    .Include(u => u.UnitStates)
+                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+
+                if (unit != null)
+                {
+                    action.Value = unit.UnitStates.OrderByDescending(us => us.Start).ToList();
+                    action.FormSuccess($"States history for unit {discordId} formed. Length: " + action.Value.Count,
+                        eventId: action.Value.Count > 0 ? EventIds.Read : EventIds.NoData);
+                }
+                else
+                {
+                    action.FormFailure($"Unit with Discord ID {discordId} not found", eventId: EventIds.NotFound);
+                }
+            }
+            catch (Exception ex)
+            {
+                action.FormException(ex);
+            }
+
+            return action;
+        }
+
+        public async Task<ActionResult<List<SingleDayEvent>>> GetUnitEventsAsync(ulong discordId)
+        {
+            ActionResult<List<SingleDayEvent>> action = new ActionResult<List<SingleDayEvent>>(_logger);
+
+            try
+            {
+                var unit = await _db.Units
+                    .Include(u => u.SingleDayEvents)
+                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+
+                if (unit != null)
+                {
+                    action.Value = unit.SingleDayEvents.OrderByDescending(e => e.DateTime).ToList();
+                    action.FormSuccess($"Events history for unit {discordId} formed. Length: " + action.Value.Count,
+                        eventId: action.Value.Count > 0 ? EventIds.Read : EventIds.NoData);
+                }
+                else
+                {
+                    action.FormFailure($"Unit with Discord ID {discordId} not found", eventId: EventIds.NotFound);
                 }
             }
             catch (Exception ex)

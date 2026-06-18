@@ -2,6 +2,6 @@
 {
     public interface IEntityWithFiles
     {
-        string GetImageFolderName();
+        string GetFolderName();
     }
 }

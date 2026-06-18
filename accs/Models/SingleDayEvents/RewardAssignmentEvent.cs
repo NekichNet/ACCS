@@ -1,5 +1,4 @@
 ﻿using accs.Models.SingleDayEvents.Abstraction;
-using accs.Models.Statuses;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -20,7 +19,7 @@ namespace accs.Models.SingleDayEvents
 
         public override string GetText()
         {
-            throw new NotImplementedException();
+            return $"Награждение {AssignedReward.Reward.Name}";
         }
     }
 

@@ -96,7 +96,7 @@ namespace accs.Models
 			}
 		}
 
-        public string GetImageFolderName()
+        public string GetFolderName()
         {
 			return "ranks";
         }

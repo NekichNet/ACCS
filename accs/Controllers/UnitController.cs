@@ -1,4 +1,5 @@
 ﻿using accs.Models;
+using accs.Models.SingleDayEvents.Abstraction;
 using accs.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -396,7 +397,6 @@ namespace accs.Controllers
         {
             try
             {
-
                 var result = await _unitService.GetUnitEventsAsync(unitId);
                 if (!result.IsSuccess)
                 {
@@ -418,7 +418,26 @@ namespace accs.Controllers
         }
     }
 
-    public class UnitDto
+    public class StateDto
+    {
+        public int Id { get; set; }
+        public string Text { get; set; }
+		public string Color { get; set; }
+		public DateTime Start { get; set; }
+		public DateTime? End { get; set; }
+		public ulong UnitId { get; set; }
+	}
+
+	public class EventDto
+	{
+		public int Id { get; set; }
+		public string Text { get; set; }
+        public string Color { get; set; }
+		public DateTime DateTime { get; set; }
+		public ulong UnitId { get; set; }
+	}
+
+	public class UnitDto
     {
         public string DiscordId { get; set; }
         public string Nickname { get; set; }

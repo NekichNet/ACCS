@@ -11,7 +11,7 @@ namespace accs.Models
         public string Name { get; set; }
         [JsonIgnore] public virtual List<Unit> Units { get; set; }
 
-        public string GetImageFolderName()
+        public string GetFolderName()
         {
             return "backgrounds";
         }

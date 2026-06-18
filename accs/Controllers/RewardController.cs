@@ -2,7 +2,6 @@
 using accs.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using Microsoft.EntityFrameworkCore;
 
 namespace accs.Controllers
@@ -45,7 +44,7 @@ namespace accs.Controllers
         }
 
         [HttpGet("{rewardId}")]
-        public async Task<IActionResult> GetRewardById([FromRoute] int rewardId)
+        public async Task<IActionResult> GetReward([FromRoute] int rewardId)
         {
             try
             {
@@ -63,7 +62,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in GetRewardById: {ex.Message}");
+                _logger.LogError($"Error in GetReward: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -99,14 +98,13 @@ namespace accs.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> CreateNewReward([FromBody] RewardDto dto)
+        public async Task<IActionResult> CreateReward([FromBody] RewardDto dto)
         {
             try
             {
                 _rewardService.Actor = HttpContext.Items["Actor"] as Unit;
 
                 var newReward = await _rewardService.CreateAsync(
-                    dto.DiscordId ?? string.Empty,
                     dto.Name,
                     dto.Color,
                     dto.Conditions,
@@ -121,7 +119,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in CreateNewReward: {ex.Message}");
+                _logger.LogError($"Error in CreateReward: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -157,7 +155,7 @@ namespace accs.Controllers
 
         [HttpPost("{rewardId}/discord-role")]
         [Authorize]
-        public async Task<IActionResult> UpdateDiscordRoleReward([FromRoute] int rewardId)
+        public async Task<IActionResult> UpdateRewardRole([FromRoute] int rewardId)
         {
             try
             {
@@ -173,7 +171,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in UpdateDiscordRoleReward: {ex.Message}");
+                _logger.LogError($"Error in UpdateRewardRole: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -197,7 +195,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in GetAssignedUnits: {ex.Message}");
+                _logger.LogError($"Error in GetAssignedUnit: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -232,7 +230,7 @@ namespace accs.Controllers
 
         [HttpGet("{rewardId}/assign/{discordId}")]
         [Authorize]
-        public async Task<IActionResult> GetAssignedUnits([FromRoute] int rewardId, [FromRoute] ulong discordId)
+        public async Task<IActionResult> GetAssignedUnit([FromRoute] int rewardId, [FromRoute] ulong discordId)
         {
             try
             {

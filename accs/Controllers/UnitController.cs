@@ -1,4 +1,5 @@
 ﻿using accs.Models;
+using accs.Models.SingleDayEvents.Abstraction;
 using accs.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,8 +11,8 @@ namespace accs.Controllers
     [ApiController]
     public class UnitController : ControllerBase
     {
+        private readonly UnitService _unitService;
         private readonly ILogger<UnitController> _logger;
-        UnitService _unitService;
 
         public UnitController(UnitService unitService, ILogger<UnitController> logger)
         {
@@ -79,12 +80,12 @@ namespace accs.Controllers
             }
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetUnit([FromRoute] ulong id)
+        [HttpGet("{unitId}")]
+        public async Task<IActionResult> GetUnit([FromRoute] ulong unitId)
         {
             try
             {
-                var result = await _unitService.GetAsync(id);
+                var result = await _unitService.GetAsync(unitId);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -92,7 +93,7 @@ namespace accs.Controllers
 
                 if (result.Value == null)
                 {
-                    _logger.LogWarning($"Unit not found: Discord ID {id}");
+                    _logger.LogWarning($"Unit not found: Discord ID {unitId}");
                     return NotFound(new { error = "Unit not found" });
                 }
 
@@ -117,12 +118,12 @@ namespace accs.Controllers
             }
         }
 
-        [HttpGet("{discordId}/status")]
-        public async Task<IActionResult> GetUnitStatuses([FromRoute] ulong discordId)
+        [HttpGet("{unitId}/status")]
+        public async Task<IActionResult> GetUnitStatuses([FromRoute] ulong unitId)
         {
             try
             {
-                var result = await _unitService.GetUnitStatusIdsAsync(discordId);
+                var result = await _unitService.GetUnitStatusIdsAsync(unitId);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -130,7 +131,7 @@ namespace accs.Controllers
 
                 if (result.Value == null)
                 {
-                    _logger.LogWarning($"Unit not found: Discord ID {discordId}");
+                    _logger.LogWarning($"Unit not found: Discord ID {unitId}");
                     return NotFound(new { error = "Unit not found" });
                 }
 
@@ -143,12 +144,12 @@ namespace accs.Controllers
             }
         }
 
-        [HttpGet("{discordId}/activity")]
-        public async Task<IActionResult> GetUnitActivity([FromRoute] ulong discordId)
+        [HttpGet("{unitId}/activity")]
+        public async Task<IActionResult> GetUnitActivity([FromRoute] ulong unitId)
         {
             try
             {
-                var result = await _unitService.GetUnitActivityAsync(discordId);
+                var result = await _unitService.GetUnitActivityAsync(unitId);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -156,7 +157,7 @@ namespace accs.Controllers
 
                 if (result.Value == null)
                 {
-                    _logger.LogWarning($"Unit not found: Discord ID {discordId}");
+                    _logger.LogWarning($"Unit not found: Discord ID {unitId}");
                     return NotFound(new { error = "Unit not found" });
                 }
                 return Ok(result.Value);
@@ -168,12 +169,12 @@ namespace accs.Controllers
             }
         }
 
-        [HttpGet("{discordId}/permission")]
+        [HttpGet("{unitId}/permission")]
         public async Task<IActionResult> GetUnitPermissions([FromRoute] ulong discordId)
         {
             try
             {
-                var result = await _unitService.GetPermissionsAsync(discordId);
+                var result = await _unitService.GetPermissionIdsAsync(discordId);
 
                 if (!result.IsSuccess)
                 {
@@ -189,12 +190,12 @@ namespace accs.Controllers
             }
         }
 
-        [HttpGet("{discordId}/status/{statusId}")]
-        public async Task<IActionResult> GetUnitStatus([FromRoute] ulong discordId, [FromRoute] int statusId)
+        [HttpGet("{unitId}/status/{statusId}")]
+        public async Task<IActionResult> GetUnitStatus([FromRoute] ulong unitId, [FromRoute] int statusId)
         {
             try
             {
-                var result = await _unitService.GetUnitStatusAsync(discordId, statusId);
+                var result = await _unitService.GetUnitStatusAsync(unitId, statusId);
 
                 if (!result.IsSuccess)
                 {
@@ -210,15 +211,15 @@ namespace accs.Controllers
             }
         }
 
-        [HttpPut("{discordId}/activity")]
+        [HttpPut("{unitId}/activity")]
         [Authorize]
-        public async Task<IActionResult> FixActivity([FromRoute] ulong discordId)
+        public async Task<IActionResult> FixActivity([FromRoute] ulong unitId)
         {
             try
             {
                 _unitService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var result = await _unitService.FixActivityAsync(discordId);
+                var result = await _unitService.FixActivityAsync(unitId);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -233,15 +234,15 @@ namespace accs.Controllers
         }
 
         /* Говно галимое. Переделать, пока на сайте не реализовали
-		[HttpPut("{discordId}/status")]
+		[HttpPut("{unitId}/status")]
 		[Authorize]
-		public async Task<IActionResult> UpdateUnitStatus([FromRoute] ulong discordId, [FromBody] int statusId)
+		public async Task<IActionResult> UpdateUnitStatus([FromRoute] ulong unitId, [FromBody] int statusId)
 		{
 			try
 			{
 				_unitService.Actor = HttpContext.Items["Actor"] as Unit;
 
-				var result = await _unitService.UpdateUnitStatusAsync(discordId, dto.StatusId);
+				var result = await _unitService.UpdateUnitStatusAsync(unitId, dto.StatusId);
 				if (!result.IsSuccess)
 				{
 					return BadRequest(new { error = result.Message });
@@ -255,15 +256,15 @@ namespace accs.Controllers
 			}
 		}
 
-		[HttpPatch("{discordId}")]
+		[HttpPatch("{unitId}")]
 		[Authorize]
-		public async Task<IActionResult> UpdateUnit([FromRoute] ulong discordId)
+		public async Task<IActionResult> UpdateUnit([FromRoute] ulong unitId)
 		{
 			try
 			{
 				_unitService.Actor = HttpContext.Items["Actor"] as Unit;
 
-				var result = await _unitService.UpdateAsync(discordId);
+				var result = await _unitService.UpdateAsync(unitId);
 				if (!result.IsSuccess)
 				{
 					return BadRequest(new { error = result.Message });
@@ -277,9 +278,9 @@ namespace accs.Controllers
 			}
 		}
 
-		[HttpDelete("{discordId}/status/{statusId}")]
+		[HttpDelete("{unitId}/status/{statusId}")]
         [Authorize]
-        public async Task<IActionResult> DeleteStatus([FromRoute] ulong discordId, [FromRoute] int statusId)
+        public async Task<IActionResult> DeleteStatus([FromRoute] ulong unitId, [FromRoute] int statusId)
         {
             try
             {
@@ -344,15 +345,15 @@ namespace accs.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{unitId}")]
         [Authorize]
-        public async Task<IActionResult> DeleteUnit([FromRoute] ulong id)
+        public async Task<IActionResult> DismissUnit([FromRoute] ulong unitId)
         {
             try
             {
                 _unitService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var result = await _unitService.DeleteAsync(id);
+                var result = await _unitService.DismissAsync(unitId);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -366,13 +367,13 @@ namespace accs.Controllers
             }
         }
 
-        [HttpGet("{id}/states")]
-        public async Task<IActionResult> GetUnitStates([FromRoute] ulong id)
+        [HttpGet("{unitId}/states")]
+        public async Task<IActionResult> GetUnitStates([FromRoute] ulong unitId)
         {
             try
             {
 
-                var result = await _unitService.GetUnitStatesAsync(id);
+                var result = await _unitService.GetUnitStatesAsync(unitId);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -393,13 +394,12 @@ namespace accs.Controllers
         }
 
 
-        [HttpGet("{id}/events")]
-        public async Task<IActionResult> GetSingleDayEvents([FromRoute] ulong id)
+        [HttpGet("{unitId}/events")]
+        public async Task<IActionResult> GetSingleDayEvents([FromRoute] ulong unitId)
         {
             try
             {
-
-                var result = await _unitService.GetUnitEventsAsync(id);
+                var result = await _unitService.GetUnitEventsAsync(unitId);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -420,7 +420,26 @@ namespace accs.Controllers
         }
     }
 
-    public class UnitDto
+    public class StateDto
+    {
+        public int Id { get; set; }
+        public string Text { get; set; }
+		public string Color { get; set; }
+		public DateTime Start { get; set; }
+		public DateTime? End { get; set; }
+		public ulong UnitId { get; set; }
+	}
+
+	public class EventDto
+	{
+		public int Id { get; set; }
+		public string Text { get; set; }
+        public string Color { get; set; }
+		public DateTime DateTime { get; set; }
+		public ulong UnitId { get; set; }
+	}
+
+	public class UnitDto
     {
         public string DiscordId { get; set; }
         public string Nickname { get; set; }

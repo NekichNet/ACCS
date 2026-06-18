@@ -8,12 +8,12 @@ namespace accs.Models.SingleDayEvents
     {
         public override string GetHexColor()
         {
-            throw new NotImplementedException();
+            return "#44FF77";
         }
 
         public override string GetText()
         {
-            throw new NotImplementedException();
+            return "Зарегистрирован в системе";
         }
     }
 }

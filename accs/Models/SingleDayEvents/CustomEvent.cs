@@ -1,6 +1,4 @@
 ﻿using accs.Models.SingleDayEvents.Abstraction;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace accs.Models.SingleDayEvents
@@ -10,12 +8,12 @@ namespace accs.Models.SingleDayEvents
     {
         public override string GetHexColor()
         {
-            throw new NotImplementedException();
+            return "#BBBBBB";
         }
 
         public override string GetText()
         {
-            throw new NotImplementedException();
+            return "Текст ивента";
         }
     }
 }

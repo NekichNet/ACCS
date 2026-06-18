@@ -1,5 +1,4 @@
-﻿using accs.Models.SingleDayEvents;
-using accs.Models.Statuses.Abstraction;
+﻿using accs.Models.Statuses.Abstraction;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.ComponentModel.DataAnnotations.Schema;

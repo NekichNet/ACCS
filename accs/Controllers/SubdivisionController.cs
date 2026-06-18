@@ -1,14 +1,8 @@
-﻿using accs.Database;
-using accs.Models;
+﻿using accs.Models;
 using accs.Services;
-using Discord.Net;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sprache;
-using System;
-using static System.Collections.Specialized.BitVector32;
 
 namespace accs.Controllers
 {
@@ -52,7 +46,7 @@ namespace accs.Controllers
         }
 
         [HttpGet("{subdivisionId}")]
-        public async Task<IActionResult> GetSubdivisionById([FromRoute] int subdivisionId)
+        public async Task<IActionResult> GetSubdivision([FromRoute] int subdivisionId)
         {
             try
             {
@@ -65,7 +59,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in GetSubdivisionById: {ex.Message}");
+                _logger.LogError($"Error in GetSubdivision: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -122,7 +116,7 @@ namespace accs.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> CreateNewSubdivision([FromBody] SubdivisionDto dto)
+        public async Task<IActionResult> CreateSubdivision([FromBody] SubdivisionDto dto)
         {
             try
             {
@@ -148,7 +142,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in CreateNewSubdivision: {ex.Message}");
+                _logger.LogError($"Error in CreateSubdivision: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -177,7 +171,7 @@ namespace accs.Controllers
 
         [HttpPost("{subdivisionId}/discord-role")]
         [Authorize]
-        public async Task<IActionResult> UpdateRoleSubdivision([FromRoute] int subdivisionId)
+        public async Task<IActionResult> UpdateSubdivisionRole([FromRoute] int subdivisionId)
         {
             try
             {
@@ -192,7 +186,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in UpdateRoleSubdivision: {ex.Message}");
+                _logger.LogError($"Error in UpdateSubdivisionRole: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }

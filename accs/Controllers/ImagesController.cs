@@ -26,9 +26,9 @@ namespace accs.Controllers
         }
 
 
-        [HttpPost("rewards/{id}")]
+        [HttpPost("rewards/{rewardId}")]
         [Authorize]
-        public async Task<IActionResult> UploadRewardImage([FromRoute] int id, [FromForm] IFormFile file)
+        public async Task<IActionResult> UploadRewardImage([FromRoute] int rewardId, [FromForm] IFormFile file)
         {
             try
             {
@@ -45,14 +45,14 @@ namespace accs.Controllers
                     return StatusCode(403, new { error = permissionCheck.Message });
                 }
 
-                var rewardExistCheck = await _rewardService.GetAsync(id);
+                var rewardExistCheck = await _rewardService.GetAsync(rewardId);
                 if (!rewardExistCheck.IsSuccess || rewardExistCheck.Value == null)
                 {
-                    return NotFound(new { error = $"Награда с ID {id} не существует. Некуда привязать картинку." });
+                    return NotFound(new { error = $"Награда с ID {rewardId} не существует. Некуда привязать картинку." });
                 }
 
                 string folderName = rewardExistCheck.Value.GetFolderName();
-                return await SaveImageAsync(folderName, id, file);
+                return await SaveImageAsync(folderName, rewardId, file);
             }
             catch (Exception ex)
             {
@@ -62,7 +62,7 @@ namespace accs.Controllers
         }
 
 
-        [HttpPost("ranks/{id}")]
+        [HttpPost("ranks/{rewardId}")]
         [Authorize]
         public async Task<IActionResult> UploadRankImage([FromRoute] int id, [FromForm] IFormFile file)
         {
@@ -98,7 +98,7 @@ namespace accs.Controllers
         }
 
 
-        [HttpPost("backgrounds/{id}")]
+        [HttpPost("backgrounds/{rewardId}")]
         [Authorize]
         public async Task<IActionResult> UploadBackgroundImage([FromRoute] int id, [FromForm] IFormFile file)
         {
@@ -130,7 +130,7 @@ namespace accs.Controllers
 
 
 
-        [HttpPost("kits/{id}")]
+        [HttpPost("kits/{rewardId}")]
         [Authorize]
         public async Task<IActionResult> UploadKitImage([FromRoute] int id, [FromForm] IFormFile file)
         {

@@ -1,4 +1,5 @@
-﻿using accs.Models;
+﻿using accs.Logging;
+using accs.Models;
 
 namespace accs.Services.Abstraction
 {
@@ -12,7 +13,7 @@ namespace accs.Services.Abstraction
         {
             _logger = logger;
 
-            _logger.LogTrace("Service called");
+            _logger.LogTrace(EventIds.Processing, "Service called");
         }
     }
 }

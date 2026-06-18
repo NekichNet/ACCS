@@ -1,8 +1,6 @@
-﻿using accs.Database;
-using accs.Models;
+﻿using accs.Models;
 using accs.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -129,7 +127,7 @@ namespace accs.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> CreateNewPost([FromBody] PostDto dto)
+        public async Task<IActionResult> CreatePost([FromBody] PostDto dto)
         {
             try
             {
@@ -154,20 +152,20 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in CreateNewPost: {ex.Message}");
+                _logger.LogError($"Error in CreatePost: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{postId}")]
         [Authorize]
-        public async Task<IActionResult> DeletePost([FromRoute] int id)
+        public async Task<IActionResult> DeletePost([FromRoute] int postId)
         {
             try
             {
                 _postService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _postService.DeleteAsync(id);
+                var action = await _postService.DeleteAsync(postId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -186,15 +184,15 @@ namespace accs.Controllers
             }
         }
 
-        [HttpPatch("{id}")]
+        [HttpPatch("{postId}")]
         [Authorize]
-        public async Task<IActionResult> UpdatePost([FromRoute] int id, [FromBody] PostDto dto)
+        public async Task<IActionResult> UpdatePost([FromRoute] int postId, [FromBody] PostDto dto)
         {
             try
             {
                 _postService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _postService.UpdateAsync(id, dto.Name, dto.AppendSubdivisionName, dto.Description, dto.Color, dto.SubdivisionId, dto.MaxRankId, dto.HeadId);
+                var action = await _postService.UpdateAsync(postId, dto.Name, dto.AppendSubdivisionName, dto.Description, dto.Color, dto.SubdivisionId, dto.MaxRankId, dto.HeadId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -213,15 +211,15 @@ namespace accs.Controllers
             }
         }
 
-        [HttpPost("{id}/discord-role")]
+        [HttpPost("{postId}/discord-role")]
         [Authorize]
-        public async Task<IActionResult> UpdatePostRole([FromRoute] int id, [FromBody] PostDto dto)
+        public async Task<IActionResult> UpdatePostRole([FromRoute] int postId)
         {
             try
             {
                 _postService.Actor = HttpContext.Items["Actor"] as Unit;
                 
-                var action = await _postService.UpdateRoleAsync(id);
+                var action = await _postService.UpdateRoleAsync(postId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -255,7 +253,7 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in GetAssignedUnits: {ex.Message}");
+                _logger.LogError($"Error in GetAssignedUnit: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -287,12 +285,12 @@ namespace accs.Controllers
             }
         }
 
-        [HttpGet("{id}/assign/{discordId}")]
-        public async Task<IActionResult> GetInfoAssignedUnit([FromRoute] int id, [FromRoute] ulong discordId)
+        [HttpGet("{postId}/assign/{unitId}")]
+        public async Task<IActionResult> GetInfoAssignedUnit([FromRoute] int postId, [FromRoute] ulong unitId)
         {
             try
             {
-                var action = await _postService.GetAsync(id);
+                var action = await _postService.GetAsync(postId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -302,7 +300,7 @@ namespace accs.Controllers
                     return NotFound(new { error = "PostId not found" });
                 }
 
-                var assignedPost = action.Value.AssignedPosts.FirstOrDefault(ap => ap.Unit.DiscordId == discordId && ap.IsActive());
+                var assignedPost = action.Value.AssignedPosts.FirstOrDefault(ap => ap.Unit.DiscordId == unitId && ap.IsActive());
                 if (assignedPost == null)
                 {
                     return Ok(null);
@@ -317,15 +315,15 @@ namespace accs.Controllers
             }
         }
 
-        [HttpDelete("{postId}/assign/{discordId}")]
+        [HttpDelete("{postId}/assign/{unitId}")]
         [Authorize]
-        public async Task<IActionResult> DeposeUnit([FromRoute] int postId, [FromRoute] ulong discordId)
+        public async Task<IActionResult> DeposeUnit([FromRoute] int postId, [FromRoute] ulong unitId)
         {
             try
             {
                 _postService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _postService.DeposeAsync(discordId, postId);
+                var action = await _postService.DeposeAsync(unitId, postId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });

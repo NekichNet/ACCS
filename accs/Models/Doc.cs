@@ -1,18 +1,22 @@
-﻿using accs.Models.SingleDayEvents.Abstraction;
+﻿using accs.Models.Abstraction;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace accs.Models
 {
-	public class Doc
+	public class Doc : IEntityWithFiles
 	{
 		public int Id { get; set; }
 		public string Name { get; set; }
 		public ulong? AuthorId { get; set; }
 		[JsonIgnore] public virtual Unit? Author { get; set; }
+
+        public string GetFolderName()
+        {
+            return "docs";
+        }
 
         public override string ToString()
         {

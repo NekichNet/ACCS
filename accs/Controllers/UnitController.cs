@@ -359,7 +359,60 @@ namespace accs.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in DismissUnit: {ex.Message}");
+                _logger.LogError($"Error in DeleteUnit: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+        [HttpGet("{unitId}/states")]
+        public async Task<IActionResult> GetUnitStates([FromRoute] ulong unitId)
+        {
+            try
+            {
+
+                var result = await _unitService.GetUnitStatesAsync(unitId);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+
+                if (result.Value == null)
+                {
+                    return NotFound(new { error = "Unit not found" });
+                }
+
+                return Ok(result.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetUnitState: {ex.Message}");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+
+        [HttpGet("{unitId}/events")]
+        public async Task<IActionResult> GetSingleDayEvents([FromRoute] ulong unitId)
+        {
+            try
+            {
+
+                var result = await _unitService.GetUnitEventsAsync(unitId);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { error = result.Message });
+                }
+
+                if (result.Value == null)
+                {
+                    return NotFound(new { error = "Unit not found" });
+                }
+
+                return Ok(result.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetSingleDayEvent: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }

@@ -1,8 +1,6 @@
 ﻿using accs.Database;
 using accs.Models;
-using accs.Models.SingleDayEvents;
 using accs.Services.Interfaces;
-using Discord;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

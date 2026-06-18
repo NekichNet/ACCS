@@ -367,16 +367,12 @@ namespace accs.Controllers
         }
 
         [HttpGet("{id}/states")]
-        public async Task<IActionResult> GetUnitState([FromRoute] UnitDto dto)
+        public async Task<IActionResult> GetUnitStates([FromRoute] ulong id)
         {
             try
             {
-                if (!ulong.TryParse(dto.DiscordId, out ulong discordId))
-                {
-                    return BadRequest(new { error = "Передан некорректный формат Discord ID." });
-                }
 
-                var result = await _unitService.GetUnitStatesAsync(discordId);
+                var result = await _unitService.GetUnitStatesAsync(id);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -398,16 +394,12 @@ namespace accs.Controllers
 
 
         [HttpGet("{id}/events")]
-        public async Task<IActionResult> GetSingleDayEvent([FromRoute] UnitDto dto)
+        public async Task<IActionResult> GetSingleDayEvents([FromRoute] ulong id)
         {
             try
             {
-                if (!ulong.TryParse(dto.DiscordId, out ulong discordId))
-                {
-                    return BadRequest(new { error = "Передан некорректный формат Discord ID." });
-                }
 
-                var result = await _unitService.GetUnitEventsAsync(discordId);
+                var result = await _unitService.GetUnitEventsAsync(id);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });

@@ -562,8 +562,7 @@ namespace accs.Services
             try
             {
                 var unit = await _db.Units
-                    .Include(u => u.UnitStates)
-                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+                    .FindAsync(discordId);
 
                 if (unit != null)
                 {
@@ -591,8 +590,7 @@ namespace accs.Services
             try
             {
                 var unit = await _db.Units
-                    .Include(u => u.SingleDayEvents)
-                    .FirstOrDefaultAsync(u => u.DiscordId == discordId);
+                    .FindAsync(discordId);
 
                 if (unit != null)
                 {

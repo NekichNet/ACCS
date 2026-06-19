@@ -170,11 +170,11 @@ namespace accs.Controllers
         }
 
         [HttpGet("{unitId}/permission")]
-        public async Task<IActionResult> GetUnitPermissions([FromRoute] ulong discordId)
+        public async Task<IActionResult> GetUnitPermissions([FromRoute] ulong unitId)
         {
             try
             {
-                var result = await _unitService.GetPermissionIdsAsync(discordId);
+                var result = await _unitService.GetPermissionIdsAsync(unitId);
 
                 if (!result.IsSuccess)
                 {

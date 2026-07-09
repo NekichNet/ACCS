@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace accs.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [ApiController]
     public class PostController : ControllerBase
     {

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace accs.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly IDiscordOAuthService _discordOAuthService;

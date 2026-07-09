@@ -95,6 +95,7 @@ namespace accs
 					clientLogger.LogCritical(EventIds.UnhandledError, ex, ex.Message);
 				}
 
+				
 				// Очищаем уже зарегистрированные команды
 				await client.Rest.BulkOverwriteGlobalCommands(new ApplicationCommandProperties[] { });
 				await client.Rest.BulkOverwriteGuildCommands(new ApplicationCommandProperties[] { }, guildProvider.GetGuildId());
@@ -103,8 +104,8 @@ namespace accs
 				// Регистрируем актуальные команды
 				await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), _app.Services);
 				await interaction.RegisterCommandsToGuildAsync(guildProvider.GetGuildId());
-
 				clientLogger.LogInformation(EventIds.Created, "Commands registered");
+				
 			};
 
 			client.StartAsync().Wait();

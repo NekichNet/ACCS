@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Business/Business.csproj" />
+  <Project Path="Discord-Bot/Discord-Bot.csproj" Id="51844e3d-2d6c-4195-b701-17f87424d835" />
+</Solution>

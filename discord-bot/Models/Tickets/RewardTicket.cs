@@ -1,10 +1,10 @@
-﻿using accs.Database;
-using accs.Services.Interfaces;
+﻿using Business.Database;
+using Business.Services.Interfaces;
 using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 
-namespace accs.Models.Tickets
+namespace Business.Models.Tickets
 {
     public class RewardTicket : Ticket
     {

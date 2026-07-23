@@ -1,11 +1,11 @@
-﻿using accs.Database;
-using accs.Models.Enums;
+﻿using Business.Database;
+using Business.Models.Enums;
 using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 using System.Text;
 
-namespace accs.Models.Tickets
+namespace Business.Models.Tickets
 {
     public abstract class Ticket
     {

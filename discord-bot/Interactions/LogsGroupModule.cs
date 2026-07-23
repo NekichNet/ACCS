@@ -1,8 +1,8 @@
 ﻿using discord_bot.Preconditions;
-using accs.Logging.Configurations;
-using accs.Models.Enums;
-using accs.Services;
-using accs.Services.Interfaces;
+using Business.Logging.Configurations;
+using Business.Models.Enums;
+using Business.Services;
+using Business.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.Options;

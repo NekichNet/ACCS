@@ -212,7 +212,6 @@ namespace Business.Services
 							_logger.LogTrace(EventIds.Processing, $"Creating UnitDismissingEvent");
 							UnitDismissingEvent dismissingEvent = new UnitDismissingEvent()
 							{
-								Initiator = Actor,
 								Units = new List<Unit> { unit }
 							};
 							_db.UnitDismissingEvents.Add(dismissingEvent);
@@ -645,7 +644,7 @@ namespace Business.Services
 				HashSet<Unit> headUnits = Actor
 					.GetPosts()
 					.SelectMany(p => p.GetAllHeadsRecursive())
-					.SelectMany(p => p.AssignedPosts.SelectMany(ap => ap.Units))
+					.SelectMany(p => p.AssignedPosts.Select(ap => ap.Unit))
 					.ToHashSet();
 
 				action.Value = await _db.Units.Except(headUnits).ToListAsync();
@@ -673,7 +672,7 @@ namespace Business.Services
 				action.Value = Actor
 					.GetPosts()
 					.SelectMany(p => p.GetAllHeadsRecursive())
-					.SelectMany(p => p.AssignedPosts.SelectMany(ap => ap.Units))
+					.SelectMany(p => p.AssignedPosts.Select(ap => ap.Unit))
 					.ToHashSet();
 
 				action.FormSuccess($"{Actor.Nickname}'s all head units retrieved. Length: {action.Value.Count}",
@@ -699,7 +698,7 @@ namespace Business.Services
 				action.Value = Actor
 					.GetPosts()
 					.SelectMany(p => p.GetAllSubordinatesRecursive())
-					.SelectMany(p => p.AssignedPosts.SelectMany(ap => ap.Units))
+					.SelectMany(p => p.AssignedPosts.Select(ap => ap.Unit))
 					.ToHashSet();
 
 				action.FormSuccess($"{Actor.Nickname}'s all subordinate units retrieved. Length: {action.Value.Count}",

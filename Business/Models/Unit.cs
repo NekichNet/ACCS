@@ -207,7 +207,7 @@ namespace Business.Models
 		{
 			return new UnitCompressed
 			{
-				DiscordId = DiscordId,
+				DiscordId = DiscordId.ToString(),
 				Nickname = Nickname,
 				SteamId = SteamId.ToString() ?? "",
 				RankUpCounter = GetRankUpCounterString(),
@@ -232,7 +232,7 @@ namespace Business.Models
 	/// </summary>
 	public class UnitCompressed
 	{
-		public ulong DiscordId;
+		public string DiscordId;
 		public string Nickname;
 		public string SteamId;
 		public string RankUpCounter;
@@ -256,7 +256,7 @@ namespace Business.Models
 	/// </summary>
 	public class NewUnitDto
 	{
-		public ulong DiscordId { get; set; }
+		public string DiscordId { get; set; }
 		public string Nickname { get; set; }
 		public int? PostsIds { get; set; } = null;
 		public int? RankId { get; set; } = null;

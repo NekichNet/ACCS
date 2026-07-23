@@ -55,7 +55,7 @@ namespace Business.Controllers
             {
                 _unitService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var result = await _unitService.RegisterAsync(newUnit.DiscordId, newUnit.Nickname);
+                var result = await _unitService.RegisterAsync(newUnit);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });

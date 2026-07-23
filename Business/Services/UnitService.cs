@@ -24,10 +24,7 @@ namespace Business.Services
 			_db = db;
         }
 
-        public async Task<EmptyAction> RegisterAsync(
-			ulong discordId,
-			string nickname
-			)
+        public async Task<EmptyAction> RegisterAsync(NewUnitDto dto)
 		{
 			ActionResult<Unit> action = new ActionResult<Unit>(_logger);
 
@@ -37,13 +34,18 @@ namespace Business.Services
 					return action.FormFailure("Unit registration restricted. Unauthorized", eventId: EventIds.Unauthorized);
                 if (!Actor.HasPermission(PermissionType.RegisterNewUnits))
                     return action.FormFailure("Unit registration restricted", eventId: EventIds.Forbidden);
-                if ((await _db.Units.FindAsync(discordId)) != null)
+
+				ulong discordId;
+				if (!ulong.TryParse(dto.DiscordId, out discordId))
+					return action.FormFailure($"Unit registration failed. Incorrect Discord ID", eventId: EventIds.BadData);
+
+				if ((await _db.Units.FindAsync(discordId)) != null)
 					return action.FormFailure($"Unit with ID {discordId} already registered", eventId: EventIds.ImpossibleAction);
                 
 				action.Value = new Unit
 				{
 					DiscordId = discordId,
-					Nickname = nickname
+					Nickname = dto.Nickname
 				};
 
 				UnitRegistrationEvent registrationEvent = new UnitRegistrationEvent

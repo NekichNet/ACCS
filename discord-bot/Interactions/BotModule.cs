@@ -1,5 +1,5 @@
-﻿using accs.Database;
-using accs.Models;
+﻿using Business.Database;
+using Business.Models;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 

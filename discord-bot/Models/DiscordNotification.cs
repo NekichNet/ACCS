@@ -1,4 +1,4 @@
-﻿namespace accs.Models.Database
+﻿namespace Business.Models.Database
 {
     public class DiscordNotification
     {

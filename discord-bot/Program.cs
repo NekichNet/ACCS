@@ -1,5 +1,5 @@
-using accs.Logging;
-using accs.Logging.Extensions;
+using Business.Logging;
+using Business.Logging.Extensions;
 
 namespace discord_bot
 {

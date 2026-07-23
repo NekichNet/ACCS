@@ -1,9 +1,9 @@
-﻿using accs.Database;
-using accs.Models.Enums;
+﻿using Business.Database;
+using Business.Models.Enums;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
-using accs.Models.Database;
+using Business.Models.Database;
 
 namespace discord_bot.Interactions
 {

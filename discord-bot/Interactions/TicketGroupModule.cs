@@ -1,13 +1,13 @@
-﻿using accs.Database;
+﻿using Business.Database;
 using discord_bot.Preconditions;
-using accs.Models.Enums;
-using accs.Services.Interfaces;
+using Business.Models.Enums;
+using Business.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using accs.Models;
-using accs.Models.Tickets;
+using Business.Models;
+using Business.Models.Tickets;
 
 namespace discord_bot.Interactions
 {

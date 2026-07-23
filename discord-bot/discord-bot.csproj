@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\accs\accs.csproj" />
+    <ProjectReference Include="..\accs\Business.csproj" />
   </ItemGroup>
 
 </Project>

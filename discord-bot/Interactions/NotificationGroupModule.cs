@@ -1,10 +1,10 @@
-﻿using accs.Database;
+﻿using Business.Database;
 using discord_bot.Preconditions;
-using accs.Models.Database;
-using accs.Models.Enums;
+using Business.Models.Database;
+using Business.Models.Enums;
 using Discord;
 using Discord.Interactions;
-using accs.Models;
+using Business.Models;
 
 namespace discord_bot.Interactions
 {

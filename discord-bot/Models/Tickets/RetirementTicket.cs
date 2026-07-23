@@ -1,13 +1,13 @@
-﻿using accs.Database;
-using accs.Models.Enums;
-using accs.Models.Statuses.Abstraction;
-using accs.Services.Interfaces;
+﻿using Business.Database;
+using Business.Models.Enums;
+using Business.Models.Statuses.Abstraction;
+using Business.Services.Interfaces;
 using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 
-namespace accs.Models.Tickets
+namespace Business.Models.Tickets
 {
     public class RetirementTicket : Ticket
     {

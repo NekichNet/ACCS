@@ -1,4 +1,4 @@
-﻿namespace accs.Models.Enums
+﻿namespace Business.Models.Enums
 {
     public enum TicketStatus
     {

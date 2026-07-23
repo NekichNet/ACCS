@@ -1,7 +1,7 @@
-﻿using accs.Database;
-using accs.Models;
-using accs.Models.Enums;
-using accs.Services.Interfaces;
+﻿using Business.Database;
+using Business.Models;
+using Business.Models.Enums;
+using Business.Services.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;

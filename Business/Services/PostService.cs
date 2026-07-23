@@ -13,7 +13,6 @@ namespace Business.Services
     {
         private readonly AppDbContext _db;
 		private readonly RankService _rankService;
-		private readonly UnitService _unitService;
 		private readonly SubdivisionService _subdivisionService;
 
         public PostService(
@@ -26,7 +25,6 @@ namespace Business.Services
         {
             _db = db;
 			_rankService = rankService;
-			_unitService = unitService;
 			_subdivisionService = subdivisionService;
         }
 

@@ -214,8 +214,7 @@ namespace Business.Services
 
                 RewardAssignmentEvent assignmentEvent = new RewardAssignmentEvent
                 {
-                    UnitId = unit.DiscordId,
-                    InitiatorId = Actor.DiscordId,
+                    Units = new List<Unit> { unit },
                     AssignedReward = newAssignedReward
                 };
 

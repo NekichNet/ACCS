@@ -275,7 +275,7 @@ namespace Business.Models
 			builder.HasMany(u => u.OwnDocs).WithOne(d => d.Author).OnDelete(DeleteBehavior.SetNull);
 			builder.HasMany(u => u.AssignedRewards).WithOne(ar => ar.Unit).OnDelete(DeleteBehavior.Cascade);
 			builder.HasMany(u => u.Activities).WithOne(a => a.Unit).OnDelete(DeleteBehavior.Cascade);
-			builder.HasMany(u => u.UnitStates).WithMany(us => us.Units);
+			builder.HasMany(u => u.UnitStates).WithOne(us => us.Unit);
 			builder.HasMany(u => u.SingleDayEvents).WithMany(e => e.Units);
 		}
 	}

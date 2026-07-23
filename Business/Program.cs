@@ -110,6 +110,7 @@ namespace Business
             builder.Services.AddTransient<StructureService>();
             builder.Services.AddTransient<SubdivisionService>();
 			builder.Services.AddTransient<UnitService>();
+            builder.Services.AddTransient<DocService>();
 
 			builder.Services.AddHttpClient();
             builder.Services.AddScoped<IDiscordOAuthService, DiscordOAuthService>();

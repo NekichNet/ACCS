@@ -18,9 +18,8 @@ namespace Business.Services
         public PostService(
 			AppDbContext db,
 			RankService rankService,
-			UnitService unitService,
 			SubdivisionService subdivisionService,
-			Logger<PostService> logger)
+			ILogger logger)
 			: base(logger)
         {
             _db = db;
@@ -295,6 +294,7 @@ namespace Business.Services
 					return action.FormFailure("Posts setting failed. Unknown handled error", eventId: EventIds.HandledError);
 
 				HashSet<Post> postsToAssign = new HashSet<Post>();
+				HashSet<Post> postsToDepose = new HashSet<Post>();
 				HashSet<Post> failedToAssign = new HashSet<Post>();
 				HashSet<Post> failedToDepose = new HashSet<Post>();
 				List<Post> canChange = canAssignResult.Value;
@@ -317,9 +317,9 @@ namespace Business.Services
 
 				Unit? unit = await _db.Units.FindAsync(unitId);
 				if (unit == null)
-					return action.FormFailure($"Posts setting failure. Unit with ID {unitId} not found", eventId: EventIds.NotFound);
+					return action.FormFailure($"Posts setting failed. Unit with ID {unitId} not found", eventId: EventIds.NotFound);
 				if (!unit.IsActive() && !Actor.IsAdmin())
-					return action.FormFailure($"Posts setting restricted. Unit {unit.Nickname} is in retirement or dismissed", eventId: EventIds.Forbidden);
+					return action.FormFailure($"Posts setting failed. Unit {unit.Nickname} is in retirement or dismissed", eventId: EventIds.Forbidden);
 
 				List<AssignedPost> assignedPosts = unit.GetAssignedPosts();
 
@@ -330,9 +330,15 @@ namespace Business.Services
 						failedToDepose.Add(assignedPost.Post);
 						continue;
 					}
+					postsToDepose.Add(assignedPost.Post);
 				}
 
-				// Не закончено
+				int postsInResult = assignedPosts.Count() + postsToAssign.Count() - postsToDepose.Count();
+				if (postsInResult < 1)
+					return action.FormFailure($"Posts setting failed. Posts in result cannot be under 1 ({postsInResult})",
+						eventId: EventIds.ImpossibleAction);
+				
+
 
 				action.FormSuccess(
 					$"",

@@ -11,7 +11,6 @@ using Business.Models.Statuses.Abstraction;
 using Business.Models.Util;
 using Business.Services.Abstraction;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 
 namespace Business.Services
 {
@@ -19,7 +18,7 @@ namespace Business.Services
 	{
 		private readonly AppDbContext _db;
 
-        public UnitService(AppDbContext db, Logger<UnitService> logger) : base(logger)
+        public UnitService(AppDbContext db, ILogger logger) : base(logger)
         {
 			_db = db;
         }

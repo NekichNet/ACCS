@@ -13,18 +13,15 @@ namespace Business.Services
     {
         private readonly AppDbContext _db;
         private readonly UnitService _unitService;
-        private readonly PostService _postService;
 
         public RankService(
             AppDbContext db,
             UnitService unitService,
-            PostService postService,
-            Logger<RankService> logger)
+			ILogger logger)
             : base(logger)
         {
             _db = db;
             _unitService = unitService;
-            _postService = postService;
         }
 
         public async Task<ActionResult<Rank>> CreateAsync(
@@ -354,13 +351,12 @@ namespace Business.Services
                     return action.FormFailure($"Permission check failed." +
                         $" Unit {unit.Nickname} is in retirement or dismissed", eventId: EventIds.Forbidden);
 
-                _postService.Actor = Actor;
-                ActionResult<List<Post>> result = await _postService.GetAllNotHeadPostsAsync();
-				if (!result.IsSuccess)
-					return action.FormFailure($"Checking permissions to change {unit.Nickname}'s rank failed." +
-						$" Handled error in getting all not head posts", eventId: EventIds.HandledError);
+				HashSet<Post> headPosts = Actor
+									.GetPosts()
+									.SelectMany(p => p.GetAllHeadsRecursive())
+									.ToHashSet();
 
-				if (!Actor.IsAdmin() && result.Value.Intersect(unit.GetPosts()).Any())
+				if (!Actor.IsAdmin() && _db.Posts.Except(headPosts).Intersect(unit.GetPosts()).Any())
                     return action.FormFailure("Permission check failed. Can't change heads ranks", eventId: EventIds.Forbidden);
 
                 action.FormSuccess($"{Actor.Nickname} can change {action.Value.Nickname}'s rank");

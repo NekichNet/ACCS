@@ -12,7 +12,7 @@ namespace Business.Services
     {
         private readonly AppDbContext _db;
 
-        public DocService(AppDbContext db, Logger<DocService> logger) : base(logger)
+        public DocService(AppDbContext db, ILogger logger) : base(logger)
         {
             _db = db;
         }

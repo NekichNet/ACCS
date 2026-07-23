@@ -10,7 +10,7 @@ namespace Business.Services
     {
         private readonly AppDbContext _db;
 
-        public StructureService(AppDbContext db, Logger<StructureService> logger) : base(logger)
+        public StructureService(AppDbContext db, ILogger logger) : base(logger)
         {
             _db = db;
         }

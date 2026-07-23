@@ -294,7 +294,7 @@ namespace Business.Services
                 AssignedRank? assignedRank = _db.AssignedRanks
                     .AsEnumerable()
                     .FirstOrDefault(
-                        ar => ar.Units.Any(u => u.DiscordId == unitDiscordId)
+                        ar => ar.UnitId == unitDiscordId
                         && ar.RankId == rankId
                         && ar.IsActive(null));
 

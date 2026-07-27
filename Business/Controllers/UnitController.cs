@@ -248,9 +248,9 @@ namespace Business.Controllers
                     return BadRequest(new { error = result.Message });
                 }
 
-                var units = result.Value;
+				IEnumerable<UnitCompressed> unitsDto = result.Value.Select(u => u.ToCompressed());
 
-                return Ok(units);
+				return Ok(unitsDto);
             }
             catch (Exception ex)
             {
@@ -270,10 +270,10 @@ namespace Business.Controllers
                     return BadRequest(new { error = result.Message });
                 }
 
-                var units = result.Value;
+				IEnumerable<UnitCompressed> unitsDto = result.Value.Select(u => u.ToCompressed());
 
-                return Ok(units);
-            }
+				return Ok(unitsDto);
+			}
             catch (Exception ex)
             {
                 _logger.LogError($"Error in GetRetiredUnits: {ex.Message}", ex, EventIds.HandledError);

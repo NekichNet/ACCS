@@ -19,7 +19,7 @@ namespace Business.Models
 	{
 		[Key]
 		[DatabaseGenerated(DatabaseGeneratedOption.None)]
-		public ulong DiscordId { get; set; } = default;
+		public ulong DiscordId { get; set; }
 		public string Nickname { get; set; } = string.Empty;
 		public ulong? SteamId { get; set; } = null;
 		public int RankUpCounter { get; set; } = 0;
@@ -243,11 +243,6 @@ namespace Business.Models
 		public int? RankId;
 		public List<int> PostsIds;
 		public List<int> AssignedRewardsIds;
-
-		public override string ToString()
-		{
-			return JsonSerializer.Serialize(this);
-		}
 	}
 
 	/// <summary>

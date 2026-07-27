@@ -44,7 +44,7 @@ namespace Business.Services
 
 				action.Value.UpdateRole();
                 await _db.SaveChangesAsync();
-				action.FormSuccess($"Reward {action.Value.Name} created");
+				action.FormSuccess($"Reward {action.Value.Name} created", eventId: EventIds.Created);
             }
             catch (Exception ex)
             {
@@ -63,9 +63,9 @@ namespace Business.Services
                 action.Value = await _db.Rewards.FindAsync(rewardId);
 
                 if (action.Value != null)
-                    action.FormSuccess($"Reward {rewardId} found");
+                    action.FormSuccess($"Reward {rewardId} found", eventId: EventIds.Read);
                 else
-                    action.FormFailure($"Reward with ID {rewardId} not found");
+                    action.FormFailure($"Reward with ID {rewardId} not found", eventId: EventIds.NotFound);
             }
             catch (Exception ex)
             {
@@ -275,6 +275,7 @@ namespace Business.Services
 
             return action;
         }
+
 
         public async Task<ActionResult<Reward>> CheckCanAssignReward(int rewardId)
         {

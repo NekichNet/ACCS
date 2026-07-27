@@ -17,7 +17,7 @@ namespace Business.Models.States.Abstraction
 	{
 		public void Configure(EntityTypeBuilder<StateWithDoc> builder)
 		{
-			builder.HasOne(s => s.Doc).WithMany().HasForeignKey(e => e.DocId).OnDelete(DeleteBehavior.NoAction);
+			builder.HasOne(s => s.Doc).WithMany(d => d.States).HasForeignKey(e => e.DocId).OnDelete(DeleteBehavior.NoAction);
 		}
 	}
 }

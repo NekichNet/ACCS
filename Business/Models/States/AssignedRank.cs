@@ -1,4 +1,5 @@
-﻿using Business.Models.Statuses.Abstraction;
+﻿using Business.Models.States.Abstraction;
+using Business.Models.Statuses.Abstraction;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -7,7 +8,7 @@ using System.Text.Json.Serialization;
 namespace Business.Models.Statuses
 {
 	[Table("AssignedRanks")]
-    public class AssignedRank : UnitState
+    public class AssignedRank : StateWithDoc
     {
         public int RankId { get; set; }
         [JsonIgnore] public virtual Rank Rank { get; set; }

@@ -141,7 +141,7 @@ namespace Business.Controllers
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError($"Error in AppendStatusAsync: {ex.Message}", ex, EventIds.HandledError);
+				_logger.LogError($"Error in ApplyStatusAsync: {ex.Message}", ex, EventIds.HandledError);
 				return StatusCode(500, new { error = "Internal server error" });
 			}
 		}

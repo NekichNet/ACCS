@@ -247,7 +247,7 @@ namespace Business.Controllers
             {
                 _rankService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _rankService.AssignAsync(rankId, unitId, docId);
+                var action = await _rankService.AssignRankAsync(rankId, unitId, docId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });

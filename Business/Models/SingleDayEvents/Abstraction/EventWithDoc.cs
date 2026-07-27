@@ -16,7 +16,7 @@ namespace Business.Models.SingleDayEvents.Abstraction
 	{
 		public void Configure(EntityTypeBuilder<EventWithDoc> builder)
 		{
-			builder.HasOne(e => e.Doc).WithMany().HasForeignKey(e => e.DocId).OnDelete(DeleteBehavior.NoAction);
+			builder.HasOne(e => e.Doc).WithMany(d => d.Events).HasForeignKey(e => e.DocId).OnDelete(DeleteBehavior.NoAction);
 		}
 	}
 }

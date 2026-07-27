@@ -6,7 +6,9 @@ namespace Business.Models.States.Statuses
     [Table("Reprimands")]
     public class Reprimand : Status
     {
-        public override string GetText()
+		[NotMapped] public override int Summand { get; } = -1;
+
+		public override string GetText()
         {
 			return "Объявлен выговор";
         }

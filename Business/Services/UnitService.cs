@@ -328,24 +328,64 @@ namespace Business.Services
 			return action;
 		}
 
-        public async Task<ActionResult<Status>> AppendStatusAsync(StatusType statusType, ulong unitId, int? docId = null)
+        public async Task<ActionResult<Status>> ApplyStatusAsync(
+			StatusType statusType,
+			ulong unitId,
+			bool overwrite = false,
+			DateTime? start = null,
+			DateTime? end = null,
+			int days = 7,
+			int? docId = null)
         {
             ActionResult<Status> action = new ActionResult<Status>(_logger);
 
             try
             {
                 if (Actor == null)
-					return action.FormFailure("Appending status restricted. Unauthorized", eventId: EventIds.Unauthorized);
+					return action.FormFailure("Applying status restricted. Unauthorized", eventId: EventIds.Unauthorized);
 				if (!Actor.HasPermission(PermissionType.AssignStatuses))
-					return action.FormFailure("Appending status restricted", eventId: EventIds.Forbidden);
+					return action.FormFailure("Applying status restricted", eventId: EventIds.Forbidden);
 
 				Unit? unit = await _db.Units.FindAsync(unitId);
 				if (unit == null)
-					return action.FormFailure($"Appending status restricted. Unit with Discord ID {unitId} not found", eventId: EventIds.NotFound);
+					return action.FormFailure($"Applying status failed. Unit with Discord ID {unitId} not found", eventId: EventIds.NotFound);
 
-                DateTime start = DateTime.UtcNow;
-                DateTime end = start.AddDays(7);
+				if (start == null)
+					start = DateTime.UtcNow;
+				if (end == null)
+					end = ((DateTime)start).AddDays(days);
 
+				if (!overwrite)
+				{
+					Status? currentStatus = unit.GetActiveStatuses().FirstOrDefault();
+					int summand = currentStatus != null ? currentStatus.Summand : 0;
+					int resultKey = (int)statusType + summand;
+					int maxKey = typeof(StatusType).GetEnumValues().Length - 1;
+					resultKey = resultKey > maxKey? maxKey : resultKey < 0 ? 0 : resultKey;
+					statusType = (StatusType)resultKey;
+				}
+
+				Status? newStatus = null;
+				switch (statusType)
+				{
+					case StatusType.Gratitude:
+						newStatus = new Gratitude { Unit = unit, Start = (DateTime)start, End = end };
+						break;
+					case StatusType.Reprimand:
+						newStatus = new Reprimand { Unit = unit, Start = (DateTime)start, End = end };
+						break;
+					case StatusType.SevereReprimand:
+						newStatus = new SevereReprimand { Unit = unit, Start = (DateTime)start, End = end };
+						break;
+					default:
+						break;
+				}
+
+				if (newStatus != null)
+				{
+					await _db.Statuses.AddAsync(newStatus);
+					await _db.SaveChangesAsync();
+				}
 			}
             catch (Exception ex)
             {

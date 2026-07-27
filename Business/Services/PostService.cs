@@ -185,7 +185,7 @@ namespace Business.Services
 
 				result.Value.UpdateRole();
 
-				_db.Posts.Update(result.Value);
+				_db.Posts.UpdateA(result.Value);
 				await _db.SaveChangesAsync();
 
 				action.FormSuccess("PostId updated", eventId: EventIds.Updated);
@@ -277,22 +277,30 @@ namespace Business.Services
 			return action;
 		}
 
-		public async Task<ActionResult<List<AssignedPost>>> SetPosts(ulong unitId, int[] postIds, int? docId = null)
+		public async Task<ActionResult<List<AssignedPost>>> AssignPostsAsync(ulong unitId, int[] postIds, bool overwrite = false, int? docId = null)
 		{
 			ActionResult<List<AssignedPost>> action = new ActionResult<List<AssignedPost>>(_logger);
 
 			try
 			{
 				if (Actor == null)
-					return action.FormFailure("Posts setting restricted. Unauthorized", eventId: EventIds.Unauthorized);
+					return action.FormFailure("Posts assigning restricted. Unauthorized", eventId: EventIds.Unauthorized);
 				if (!Actor.HasPermission(PermissionType.AssignPosts))
-					return action.FormFailure("Posts setting restricted", eventId: EventIds.Forbidden);
+					return action.FormFailure("Posts assigning restricted", eventId: EventIds.Forbidden);
 
 				var canAssignResult = await GetPostsCanAssignAsync();
 
 				if (!canAssignResult.IsSuccess)
-					return action.FormFailure("Posts setting failed. Unknown handled error", eventId: EventIds.HandledError);
+					return action.FormFailure("Posts assigning failed. Unknown handled error", eventId: EventIds.HandledError);
 
+				Unit? unit = await _db.Units.FindAsync(unitId);
+				if (unit == null)
+					return action.FormFailure($"Posts assigning failed. Unit with ID {unitId} not found", eventId: EventIds.NotFound);
+				if (!unit.IsActive() && !Actor.IsAdmin())
+					return action.FormFailure($"Posts assigning failed. Unit {unit.Nickname} is in retirement or dismissed", eventId: EventIds.Forbidden);
+
+				List<Post> posts = unit.GetPosts();
+				HashSet<Post> postsToKeep = new HashSet<Post>();
 				HashSet<Post> postsToAssign = new HashSet<Post>();
 				HashSet<Post> postsToDepose = new HashSet<Post>();
 				HashSet<Post> failedToAssign = new HashSet<Post>();
@@ -300,50 +308,83 @@ namespace Business.Services
 				List<Post> canChange = canAssignResult.Value;
 
 				if (!canChange.Any())
-					return action.FormFailure("Posts setting failed. Can't set any posts", eventId: EventIds.Failed);
+					return action.FormFailure("Posts assigning failed. Can't set any posts", eventId: EventIds.Failed);
 
 				foreach (int postId in postIds)
 				{
 					Post? postToAssign = await _db.Posts.FindAsync(postId);
 					if (postToAssign == null)
+					{
+						_logger.LogWarning(eventId: EventIds.NotFound, $"Post assigning failed. Post with ID {postId} not found");
 						continue;
+					}
 					if (!canChange.Contains(postToAssign))
 					{
 						failedToAssign.Add(postToAssign);
+						_logger.LogWarning(
+							eventId: EventIds.Forbidden,
+							$"Post assigning restricted. Actor {Actor.Nickname} with Discord ID " +
+							$"{Actor.DiscordId} cannot assign post {postToAssign.GetFullName()} with ID {postId}");
+						continue;
+					}
+					if (posts.Contains(postToAssign))
+					{
+						postsToKeep.Add(postToAssign);
+						_logger.LogDebug(eventId: EventIds.Processing,
+							$"Posts assigning in process. Post {postToAssign.Name} with ID {postId} keeped.");
 						continue;
 					}
 					postsToAssign.Add(postToAssign);
 				}
 
-				Unit? unit = await _db.Units.FindAsync(unitId);
-				if (unit == null)
-					return action.FormFailure($"Posts setting failed. Unit with ID {unitId} not found", eventId: EventIds.NotFound);
-				if (!unit.IsActive() && !Actor.IsAdmin())
-					return action.FormFailure($"Posts setting failed. Unit {unit.Nickname} is in retirement or dismissed", eventId: EventIds.Forbidden);
-
-				List<AssignedPost> assignedPosts = unit.GetAssignedPosts();
-
-				foreach (AssignedPost assignedPost in assignedPosts)
+				if (overwrite)
 				{
-					if (!canChange.Contains(assignedPost.Post))
+					List<AssignedPost> assignedPosts = unit.GetAssignedPosts();
+					foreach (AssignedPost assignedPost in assignedPosts)
 					{
-						failedToDepose.Add(assignedPost.Post);
-						continue;
+						if (postsToKeep.Contains(assignedPost.Post))
+							continue;
+						if (!canChange.Contains(assignedPost.Post))
+						{
+							_logger.LogDebug(
+								eventId: EventIds.Forbidden,
+								$"Post deposing restricted. Actor {Actor.Nickname} with Discord ID " +
+								$"{Actor.DiscordId} cannot depose from post {assignedPost.Post.GetFullName()} with ID {assignedPost.Post.Id}");
+							failedToDepose.Add(assignedPost.Post);
+							continue;
+						}
+						postsToDepose.Add(assignedPost.Post);
 					}
-					postsToDepose.Add(assignedPost.Post);
+
+					int postsInResult = postsToKeep.Count() + postsToAssign.Count() - postsToDepose.Count();
+					if (postsInResult < 1)
+						return action.FormFailure($"Posts assigning failed. Posts in result cannot be under 1 ({postsInResult})",
+							eventId: EventIds.ImpossibleAction);
+
+					foreach (AssignedPost assignedPost in assignedPosts.IntersectBy(postsToDepose, ap => ap.Post))
+					{
+						assignedPost.Terminate();
+					}
+				}
+				
+				DateTime start = DateTime.UtcNow;
+
+				foreach (Post postToAssign in postsToAssign)
+				{
+					unit.UnitStates.Add(new AssignedPost()
+						{
+							Post = postToAssign,
+							Start = start,
+							DocId = docId,
+						});
 				}
 
-				int postsInResult = assignedPosts.Count() + postsToAssign.Count() - postsToDepose.Count();
-				if (postsInResult < 1)
-					return action.FormFailure($"Posts setting failed. Posts in result cannot be under 1 ({postsInResult})",
-						eventId: EventIds.ImpossibleAction);
-				
-
+				await _db.SaveChangesAsync();
 
 				action.FormSuccess(
-					$"",
-					eventId: EventIds.Updated
-				);
+					$"Unit {unit.Nickname} was assigned to " +
+					$"{postsToAssign.Count()}/{postsToAssign.Count() + failedToAssign.Count()} and deposed" +
+					$"from {postsToDepose.Count()}/{postsToDepose.Count() + failedToDepose.Count()} posts", eventId: EventIds.Updated);
 			}
 			catch (Exception ex)
 			{
@@ -376,7 +417,6 @@ namespace Business.Services
 				action.Value = assignedPost;
 
 				await _db.AssignedPosts.AddAsync(assignedPost);
-
 				await _db.SaveChangesAsync();
 
 				action.FormSuccess($"Unit {unit.Nickname} was assigned to post {result.Value.GetFullName()}", eventId: EventIds.Created);
@@ -419,7 +459,6 @@ namespace Business.Services
 					return action.FormFailure($"Unit {unit.Nickname} deposing failed. Unit isn't assigned to post with ID {postId}", eventId: EventIds.NotFound);
 				
 				assignedPost.Terminate();
-
 				await _db.SaveChangesAsync();
 
 				action.FormSuccess($"Unit {unit.Nickname} deposed from {assignedPost.Post.Name}", eventId: EventIds.Ok);
@@ -484,7 +523,7 @@ namespace Business.Services
 						$" PostId with ID {postId} not found", eventId: EventIds.NotFound);
 
 				if (!Actor.HasPermission(PermissionType.AssignPosts))
-					return action.FormFailure($"{Actor.Nickname} don't have AssignPosts permission", eventId: EventIds.Forbidden);
+					return action.FormFailure($"{Actor.Nickname} don't have AssignPostsAsync permission", eventId: EventIds.Forbidden);
 
 				List<Post> actorHeads = Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).ToList();
 
@@ -512,7 +551,7 @@ namespace Business.Services
 					return action.FormFailure("Getting postsToAssign can assign failed. Unauthorized", eventId: EventIds.Unauthorized);
 
 				if (!Actor.HasPermission(PermissionType.AssignPosts))
-					return action.FormFailure($"{Actor.Nickname} don't have AssignPosts permission", eventId: EventIds.Forbidden);
+					return action.FormFailure($"{Actor.Nickname} don't have AssignPostsAsync permission", eventId: EventIds.Forbidden);
 
 				if (Actor.IsAdmin())
 				{
@@ -550,8 +589,8 @@ namespace Business.Services
 				if (Actor == null)
 					return action.FormFailure("Getting units can change postsToAssign failed. Unauthorized", eventId: EventIds.Unauthorized);
 
-				if (!Actor.HasPermission(PermissionType.AssignPosts))
-					return action.FormFailure($"{Actor.Nickname} don't have AssignPosts permission", eventId: EventIds.Forbidden);
+				if (!Actor.HasPermission(PermissionType.AssignPostsAsync))
+					return action.FormFailure($"{Actor.Nickname} don't have AssignPostsAsync permission", eventId: EventIds.Forbidden);
 
 				if (Actor.IsAdmin())
 				{

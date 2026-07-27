@@ -43,7 +43,31 @@ namespace Business.Controllers
             }
         }
 
-        [HttpGet("{rewardId}")]
+		[HttpGet("actual")]
+		public async Task<IActionResult> GetAllActualRewards()
+		{
+			try
+			{
+				var action = await _rewardService.GetAllActualAsync();
+				if (!action.IsSuccess)
+				{
+					return BadRequest(new { error = action.Message });
+				}
+				if (action.Value == null)
+				{
+					return StatusCode(500, new { error = "Internal server error" });
+				}
+
+				return Ok(action.Value);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in GetAllRewards: {ex.Message}");
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
+
+		[HttpGet("{rewardId}")]
         public async Task<IActionResult> GetReward([FromRoute] int rewardId)
         {
             try

@@ -94,7 +94,26 @@ namespace Business.Services
             return action;
         }
 
-        public async Task<EmptyAction> UpdateAsync(int rewardId, string name, string color, string conditions, string privileges)
+		public async Task<ActionResult<List<Reward>>> GetAllActualAsync()
+		{
+			ActionResult<List<Reward>> action = new ActionResult<List<Reward>>(_logger);
+
+			try
+			{
+				action.Value = await _db.Rewards.Where(r => r.CanBeAssigned).ToListAsync();
+
+				action.FormSuccess("Reward list formed, length: " + action.Value.Count(),
+					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<EmptyAction> UpdateAsync(int rewardId, string name, string color, string conditions, string privileges)
         {
             EmptyAction action = new EmptyAction(_logger);
 

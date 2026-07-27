@@ -241,7 +241,7 @@ namespace Business.Services
             return action;
         }
 
-        public async Task<ActionResult<AssignedRank>> AssignAsync(int rankId, ulong unitId, int? docId = null)
+        public async Task<ActionResult<AssignedRank>> AssignRankAsync(int rankId, ulong unitId, int? docId = null)
         {
 			ActionResult<AssignedRank> action = new ActionResult<AssignedRank>(_logger);
 

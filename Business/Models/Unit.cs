@@ -136,11 +136,11 @@ namespace Business.Models
 		{
 			HashSet<Permission> permissions = new HashSet<Permission>();
 
-			AssignedRank? assignedRank = GetAssignedRank();
-			if (assignedRank != null)
-				permissions.UnionWith(assignedRank.Rank.GetPermissionsRecursive());
+			Rank? rank = GetRank();
+			if (rank != null)
+				permissions.UnionWith(rank.GetPermissionsRecursive());
 
-			permissions.UnionWith(GetAssignedPosts().SelectMany(ap => ap.Post.GetPermissionsRecursive()));
+			permissions.UnionWith(GetPosts().SelectMany(p => p.GetPermissionsRecursive()));
 			return permissions;
 		}
 

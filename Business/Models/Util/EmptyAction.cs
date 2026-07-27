@@ -1,5 +1,4 @@
-﻿using Business.Logging;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Business.Models.Util
@@ -10,8 +9,7 @@ namespace Business.Models.Util
 
 		public string Message { get; set; } = "Not stated";
 		public bool IsSuccess { get; set; }
-        [JsonIgnore]
-        public Exception? Exception { get; set; }
+		[JsonIgnore] public Exception? Exception { get; set; }
 		public DateTime Start { get; set; }
 		public DateTime End { get; set; }
 
@@ -21,7 +19,7 @@ namespace Business.Models.Util
 			Start = DateTime.UtcNow;
 		}
 
-		public void Log(LogLevel logLevel = LogLevel.Trace, int eventId = 100)
+		public void Log(LogLevel logLevel = LogLevel.Information, int eventId = 100)
 		{
 			if (_logger != null)
 				_logger.Log(logLevel, ToString());
@@ -58,7 +56,7 @@ namespace Business.Models.Util
 			Message = message;
 			Exception = exception;
 
-			Log(LogLevel.Debug, eventId);
+			Log(LogLevel.Warning, eventId);
 
 			return this;
 		}

@@ -122,7 +122,8 @@ namespace Business.Controllers
 		public async Task<IActionResult> AppendStatus(
             [FromRoute] ulong unitId,
             [FromRoute] ushort statusKey,
-            [FromQuery(Name = "doc")] int? docId)
+            [FromQuery(Name = "override")] bool overwrite = false,
+			[FromQuery(Name = "doc")] int? docId = null)
 		{
 			try
 			{
@@ -131,7 +132,7 @@ namespace Business.Controllers
 					return BadRequest(new { error = "Appending status failed. Invalid status key" });
 				}
 
-				var result = await _unitService.AppendStatusAsync((StatusType)statusKey, unitId, docId);
+				var result = await _unitService.ApplyStatusAsync((StatusType)statusKey, unitId, docId: docId);
 				if (!result.IsSuccess)
 				{
 					return BadRequest(new { error = result.Message });
@@ -284,7 +285,7 @@ namespace Business.Controllers
         [Authorize]
         public async Task<IActionResult> DismissUnit(
             [FromRoute] ulong unitId,
-			[FromQuery(Name = "doc")] int? docId)
+			[FromQuery(Name = "doc")] int? docId = null)
         {
             try
             {

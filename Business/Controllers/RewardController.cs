@@ -229,7 +229,7 @@ namespace Business.Controllers
         public async Task<IActionResult> AssignReward(
             [FromRoute] int rewardId,
             [FromRoute] ulong unitId,
-			[FromQuery(Name = "doc")] int? docId)
+			[FromQuery(Name = "doc")] int? docId = null)
         {
             try
             {

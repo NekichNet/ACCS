@@ -241,7 +241,7 @@ namespace Business.Controllers
         public async Task<IActionResult> AssignRank(
             [FromRoute] int rankId,
             [FromRoute] ulong unitId,
-			[FromQuery(Name = "doc")] int? docId)
+			[FromQuery(Name = "doc")] int? docId = null)
         {
             try
             {

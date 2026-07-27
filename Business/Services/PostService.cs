@@ -185,7 +185,7 @@ namespace Business.Services
 
 				result.Value.UpdateRole();
 
-				_db.Posts.UpdateA(result.Value);
+				_db.Posts.Update(result.Value);
 				await _db.SaveChangesAsync();
 
 				action.FormSuccess("PostId updated", eventId: EventIds.Updated);

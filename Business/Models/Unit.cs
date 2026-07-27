@@ -19,7 +19,7 @@ namespace Business.Models
 	{
 		[Key]
 		[DatabaseGenerated(DatabaseGeneratedOption.None)]
-		public ulong DiscordId { get; set; } = default;
+		public ulong DiscordId { get; set; }
 		public string Nickname { get; set; } = string.Empty;
 		public ulong? SteamId { get; set; } = null;
 		public int RankUpCounter { get; set; } = 0;

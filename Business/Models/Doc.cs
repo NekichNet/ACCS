@@ -30,7 +30,10 @@ namespace Business.Models
         }
 	}
 
-	public class DocDto
+    /// <summary>
+    /// Общепринятое DTO для загрузки нового документа
+    /// </summary>
+	public class NewDocDto
 	{
 		public string Title { get; set; } = "Новый документ";
 		public HashSet<int> UnitIds { get; set; } = new HashSet<int>();

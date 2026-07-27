@@ -27,9 +27,9 @@ namespace Business.Models
 		public void Configure(EntityTypeBuilder<AssignedReward> builder)
 		{
 			builder.HasKey(ar => new { ar.RewardId, ar.UnitId });
-			builder.HasOne(ar => ar.Reward).WithMany(r => r.Assigned).HasForeignKey(ar => ar.RewardId).OnDelete(DeleteBehavior.SetNull);
+			builder.HasOne(ar => ar.Reward).WithMany(r => r.AssignedRewards).HasForeignKey(ar => ar.RewardId).OnDelete(DeleteBehavior.SetNull);
 			builder.HasOne(ar => ar.Unit).WithMany(u => u.AssignedRewards).HasForeignKey(ar => ar.UnitId).OnDelete(DeleteBehavior.SetNull);
-			builder.HasOne(ar => ar.AssignmentEvent).WithOne(ae => ae.AssignedReward).OnDelete(DeleteBehavior.Cascade);
+			builder.HasOne(ar => ar.AssignmentEvent).WithMany(ae => ae.AssignedRewards).OnDelete(DeleteBehavior.Cascade);
 		}
 	}
 }

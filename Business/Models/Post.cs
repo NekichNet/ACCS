@@ -116,6 +116,22 @@ namespace Business.Models
         }
     }
 
+	/// <summary>
+	/// Общепринятое DTO для должности на импорт и экспорт
+	/// </summary>
+	public class PostDto
+	{
+		public int? Id { get; set; }
+		public string Name { get; set; } = string.Empty;
+		public bool AppendSubdivisionName { get; set; } = false;
+		public string Description { get; set; } = string.Empty;
+		public string Color { get; set; } = string.Empty;
+		public int MaxRankId { get; set; }
+		public int? SubdivisionId { get; set; }
+		public int? HeadId { get; set; }
+		public List<int> PermissionsId { get; set; } = new List<int>();
+	}
+
 	public class PostConfiguration : IEntityTypeConfiguration<Post>
 	{
 		public void Configure(EntityTypeBuilder<Post> builder)

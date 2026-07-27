@@ -12,17 +12,20 @@ namespace Business.Services
     public class PostService : BusinessService
     {
         private readonly AppDbContext _db;
+		private readonly DocService _docService;
 		private readonly RankService _rankService;
 		private readonly SubdivisionService _subdivisionService;
 
         public PostService(
 			AppDbContext db,
+			DocService docService,
 			RankService rankService,
 			SubdivisionService subdivisionService,
 			ILogger logger)
 			: base(logger)
         {
             _db = db;
+			_docService = docService;
 			_rankService = rankService;
 			_subdivisionService = subdivisionService;
         }
@@ -91,15 +94,13 @@ namespace Business.Services
             return action;
 		}
 
-        public async Task<ActionResult<Post>> GetAsync(
-            int id
-            )
+        public async Task<ActionResult<Post>> GetAsync(int postId)
         {
 			ActionResult<Post> action = new ActionResult<Post>(_logger);
 
             try
             {
-				action.Value = await _db.Posts.FindAsync(id);
+				action.Value = await _db.Posts.FindAsync(postId);
 
 				if (action.Value != null)
 					action.FormSuccess("PostId found", eventId: EventIds.Read);
@@ -277,7 +278,7 @@ namespace Business.Services
 			return action;
 		}
 
-		public async Task<ActionResult<List<AssignedPost>>> AssignPostsAsync(ulong unitId, int[] postIds, bool overwrite = false, int? docId = null)
+		public async Task<ActionResult<List<AssignedPost>>> AssignPostsAsync(ulong[] unitIds, int[] postIds, bool overwrite = false, int? docId = null)
 		{
 			ActionResult<List<AssignedPost>> action = new ActionResult<List<AssignedPost>>(_logger);
 
@@ -288,103 +289,118 @@ namespace Business.Services
 				if (!Actor.HasPermission(PermissionType.AssignPosts))
 					return action.FormFailure("Posts assigning restricted", eventId: EventIds.Forbidden);
 
+				if (docId != null)
+				{
+					_docService.Actor = Actor;
+					var docResult = await _docService.GetAsync((int)docId);
+					if (!docResult.IsSuccess)
+						return action.FormFailure($"Assigning rewards failed. Doc with ID {docId} not found", eventId: EventIds.NotFound);
+				}
+
 				var canAssignResult = await GetPostsCanAssignAsync();
 
 				if (!canAssignResult.IsSuccess)
 					return action.FormFailure("Posts assigning failed. Unknown handled error", eventId: EventIds.HandledError);
 
-				Unit? unit = await _db.Units.FindAsync(unitId);
-				if (unit == null)
-					return action.FormFailure($"Posts assigning failed. Unit with ID {unitId} not found", eventId: EventIds.NotFound);
-				if (!unit.IsActive() && !Actor.IsAdmin())
-					return action.FormFailure($"Posts assigning failed. Unit {unit.Nickname} is in retirement or dismissed", eventId: EventIds.Forbidden);
+				List<Unit> units = new List<Unit>();
 
-				List<Post> posts = unit.GetPosts();
-				HashSet<Post> postsToKeep = new HashSet<Post>();
-				HashSet<Post> postsToAssign = new HashSet<Post>();
-				HashSet<Post> postsToDepose = new HashSet<Post>();
-				HashSet<Post> failedToAssign = new HashSet<Post>();
-				HashSet<Post> failedToDepose = new HashSet<Post>();
-				List<Post> canChange = canAssignResult.Value;
-
-				if (!canChange.Any())
-					return action.FormFailure("Posts assigning failed. Can't set any posts", eventId: EventIds.Failed);
-
-				foreach (int postId in postIds)
+				foreach (ulong unitId in unitIds)
 				{
-					Post? postToAssign = await _db.Posts.FindAsync(postId);
-					if (postToAssign == null)
-					{
-						_logger.LogWarning(eventId: EventIds.NotFound, $"Post assigning failed. Post with ID {postId} not found");
-						continue;
-					}
-					if (!canChange.Contains(postToAssign))
-					{
-						failedToAssign.Add(postToAssign);
-						_logger.LogWarning(
-							eventId: EventIds.Forbidden,
-							$"Post assigning restricted. Actor {Actor.Nickname} with Discord ID " +
-							$"{Actor.DiscordId} cannot assign post {postToAssign.GetFullName()} with ID {postId}");
-						continue;
-					}
-					if (posts.Contains(postToAssign))
-					{
-						postsToKeep.Add(postToAssign);
-						_logger.LogDebug(eventId: EventIds.Processing,
-							$"Posts assigning in process. Post {postToAssign.Name} with ID {postId} keeped.");
-						continue;
-					}
-					postsToAssign.Add(postToAssign);
-				}
+					Unit? unit = await _db.Units.FindAsync(unitId);
+					if (unit == null)
+						return action.FormFailure($"Posts assigning failed. Unit with ID {unitId} not found", eventId: EventIds.NotFound);
+					if (!unit.IsActive() && !Actor.IsAdmin())
+						return action.FormFailure($"Posts assigning failed. Unit {unit.Nickname} is in retirement or dismissed", eventId: EventIds.Forbidden);
 
-				if (overwrite)
-				{
-					List<AssignedPost> assignedPosts = unit.GetAssignedPosts();
-					foreach (AssignedPost assignedPost in assignedPosts)
+					List<Post> posts = unit.GetPosts();
+					HashSet<Post> postsToKeep = new HashSet<Post>();
+					HashSet<Post> postsToAssign = new HashSet<Post>();
+					HashSet<Post> postsToDepose = new HashSet<Post>();
+					HashSet<Post> failedToAssign = new HashSet<Post>();
+					HashSet<Post> failedToDepose = new HashSet<Post>();
+					List<Post> canChange = canAssignResult.Value;
+
+					if (!canChange.Any())
+						return action.FormFailure("Posts assigning failed. Can't set any posts", eventId: EventIds.Failed);
+
+					foreach (int postId in postIds)
 					{
-						if (postsToKeep.Contains(assignedPost.Post))
-							continue;
-						if (!canChange.Contains(assignedPost.Post))
+						Post? postToAssign = await _db.Posts.FindAsync(postId);
+						if (postToAssign == null)
 						{
-							_logger.LogDebug(
-								eventId: EventIds.Forbidden,
-								$"Post deposing restricted. Actor {Actor.Nickname} with Discord ID " +
-								$"{Actor.DiscordId} cannot depose from post {assignedPost.Post.GetFullName()} with ID {assignedPost.Post.Id}");
-							failedToDepose.Add(assignedPost.Post);
+							_logger.LogWarning(eventId: EventIds.NotFound, $"Post assigning failed. Post with ID {postId} not found");
 							continue;
 						}
-						postsToDepose.Add(assignedPost.Post);
+						if (!canChange.Contains(postToAssign))
+						{
+							failedToAssign.Add(postToAssign);
+							_logger.LogWarning(
+								eventId: EventIds.Forbidden,
+								$"Post assigning restricted. Actor {Actor.Nickname} with Discord ID " +
+								$"{Actor.DiscordId} cannot assign post {postToAssign.GetFullName()} with ID {postId}");
+							continue;
+						}
+						if (posts.Contains(postToAssign))
+						{
+							postsToKeep.Add(postToAssign);
+							_logger.LogDebug(eventId: EventIds.Processing,
+								$"Posts assigning in process. Post {postToAssign.Name} with ID {postId} keeped.");
+							continue;
+						}
+						postsToAssign.Add(postToAssign);
 					}
 
-					int postsInResult = postsToKeep.Count() + postsToAssign.Count() - postsToDepose.Count();
-					if (postsInResult < 1)
-						return action.FormFailure($"Posts assigning failed. Posts in result cannot be under 1 ({postsInResult})",
-							eventId: EventIds.ImpossibleAction);
-
-					foreach (AssignedPost assignedPost in assignedPosts.IntersectBy(postsToDepose, ap => ap.Post))
+					if (overwrite)
 					{
-						assignedPost.Terminate();
-					}
-				}
-				
-				DateTime start = DateTime.UtcNow;
+						List<AssignedPost> assignedPosts = unit.GetAssignedPosts();
+						foreach (AssignedPost assignedPost in assignedPosts)
+						{
+							if (postsToKeep.Contains(assignedPost.Post))
+								continue;
+							if (!canChange.Contains(assignedPost.Post))
+							{
+								_logger.LogDebug(
+									eventId: EventIds.Forbidden,
+									$"Post deposing restricted. Actor {Actor.Nickname} with Discord ID {Actor.DiscordId}" +
+									$" cannot depose from post {assignedPost.Post.GetFullName()} with ID {assignedPost.Post.Id}");
+								failedToDepose.Add(assignedPost.Post);
+								continue;
+							}
+							postsToDepose.Add(assignedPost.Post);
+						}
 
-				foreach (Post postToAssign in postsToAssign)
-				{
-					unit.UnitStates.Add(new AssignedPost()
+						int postsInResult = postsToKeep.Count() + postsToAssign.Count() - postsToDepose.Count();
+						if (postsInResult < 1)
+							return action.FormFailure($"Posts assigning failed. Posts in result cannot be under 1 ({postsInResult})",
+								eventId: EventIds.ImpossibleAction);
+
+						foreach (AssignedPost assignedPost in assignedPosts.IntersectBy(postsToDepose, ap => ap.Post))
+						{
+							assignedPost.Terminate();
+						}
+					}
+
+					DateTime start = DateTime.UtcNow;
+
+					foreach (Post postToAssign in postsToAssign)
+					{
+						unit.UnitStates.Add(new AssignedPost()
 						{
 							Post = postToAssign,
 							Start = start,
 							DocId = docId,
 						});
+					}
 				}
 
 				await _db.SaveChangesAsync();
 
-				action.FormSuccess(
-					$"Unit {unit.Nickname} was assigned to " +
-					$"{postsToAssign.Count()}/{postsToAssign.Count() + failedToAssign.Count()} and deposed" +
-					$"from {postsToDepose.Count()}/{postsToDepose.Count() + failedToDepose.Count()} posts", eventId: EventIds.Updated);
+				// Не закончено.
+
+				//action.FormSuccess(
+				//	$"Unit {unit.Nickname} was assigned to " +
+				//	$"{postsToAssign.Count()}/{postsToAssign.Count() + failedToAssign.Count()} and deposed" +
+				//	$"from {postsToDepose.Count()}/{postsToDepose.Count() + failedToDepose.Count()} posts", eventId: EventIds.Updated);
 			}
 			catch (Exception ex)
 			{
@@ -394,7 +410,7 @@ namespace Business.Services
 			return action;
 		}
 
-		public async Task<ActionResult<AssignedPost>> AssignAsync(ulong unitDiscordId, int postId, Unit? unit = null)
+		public async Task<ActionResult<AssignedPost>> AssignAsync(ulong unitDiscordId, int postId, Unit? unit = null, int? docId = null)
 		{
 			ActionResult<AssignedPost> action = new ActionResult<AssignedPost>(_logger);
 
@@ -404,6 +420,14 @@ namespace Business.Services
 				if (!result.IsSuccess)
 					return action.FormFailure("PostId assigning restricted. Permission check failed", eventId: EventIds.Forbidden);
 
+				if (docId != null)
+				{
+					_docService.Actor = Actor;
+					var docResult = await _docService.GetAsync((int)docId);
+					if (!docResult.IsSuccess)
+						return action.FormFailure($"Assigning rewards failed. Doc with ID {docId} not found", eventId: EventIds.NotFound);
+				}
+
 				if (unit == null)
 					unit = await _db.Units.FindAsync(unitDiscordId);
 				if (unit == null)
@@ -412,7 +436,8 @@ namespace Business.Services
                 AssignedPost assignedPost = new AssignedPost
 				{
 					Unit = unit,
-					Post = result.Value
+					Post = result.Value,
+					DocId = docId
 				};
 				action.Value = assignedPost;
 

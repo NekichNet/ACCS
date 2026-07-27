@@ -9,17 +9,17 @@ namespace Business.Models.SingleDayEvents
 	[Table("RewardAssignmentEvents")]
     public class RewardAssignmentEvent : EventWithDoc
     {
-        public int AssignedRewardId { get; set; }
-        [JsonIgnore] public virtual AssignedReward AssignedReward { get; set; }
+        [JsonIgnore] public virtual List<AssignedReward> AssignedRewards { get; set; }
 
         public override string GetHexColor()
         {
-            return AssignedReward.Reward.Color;
+            return "#FFFF00";
         }
 
         public override string GetText()
         {
-            return $"Награждение {AssignedReward.Reward.Name}";
+            string rewarded = Units.Count > 1 ? "награждены" : "награждён";
+            return $"{string.Join(", ", Units.Select(u => u.Nickname))} {rewarded} {string.Join(", ", AssignedRewards.Select(ar => ar.Reward.Name))}";
         }
     }
 
@@ -27,7 +27,7 @@ namespace Business.Models.SingleDayEvents
 	{
 		public void Configure(EntityTypeBuilder<RewardAssignmentEvent> builder)
 		{
-            builder.HasOne(e => e.AssignedReward).WithOne(ra => ra.AssignmentEvent).OnDelete(DeleteBehavior.SetNull);
+            builder.HasMany(e => e.AssignedRewards).WithOne(ra => ra.AssignmentEvent).OnDelete(DeleteBehavior.SetNull);
 		}
 	}
 }

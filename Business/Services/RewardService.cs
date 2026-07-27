@@ -6,15 +6,18 @@ using Business.Models.SingleDayEvents;
 using Business.Models.Util;
 using Business.Services.Abstraction;
 using Microsoft.EntityFrameworkCore;
+
 namespace Business.Services
 {
     public class RewardService : BusinessService
     {
         private readonly AppDbContext _db;
+        private readonly DocService _docService;
 
-        public RewardService(AppDbContext db, ILogger logger) : base(logger)
+        public RewardService(AppDbContext db, DocService docService, ILogger logger) : base(logger)
         {
             _db = db;
+            _docService = docService;
         }
 
         public async Task<ActionResult<Reward>> CreateAsync(
@@ -44,7 +47,7 @@ namespace Business.Services
 
 				action.Value.UpdateRole();
                 await _db.SaveChangesAsync();
-				action.FormSuccess($"Reward {action.Value.Name} created", eventId: EventIds.Created);
+				action.FormSuccess($"Reward {action.Value.Name} created");
             }
             catch (Exception ex)
             {
@@ -63,9 +66,9 @@ namespace Business.Services
                 action.Value = await _db.Rewards.FindAsync(rewardId);
 
                 if (action.Value != null)
-                    action.FormSuccess($"Reward {rewardId} found", eventId: EventIds.Read);
+                    action.FormSuccess($"Reward {rewardId} found");
                 else
-                    action.FormFailure($"Reward with ID {rewardId} not found", eventId: EventIds.NotFound);
+                    action.FormFailure($"Reward with ID {rewardId} not found");
             }
             catch (Exception ex)
             {
@@ -205,45 +208,93 @@ namespace Business.Services
             return action;
         }
 
-        public async Task<ActionResult<AssignedReward>> AssignAsync(int rewardId, ulong unitId, int? docId = null)
+        public async Task<ActionResult<List<AssignedReward>>> AssignAsync(ulong[] unitIds, int[] rewardIds, int? docId = null)
         {
-            ActionResult<AssignedReward> action = new ActionResult<AssignedReward>(_logger);
+            ActionResult<List<AssignedReward>> action = new ActionResult<List<AssignedReward>>(_logger);
 
             try
             {
-                ActionResult<Reward> result = await CheckCanAssignReward(rewardId);
-                if (!result.IsSuccess)
-                    return action.FormFailure("Assigning reward restricted. Permission check failed", eventId: EventIds.Forbidden);
+                if (Actor == null)
+					return action.FormFailure("Assigning rewards restricted. Unauthorized", eventId: EventIds.Unauthorized);
 
-                Unit? unit = await _db.Units.FindAsync(unitId);
-                if (unit == null)
-                    return action.FormFailure($"Assigning reward failed. Unit with ID {unitId} not found", eventId: EventIds.NotFound);
+				if (!Actor.HasPermission(PermissionType.AssignRewards))
+					return action.FormFailure($"Assigning rewards restricted. {Actor.Nickname} doesn't have AssignRewards permission", eventId: EventIds.Forbidden);
 
-                AssignedReward? existingAssignment = await _db.AssignedRewards
-                    .FirstOrDefaultAsync(ar => ar.RewardId == rewardId && ar.UnitId == unit.DiscordId);
+				if (docId != null)
+				{
+					_docService.Actor = Actor;
+					var docResult = await _docService.GetAsync((int)docId);
+					if (!docResult.IsSuccess)
+						return action.FormFailure($"Assigning rewards failed. Doc with ID {docId} not found", eventId: EventIds.NotFound);
+				}
 
-                if (existingAssignment != null)
-                    return action.FormFailure("Unit already assigned to this reward");
+				List<Unit> units = new List<Unit>();
 
-                AssignedReward newAssignedReward = new AssignedReward
+				foreach (ulong unitId in unitIds)
+				{
+					Unit? unit = await _db.Units.FindAsync(unitId);
+					if (unit == null)
+					{
+						_logger.LogWarning(eventId: EventIds.NotFound, $"Assigning reward failed. Unit with ID {unitId} not found");
+						continue;
+					}
+                    units.Add(unit);
+				}
+
+				if (!units.Any())
+					return action.FormFailure($"Assigning rewards failed. Not any valid unit Discord ID provided", eventId: EventIds.NotFound);
+
+                List<AssignedReward> rewardAssignments = new List<AssignedReward>();
+                List<Reward> rewards = new List<Reward>();
+
+                foreach (int rewardId in rewardIds)
                 {
-                    UnitId = unit.DiscordId,
-                    RewardId = rewardId
+					Reward? reward = await _db.Rewards.FindAsync(rewardId);
+					if (reward == null)
+                    {
+						_logger.LogWarning(eventId: EventIds.NotFound, $"Assigning reward failed. Reward with ID {rewardId} not found");
+                        continue;
+					}
+
+                    bool wasAssigned = false;
+					foreach (Unit unit in units)
+					{
+						AssignedReward? existingAssignment = await _db.AssignedRewards
+							.FirstOrDefaultAsync(ar => ar.RewardId == reward.Id && ar.UnitId == unit.DiscordId);
+
+						if (existingAssignment != null)
+						{
+							_logger.LogWarning(eventId: EventIds.ImpossibleAction,
+								$"Assigning reward failed. Unit {unit.Nickname} already assigned to reward {reward.Name}");
+							continue;
+						}
+
+                        AssignedReward assignedReward = new AssignedReward { Unit = unit, Reward = reward };
+                        rewardAssignments.Add(assignedReward);
+                        wasAssigned = true;
+					}
+
+                    if (wasAssigned)
+                        rewards.Add(reward);
+                }
+
+				if (!rewardAssignments.Any())
+					return action.FormFailure($"Assigning rewards failed. Not any valid reward ID provided", eventId: EventIds.NotFound);
+
+                RewardAssignmentEvent rewardAssignmentEvent = new RewardAssignmentEvent()
+                {
+                    AssignedRewards = rewardAssignments,
+                    Units = rewardAssignments.Select(ra => ra.Unit).ToHashSet().ToList(),
+                    DocId = docId,
                 };
 
-                RewardAssignmentEvent assignmentEvent = new RewardAssignmentEvent
-                {
-                    Units = new List<Unit> { unit },
-                    AssignedReward = newAssignedReward
-                };
-
-                await _db.AssignedRewards.AddAsync(newAssignedReward);
-                await _db.RewardAssignmentEvents.AddAsync(assignmentEvent);
+				await _db.AssignedRewards.AddRangeAsync(rewardAssignments);
+                rewardAssignmentEvent.AssignedRewards = rewardAssignments;
+                await _db.RewardAssignmentEvents.AddAsync(rewardAssignmentEvent);
                 await _db.SaveChangesAsync();
 
-				action.Value = newAssignedReward;
-
-				action.FormSuccess($"Unit {unit.Nickname} assigned to reward {newAssignedReward.Reward.Name}");
+				action.Value = rewardAssignments;
+				action.FormSuccess($"{rewardAssignmentEvent.Units.Count} units were assigned to {rewards.Count} rewards", eventId: EventIds.Updated);
             }
             catch (Exception ex)
             {
@@ -276,22 +327,13 @@ namespace Business.Services
             return action;
         }
 
-
         public async Task<ActionResult<Reward>> CheckCanAssignReward(int rewardId)
         {
 			ActionResult<Reward> action = new ActionResult<Reward>(_logger);
 
 			try
 			{
-				if (Actor == null)
-					return action.FormFailure("Permission check failed. Unauthorized", eventId: EventIds.Unauthorized);
-
-				if (!Actor.HasPermission(PermissionType.AssignRewards))
-					return action.FormFailure($"Permission check failed. {Actor.Nickname} doesn't have AssignRewards permission", eventId: EventIds.Forbidden);
-
-                action.Value = await _db.Rewards.FindAsync(rewardId);
-                if (action.Value == null)
-                    return action.FormFailure($"Permission check failed. Reward with ID {rewardId} not found", eventId: EventIds.NotFound);
+				
 
 				action.FormSuccess($"{Actor.Nickname} can assign {action.Value.Name} reward", eventId: EventIds.Accessed);
 			}

@@ -16,7 +16,7 @@ namespace Business.Models
 		public string Privileges { get; set; } = string.Empty;
 		public bool CanBeAssigned { get; set; } = true;
 		public ulong? DiscordRoleId { get; set; }
-		[JsonIgnore] public virtual List<AssignedReward> Assigned { get; set; } = new List<AssignedReward>();
+		[JsonIgnore] public virtual List<AssignedReward> AssignedRewards { get; set; } = new List<AssignedReward>();
 
 		public void UpdateRole()
 		{
@@ -57,7 +57,7 @@ namespace Business.Models
 	{
 		public void Configure(EntityTypeBuilder<Reward> builder)
 		{
-			builder.HasMany(r => r.Assigned).WithOne(ar => ar.Reward).HasForeignKey(r => r.RewardId).OnDelete(DeleteBehavior.Cascade);
+			builder.HasMany(r => r.AssignedRewards).WithOne(ar => ar.Reward).HasForeignKey(ar => ar.RewardId).OnDelete(DeleteBehavior.Cascade);
 		}
 	}
 }

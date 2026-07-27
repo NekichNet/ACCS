@@ -232,17 +232,22 @@ namespace Business.Models
 	/// </summary>
 	public class UnitCompressed
 	{
-		public string DiscordId;
-		public string Nickname;
-		public string SteamId;
-		public string RankUpCounter;
-		public string Joined;
-		public int Gender;
-		public int BackgroundPictureId;
-		public int FavoriteKitId;
-		public int? RankId;
-		public List<int> PostsIds;
-		public List<int> AssignedRewardsIds;
+        public string DiscordId { get; set; } = string.Empty;
+        public string Nickname { get; set; } = string.Empty;
+        public string SteamId { get; set; } = string.Empty;
+        public string RankUpCounter { get; set; } = string.Empty;
+        public string Joined { get; set; } = string.Empty;
+        public int Gender { get; set; }
+        public int BackgroundPictureId { get; set; }
+        public int FavoriteKitId { get; set; }
+        public int? RankId { get; set; }
+        public List<int> PostsIds { get; set; } = new();
+        public List<int> AssignedRewardsIds { get; set; } = new();
+
+        public override string ToString()
+		{
+			return JsonSerializer.Serialize(this);
+		}
 	}
 
 	/// <summary>

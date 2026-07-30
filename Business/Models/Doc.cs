@@ -39,12 +39,14 @@ namespace Business.Models
 		public HashSet<int> UnitIds { get; set; } = new HashSet<int>();
 		public IFormFile File { get; set; }
 	}
-
+    
 	public class DocConfiguration : IEntityTypeConfiguration<Doc>
     {
         public void Configure(EntityTypeBuilder<Doc> builder)
         {
-            builder.HasOne(d => d.Author).WithMany(u => u.OwnDocs).HasForeignKey(u => u.AuthorId).OnDelete(DeleteBehavior.NoAction);
+            builder.HasMany(d => d.States).WithOne(s => s.Doc).HasForeignKey(d => d.Doc).OnDelete(DeleteBehavior.Cascade);
+			builder.HasMany(d => d.Events).WithOne(s => s.Doc).HasForeignKey(d => d.Doc).OnDelete(DeleteBehavior.Cascade);
+			builder.HasOne(d => d.Author).WithMany(u => u.OwnDocs).HasForeignKey(u => u.AuthorId).OnDelete(DeleteBehavior.NoAction);
         }
     }
 }

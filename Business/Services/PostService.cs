@@ -34,7 +34,7 @@ namespace Business.Services
             string name,
             string description,
             int? subdivisionId,
-            int headId,
+            int? headId,
             int maxRankId,
             string color,
             bool appendSubdivisionName,
@@ -45,9 +45,19 @@ namespace Business.Services
 
             try
             {
-				ActionResult<Post> headResult = await CheckCanManageAsync(headId);
-				if (!headResult.IsSuccess)
-					return action.FormFailure("Permission check failed", eventId: EventIds.Forbidden);
+				if (headId != null)
+				{
+					ActionResult<Post> headResult = await CheckCanManageAsync((int)headId);
+					if (!headResult.IsSuccess)
+						return action.FormFailure("Creating post restricted. Permission check failed", eventId: EventIds.Forbidden);
+				}
+				else
+				{
+					if (Actor == null)
+						return action.FormFailure("Creating post restricted. Unauthorized", eventId: EventIds.Unauthorized);
+					if (!Actor.IsAdmin())
+						return action.FormFailure("Creating post restricted. Can't create post without head", eventId: EventIds.Forbidden);
+				}
 
 				if (subdivisionId != null)
 				{
@@ -142,7 +152,7 @@ namespace Business.Services
 			string color,
 			int? subdivisionId,
 			int maxRankId,
-			int headId
+			int? headId
 			)
 		{
 			EmptyAction action = new EmptyAction(_logger);
@@ -153,9 +163,19 @@ namespace Business.Services
 				if (!result.IsSuccess)
 					return action.FormFailure("Permission check failed", eventId: EventIds.Forbidden);
 
-				ActionResult<Post> headResult = await CheckCanManageAsync(headId);
-				if (!headResult.IsSuccess)
-					return action.FormFailure($"PostId updating failed. Can't set head with ID {postId}", eventId: EventIds.Forbidden);
+				if (headId != null)
+				{
+					ActionResult<Post> headResult = await CheckCanManageAsync((int)headId);
+					if (!headResult.IsSuccess)
+						return action.FormFailure("Creating post restricted. Permission check failed", eventId: EventIds.Forbidden);
+				}
+				else
+				{
+					if (Actor == null)
+						return action.FormFailure("Creating post restricted. Unauthorized", eventId: EventIds.Unauthorized);
+					if (!Actor.IsAdmin())
+						return action.FormFailure("Creating post restricted. Can't create post without head", eventId: EventIds.Forbidden);
+				}
 
 				if (subdivisionId != null)
 				{

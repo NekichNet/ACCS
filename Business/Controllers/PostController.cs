@@ -253,18 +253,14 @@ namespace Business.Controllers
             }
         }
 
-        [HttpPost("{postId}/assign")] // Todo: переделать на "{postId}/assign/{unitId}"
+        /*
+        [HttpPost("{postId}/assign/{unitId}")] // Todo: переделать на "{postId}/assign/{unitId}"
         [Authorize]
-        public async Task<IActionResult> AssignPost([FromRoute] int postId, [FromBody] PostDto dto)
+        public async Task<IActionResult> AssignPost([FromRoute] int postId, [FromRoute] ulong unitId, [FromBody] PostDto dto)
         {
             try
             {
                 _postService.Actor = HttpContext.Items["Actor"] as Unit;
-
-                if (!ulong.TryParse(dto.DiscordId, out ulong discordId))
-                {
-                    return BadRequest(new { error = "Передан некорректный формат Discord ID." });
-                }
 
                 var action = await _postService.AssignAsync(discordId, postId);
                 if (!action.IsSuccess)
@@ -279,6 +275,7 @@ namespace Business.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+        */
 
         [HttpGet("{postId}/assign/{unitId}")]
         public async Task<IActionResult> GetInfoAssignedUnit([FromRoute] int postId, [FromRoute] ulong unitId)

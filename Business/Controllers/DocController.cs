@@ -24,7 +24,7 @@ namespace Business.Controllers
 
 		[HttpPost]
 		[Authorize]
-		public async Task<IActionResult> CreateDoc([FromBody] NewDocDto dto)
+		public async Task<IActionResult> CreateDoc([FromForm] NewDocDto dto)
 		{
 			try
 			{

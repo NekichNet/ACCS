@@ -44,8 +44,6 @@ namespace Business.Models
     {
         public void Configure(EntityTypeBuilder<Doc> builder)
         {
-            builder.HasMany(d => d.States).WithOne(s => s.Doc).HasForeignKey(d => d.Doc).OnDelete(DeleteBehavior.Cascade);
-			builder.HasMany(d => d.Events).WithOne(s => s.Doc).HasForeignKey(d => d.Doc).OnDelete(DeleteBehavior.Cascade);
 			builder.HasOne(d => d.Author).WithMany(u => u.OwnDocs).HasForeignKey(u => u.AuthorId).OnDelete(DeleteBehavior.NoAction);
         }
     }

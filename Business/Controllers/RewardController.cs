@@ -224,6 +224,7 @@ namespace Business.Controllers
             }
         }
 
+        /*
         [HttpPost("{rewardId}/assign/{unitId}")]
         [Authorize]
         public async Task<IActionResult> AssignReward(
@@ -249,6 +250,7 @@ namespace Business.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+        */
 
         [HttpGet("{rewardId}/assign/{unitId}")]
         [Authorize]

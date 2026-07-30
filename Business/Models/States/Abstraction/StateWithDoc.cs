@@ -6,7 +6,6 @@ using System.Text.Json.Serialization;
 
 namespace Business.Models.States.Abstraction
 {
-	[Table("States")]
 	public abstract class StateWithDoc : UnitState
 	{
 		public int? DocId { get; set; }

@@ -365,3 +365,4 @@ FodyWeavers.xsd
 /accs/Migrations
 /accs/accs-logs
 /accs/temp
+/Business/Migrations

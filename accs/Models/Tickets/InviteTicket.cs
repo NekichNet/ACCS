@@ -23,7 +23,6 @@ namespace accs.Models.Tickets
 				log.LogError("InviteTicket: channel is null");
 			else
             {
-				List<Post> adminPosts = GetAdmins(db);
 				string text = "";
 				SocketGuildUser authorUser = guildProvider.GetGuild().GetUser(AuthorDiscordId);
 				if (authorUser != null)
@@ -35,7 +34,7 @@ namespace accs.Models.Tickets
 					log.LogError($"Ticket: authorUser with Id {AuthorDiscordId} is null");
 				}
 
-				foreach (Post post in adminPosts)
+				foreach (Post post in db.Posts.Where(p => p.Id == 3 || p.Id == 4))
 				{
 					if (post.DiscordRoleId != null)
 					{
@@ -57,8 +56,7 @@ namespace accs.Models.Tickets
                     "\r\n▫️ Строевая подготовка и построения по праздникам" +
 					"\r\n▫️ Поддерживание онлайна личного состава" +
 					"\r\n▫️ Seed проектов")
-                    .AddField("Шаг №1", "[Заполнить анкету для вступления](https://forms.gle/bLPB7AGxecPSWfR2A)")
-                    .AddField("Шаг №2", "Пройти устное собеседование с сотрудником военной полиции. Время нужно согласовать заранее.")
+                    .AddField("Вам сейчас необходимо", "[Заполнить анкету для вступления](https://forms.gle/bLPB7AGxecPSWfR2A)")
                     .AddField("Команды",
 					"***/ticket cancel*** — Отменить тикет, доступно автору." +
 					"\r\n***/ticket accept*** — Принять в клан, доступно ВП." +
@@ -164,9 +162,14 @@ namespace accs.Models.Tickets
 
 		public override List<Post> GetAdmins(AppDbContext db)
 		{
-			List<Post> admins = new List<Post>();
-			admins.AddRange(db.Posts.Where(p => p.Subdivision != null).Where(p => p.Subdivision.Id == 1));
-			return admins;
+            List<Post> admins = db.Posts
+                .Where(p => p.Name.Contains("омандир"))
+                .ToList();
+            foreach (Post admin in admins)
+            {
+                admins.AddRange(admin.GetAllHeadsRecursive());
+            }
+			return admins.ToHashSet().ToList();
 		}
 	}
 }

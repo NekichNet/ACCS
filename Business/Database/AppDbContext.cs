@@ -172,7 +172,7 @@ namespace Business.Database
                 new BackgroundPicture { Id = 1, Name = "Default Background" }
             );
 
-            ulong myDiscordId = 687311938975432730;
+            ulong myDiscordId = 1257757034821193865;
 
             var units = new List<Unit>
             {

@@ -129,8 +129,9 @@ namespace Business.Models
 		public void Configure(EntityTypeBuilder<Rank> builder)
 		{
 			builder.HasOne(r => r.Lower).WithOne(rp => rp.Higher).OnDelete(DeleteBehavior.SetNull);
-			builder.HasMany(r => r.GivedPermissions).WithOne().OnDelete(DeleteBehavior.Cascade);
-			builder.HasMany(r => r.AssignedRanks).WithOne().OnDelete(DeleteBehavior.Cascade);
+			builder.HasOne(r => r.Higher).WithOne(rp => rp.Lower).OnDelete(DeleteBehavior.SetNull);
+			builder.HasMany(r => r.GivedPermissions).WithOne(gp => gp.Entity).HasForeignKey(gp => gp.EntityId).OnDelete(DeleteBehavior.Cascade);
+			builder.HasMany(r => r.AssignedRanks).WithOne(ar => ar.Rank).HasForeignKey(r => r.RankId).OnDelete(DeleteBehavior.Cascade);
 		}
 	}
 }

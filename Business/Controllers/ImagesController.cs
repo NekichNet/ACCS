@@ -49,6 +49,8 @@ namespace Business.Controllers
                     return NotFound(new { error = $"Награда с ID {rewardId} не существует. Некуда привязать картинку." });
                 }
 
+                // TODO: Здесь проверку на объём файла!
+
                 string folderName = rewardExistCheck.Value.GetFilesFolderName();
                 return await SaveImageAsync(folderName, rewardId, file);
             }

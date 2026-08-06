@@ -4,6 +4,7 @@ using Business.Models.Interfaces;
 using Business.Models.Statuses;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -22,6 +23,11 @@ namespace Business.Models
 		[JsonIgnore] public virtual Rank? Higher { get; set; }
 		[JsonIgnore] public virtual HashSet<GivedPermission<Rank>> GivedPermissions { get; set; } = new HashSet<GivedPermission<Rank>>();
 		[JsonIgnore] public virtual List<AssignedRank> AssignedRanks { get; set; } = new List<AssignedRank>();
+
+		/// <summary>
+		/// Индекс, необходимый для сравнения званий и сортировки.
+		/// </summary>
+		[NotMapped] public int Index { get { return GetIndex(); } }
 
 		public void InsertLower(Rank rank)
 		{
@@ -122,6 +128,12 @@ namespace Business.Models
 			}
 			return higherRanks;
 		}
+
+		public int GetIndex()
+		{
+			// TODO: Реализовать получение индекса звания, который понадобится для сортировки
+			throw new NotImplementedException();
+		}
     }
 
 	public class RankConfiguration : IEntityTypeConfiguration<Rank>
@@ -129,8 +141,9 @@ namespace Business.Models
 		public void Configure(EntityTypeBuilder<Rank> builder)
 		{
 			builder.HasOne(r => r.Lower).WithOne(rp => rp.Higher).OnDelete(DeleteBehavior.SetNull);
-			builder.HasMany(r => r.GivedPermissions).WithOne().OnDelete(DeleteBehavior.Cascade);
-			builder.HasMany(r => r.AssignedRanks).WithOne().OnDelete(DeleteBehavior.Cascade);
+			builder.HasOne(r => r.Higher).WithOne(rp => rp.Lower).OnDelete(DeleteBehavior.SetNull);
+			builder.HasMany(r => r.GivedPermissions).WithOne(gp => gp.Entity).HasForeignKey(gp => gp.EntityId).OnDelete(DeleteBehavior.Cascade);
+			builder.HasMany(r => r.AssignedRanks).WithOne(ar => ar.Rank).HasForeignKey(r => r.RankId).OnDelete(DeleteBehavior.Cascade);
 		}
 	}
 }

@@ -114,6 +114,17 @@ namespace Business.Models
         {
 			return GetPermissionsRecursive().Any(p => p.Type == permissionType);
         }
+
+		public PostDto ToDto()
+		{
+			return new PostDto
+			{
+				Id = Id,
+				Name = GetFullName(),
+				AppendSubdivisionName = AppendSubdivisionName,
+				Description = Description,
+			};
+		}
     }
 
 	/// <summary>
@@ -136,7 +147,8 @@ namespace Business.Models
 	{
 		public void Configure(EntityTypeBuilder<Post> builder)
 		{
-			builder.HasOne(p => p.Head).WithMany(ph => ph.Subordinates).HasForeignKey(p => p.HeadId).OnDelete(DeleteBehavior.SetNull);
+			builder.HasOne(p => p.Head).WithMany(ph => ph.Subordinates).HasForeignKey(ph => ph.HeadId).OnDelete(DeleteBehavior.SetNull);
+			builder.HasMany(p => p.Subordinates).WithOne(ps => ps.Head).OnDelete(DeleteBehavior.SetNull);
 			builder.HasOne(p => p.Subdivision).WithMany(s => s.Posts).HasForeignKey(p => p.SubdivisionId).OnDelete(DeleteBehavior.SetNull);
 			builder.HasOne(p => p.MaxRank).WithMany().HasForeignKey(p => p.MaxRankId).OnDelete(DeleteBehavior.NoAction);
 			builder.HasMany(p => p.GivedPermissions).WithOne().OnDelete(DeleteBehavior.Cascade);

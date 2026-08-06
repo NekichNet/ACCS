@@ -4,6 +4,7 @@ using Business.Models.Interfaces;
 using Business.Models.Statuses;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -22,6 +23,11 @@ namespace Business.Models
 		[JsonIgnore] public virtual Rank? Higher { get; set; }
 		[JsonIgnore] public virtual HashSet<GivedPermission<Rank>> GivedPermissions { get; set; } = new HashSet<GivedPermission<Rank>>();
 		[JsonIgnore] public virtual List<AssignedRank> AssignedRanks { get; set; } = new List<AssignedRank>();
+
+		/// <summary>
+		/// Индекс, необходимый для сравнения званий и сортировки.
+		/// </summary>
+		[NotMapped] public int Index { get { return GetIndex(); } }
 
 		public void InsertLower(Rank rank)
 		{
@@ -121,6 +127,12 @@ namespace Business.Models
 				higherRanks.AddRange(Lower.GetAllHigherRecursive());
 			}
 			return higherRanks;
+		}
+
+		public int GetIndex()
+		{
+			// TODO: Реализовать получение индекса звания, который понадобится для сортировки
+			throw new NotImplementedException();
 		}
     }
 

@@ -203,6 +203,34 @@ namespace Business.Models
 			return Gender == Gender.Female;
 		}
 
+		/// <summary>
+		/// Выдаёт список активности, которая была зафиксирована на этой неделе, начиная с понедельника включительно
+		/// </summary>
+		public List<Activity> GetWeekActivity()
+		{
+			int dayOfWeekNum = DateTime.UtcNow.DayOfWeek == DayOfWeek.Sunday ? 6 : (int)DateTime.UtcNow.DayOfWeek - 1;
+			DateOnly startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-dayOfWeekNum));
+			return Activities.Where(a => a.Date >= startDate).ToList();
+		}
+
+		/// <summary>
+		/// Выдаёт список активности, которая была зафиксирована в этом месяце, начиная с первого числа месяца включительно
+		/// </summary>
+		public List<Activity> GetMonthActivity()
+		{
+			DateTime now = DateTime.UtcNow;
+			DateOnly startDate = new DateOnly(now.Year, now.Month, 1);
+			return Activities.Where(a => a.Date >= startDate).ToList();
+		}
+
+
+		public List<Activity> GetMonthActivity()
+		{
+			DateTime now = DateTime.UtcNow;
+			DateOnly startDate = new DateOnly(now.Year, now.Month, 1);
+			return Activities.Where(a => a.Date >= startDate).ToList();
+		}
+
 		public UnitCompressed ToCompressed()
 		{
 			return new UnitCompressed
@@ -228,7 +256,7 @@ namespace Business.Models
 	}
 
 	/// <summary>
-	/// Общеустановленный Unit DTO для API
+	/// Общеустановленный Unit DTO на экспорт
 	/// </summary>
 	public class UnitCompressed
 	{
@@ -238,6 +266,12 @@ namespace Business.Models
         public string RankUpCounter { get; set; } = string.Empty;
         public string Joined { get; set; } = string.Empty;
         public int Gender { get; set; }
+		public int RankIndex { get; set; } = 0;
+		public int PostIndex { get; set; } = 0;
+		public int WeekActivityCount { get; set; }
+		public int MonthActivityCount { get; set; }
+		public int YearActivityCount { get; set; }
+		public int TotalActivityCount { get; set; }
         public int BackgroundPictureId { get; set; }
         public FavoriteKit FavoriteKit { get; set; }
         public int? RankId { get; set; }

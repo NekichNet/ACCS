@@ -115,6 +115,12 @@ namespace Business.Models
 			return GetPermissionsRecursive().Any(p => p.Type == permissionType);
         }
 
+		public int GetIndex()
+		{
+			// TODO: Реализовать получение индекса должности, который понадобится для сортировки
+			throw new NotImplementedException();
+		}
+
 		public PostDto ToDto()
 		{
 			return new PostDto
@@ -133,14 +139,33 @@ namespace Business.Models
 	public class PostDto
 	{
 		public int? Id { get; set; }
+		/// <summary>
+		/// Название только самой должности.
+		/// Отображать только при наличии возможности редактирования.
+		/// </summary>
 		public string Name { get; set; } = string.Empty;
+		/// <summary>
+		/// Полное название должности, включающее названия подразделений.
+		/// Отличается от Name, только если AppendSubdivisionName == true.
+		/// Это свойство только на экспорт с бэкенда!
+		/// </summary>
+		public string Fullname { get; set; } = string.Empty;
+		/// <summary>
+		/// Индекс должности, необходимый для сортировки.
+		/// </summary>
+		public int Index { get; set; }
 		public bool AppendSubdivisionName { get; set; } = false;
 		public string Description { get; set; } = string.Empty;
 		public string Color { get; set; } = string.Empty;
 		public int MaxRankId { get; set; }
 		public int? SubdivisionId { get; set; }
 		public int? HeadId { get; set; }
-		public List<int> PermissionsId { get; set; } = new List<int>();
+		public List<Permission> PermissionsId { get; set; } = new();
+
+		public override string ToString()
+		{
+			return JsonSerializer.Serialize(this);
+		}
 	}
 
 	public class PostConfiguration : IEntityTypeConfiguration<Post>

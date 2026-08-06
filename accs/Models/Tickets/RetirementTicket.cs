@@ -23,7 +23,7 @@ namespace accs.Models.Tickets
 				log.LogError("RetirementTicket: channel is null");
 			else
 			{
-				List<Post> adminPosts = GetAdmins(db);
+				List<Post> adminPosts = await GetAdminsAsync(db);
 				string text = "";
 				SocketGuildUser authorUser = guildProvider.GetGuild().GetUser(AuthorDiscordId);
 				if (authorUser != null)
@@ -166,7 +166,7 @@ namespace accs.Models.Tickets
 			}
         }
 
-		public override List<Post> GetAdmins(AppDbContext db)
+		public async override Task<List<Post>> GetAdminsAsync(AppDbContext db)
 		{
 			List<Post> admins = new List<Post>();
 			admins.AddRange(db.Posts.Where(p => p.Id < 3));

@@ -42,7 +42,7 @@ namespace accs.DiscordBot.Interactions
 			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
 			if (unit != null)
             {
-				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any() || unit.HasPermission(PermissionType.Administrator))
+				if (unit.Posts.Intersect(await ticket.GetAdminsAsync(_db)).Any() || unit.HasPermission(PermissionType.Administrator))
 				{
 					await ticket.AcceptAsync(_guildProvider, _db, unit.DiscordId);
 					return;
@@ -67,7 +67,7 @@ namespace accs.DiscordBot.Interactions
 			Unit? unit = await _db.Units.FindAsync(Context.User.Id);
 			if (unit != null)
 			{
-				if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any() || unit.HasPermission(PermissionType.Administrator))
+				if (unit.Posts.Intersect(await ticket.GetAdminsAsync(_db)).Any() || unit.HasPermission(PermissionType.Administrator))
 				{
 					await ticket.RefuseAsync(_guildProvider, _db, unit.DiscordId);
 					return;
@@ -117,7 +117,7 @@ namespace accs.DiscordBot.Interactions
 
 				SocketGuild guild = _guildProvider.GetGuild();
                 SocketGuildUser author = guild.GetUser(ticket.AuthorDiscordId);
-				List<ulong> roleIds = ticket.GetAdmins(_db).Where(t => t.DiscordRoleId != null).Select(t => (ulong)t.DiscordRoleId).ToList();
+				List<ulong> roleIds = (await ticket.GetAdminsAsync(_db)).Where(t => t.DiscordRoleId != null).Select(t => (ulong)t.DiscordRoleId).ToList();
 				ulong voiceCategoryId = ulong.Parse(DotNetEnv.Env.GetString("VOICE_CATEGORY_ID", "null"));
 
 				if (guild.VoiceChannels.Any(c => c.Name == $"【🎧】Тикет {ticketId}"))
@@ -161,7 +161,7 @@ namespace accs.DiscordBot.Interactions
 				Unit? unit = await _db.Units.FindAsync(Context.User.Id);
 				if (unit != null)
 				{
-					if (unit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
+					if (unit.Posts.Intersect(await ticket.GetAdminsAsync(_db)).Any())
 					{
 						await invite.AcceptanceHandler(selectedId, _guildProvider, _db, _log, unit.DiscordId);
 					}
@@ -201,7 +201,7 @@ namespace accs.DiscordBot.Interactions
 				await RespondAsync("Ошибка: Вы не найдены в системе", ephemeral: true);
 				return;
 			}
-			if (!userUnit.Posts.Intersect(ticket.GetAdmins(_db)).Any())
+			if (!userUnit.Posts.Intersect(await ticket.GetAdminsAsync(_db)).Any())
 			{
 				await RespondAsync("Выбор должностей доступен только ответственной за тикет службе", ephemeral: true);
 				return;

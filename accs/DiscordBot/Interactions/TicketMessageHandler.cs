@@ -271,7 +271,7 @@ namespace accs.DiscordBot.Interactions
 			await _db.SaveChangesAsync();
 			await ticket.CreateChannelAsync(_guildProvider, _logTicket, _db);
 			await ticket.SendWelcomeMessageAsync(_guildProvider, _logTicket, _db);
-			await RespondAsync("Предложение создано. Пожалуйста, опишите его в канале тикета.", ephemeral: true);
+			await RespondAsync("Тикет предложения создан. Пожалуйста, расскажите подробности в канале тикета.", ephemeral: true);
 		}
 	}
 }

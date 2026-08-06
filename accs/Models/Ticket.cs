@@ -79,7 +79,7 @@ namespace accs.Models
                 targetId: guild.EveryoneRole.Id, permissions: new OverwritePermissions(viewChannel: PermValue.Deny)));
             overwrites.Add(new Overwrite(targetType: PermissionTarget.User,
                 targetId: AuthorDiscordId, permissions: permissions));
-            foreach (Post post in GetAdmins(db))
+            foreach (Post post in await GetAdminsAsync(db))
                 if (post.DiscordRoleId != null)
 				    overwrites.Add(new Overwrite(targetType: PermissionTarget.Role, targetId: (ulong)post.DiscordRoleId, permissions: permissions));
 
@@ -146,7 +146,7 @@ namespace accs.Models
                 Console.WriteLine("Не найден канал для сохранения сообщений тикета!");
 		}
 
-        public virtual List<Post> GetAdmins(AppDbContext db)
+        public async virtual Task<List<Post>> GetAdminsAsync(AppDbContext db)
         {
             List<Post> administrators = db.Posts.ToList().Where(p => p.GetPermissionsRecursive().Any(pr => pr.Type == PermissionType.Administrator)).ToList();
             return administrators;

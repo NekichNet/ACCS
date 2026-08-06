@@ -59,8 +59,8 @@ namespace accs.Models.Tickets
                     .AddField("Вам сейчас необходимо", "[Заполнить анкету для вступления](https://forms.gle/bLPB7AGxecPSWfR2A)")
                     .AddField("Команды",
 					"***/ticket cancel*** — Отменить тикет, доступно автору." +
-					"\r\n***/ticket accept*** — Принять в клан, доступно ВП." +
-					"\r\n***/ticket refuse*** — Отказать в тикете, доступно ВП." +
+					"\r\n***/ticket accept*** — Принять в клан, доступно командирам." +
+					"\r\n***/ticket refuse*** — Отказать в тикете, доступно командирам." +
 					"\r\n***/ticket voice*** — Создать приватный голосовой канал, доступно всем.")
                     .WithImageUrl("https://c.tenor.com/mCr1ijrLsyUAAAAd/tenor.gif");
                 await channel.SendMessageAsync(embed: embed.Build(), text: text, allowedMentions: AllowedMentions.All);
@@ -71,7 +71,7 @@ namespace accs.Models.Tickets
         {
             SocketTextChannel channel = guildProvider.GetGuild().GetTextChannel(ChannelDiscordId);
 
-            List<Post> shooterPosts = db.Posts.Where(p => p.Name == "Стрелок").ToList();
+            List<Post> shooterPosts = await db.Posts.Where(p => p.Name == "Стрелок").ToListAsync();
 
             if (!shooterPosts.Any())
             {
@@ -160,15 +160,11 @@ namespace accs.Models.Tickets
             await post.NotifyOnAssignAsync(guildProvider.GetGuild(), db, unit);
 		}
 
-		public override List<Post> GetAdmins(AppDbContext db)
+		public async override Task<List<Post>> GetAdminsAsync(AppDbContext db)
 		{
-            List<Post> admins = db.Posts
-                .Where(p => p.Name.Contains("омандир"))
+            List<Post> admins = (await db.Posts.ToListAsync())
+				.Where(p => p.GetPermissionsRecursive().Any(pm => pm.Type == PermissionType.ChangePosts))
                 .ToList();
-            foreach (Post admin in admins)
-            {
-                admins.AddRange(admin.GetAllHeadsRecursive());
-            }
 			return admins.ToHashSet().ToList();
 		}
 	}

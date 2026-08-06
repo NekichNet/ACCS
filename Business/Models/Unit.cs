@@ -215,7 +215,7 @@ namespace Business.Models
 				Gender = (int)Gender,
 				RankId = GetRank()?.Id,
 				BackgroundPictureId = BackgroundPictureId,
-				FavoriteKitId = FavoriteKitId,
+				FavoriteKit = FavoriteKit,
 				PostsIds = GetPosts().Select(p => p.Id).ToList(),
 				AssignedRewardsIds = AssignedRewards.Select(ar => ar.Reward.Id).ToList()
 			};
@@ -239,7 +239,7 @@ namespace Business.Models
         public string Joined { get; set; } = string.Empty;
         public int Gender { get; set; }
         public int BackgroundPictureId { get; set; }
-        public int FavoriteKitId { get; set; }
+        public FavoriteKit FavoriteKit { get; set; }
         public int? RankId { get; set; }
         public List<int> PostsIds { get; set; } = new();
         public List<int> AssignedRewardsIds { get; set; } = new();

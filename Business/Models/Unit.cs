@@ -223,14 +223,6 @@ namespace Business.Models
 			return Activities.Where(a => a.Date >= startDate).ToList();
 		}
 
-
-		public List<Activity> GetMonthActivity()
-		{
-			DateTime now = DateTime.UtcNow;
-			DateOnly startDate = new DateOnly(now.Year, now.Month, 1);
-			return Activities.Where(a => a.Date >= startDate).ToList();
-		}
-
 		public UnitCompressed ToCompressed()
 		{
 			return new UnitCompressed

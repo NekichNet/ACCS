@@ -38,7 +38,7 @@ namespace Business.Services
             int maxRankId,
             string color,
             bool appendSubdivisionName,
-			List<int> permissionsId
+			List<Permission> permissionsId
             )
         {
             ActionResult<Post> action = new ActionResult<Post>(_logger);

@@ -214,14 +214,4 @@ namespace Business.Controllers
             }
         }
     }
-
-    public class SubdivisionDto
-    {
-        public string Name { get; set; } = string.Empty;
-        public bool AppendHeadName { get; set; } = false;
-        public string Description { get; set; } = string.Empty;
-        public string Color { get; set; } = "#AAAAAA";
-        public ulong? DiscordRoleId { get; set; } = 1;
-        public int? HeadId { get; set; } = 1;
-    }
 }

@@ -117,8 +117,7 @@ namespace Business.Models
 
 		public int GetIndex()
 		{
-			// TODO: Реализовать получение индекса должности, который понадобится для сортировки
-			throw new NotImplementedException();
+			return GetAllHeadsRecursive().Count;
 		}
 
 		public PostDto ToDto()
@@ -126,9 +125,17 @@ namespace Business.Models
 			return new PostDto
 			{
 				Id = Id,
-				Name = GetFullName(),
+				Name = Name,
+				Fullname = GetFullName(),
+				Index = GetIndex(),
 				AppendSubdivisionName = AppendSubdivisionName,
 				Description = Description,
+				Color = Color,
+				MaxRankId = MaxRankId,
+				SubdivisionId = SubdivisionId,
+				HeadId = HeadId,
+				Permissions = GivedPermissions.Select(gp => gp.Permission).ToHashSet(),
+				AllPermissions = GetPermissionsRecursive()
 			};
 		}
     }
@@ -160,7 +167,15 @@ namespace Business.Models
 		public int MaxRankId { get; set; }
 		public int? SubdivisionId { get; set; }
 		public int? HeadId { get; set; }
-		public List<Permission> PermissionsId { get; set; } = new();
+		/// <summary>
+		/// Разрешения, выданные конкретно этой должности
+		/// </summary>
+		public HashSet<Permission> Permissions { get; set; } = new();
+		/// <summary>
+		/// Все разрешения этой должности,
+		/// в том числе унаследованные от подчинённых.
+		/// </summary>
+		public HashSet<Permission> AllPermissions { get; set; } = new();
 
 		public override string ToString()
 		{

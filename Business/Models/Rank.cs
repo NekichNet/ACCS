@@ -131,8 +131,7 @@ namespace Business.Models
 
 		public int GetIndex()
 		{
-			// TODO: Реализовать получение индекса звания, который понадобится для сортировки
-			throw new NotImplementedException();
+			return GetAllHigherRecursive().Count;
 		}
     }
 

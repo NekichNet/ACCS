@@ -35,7 +35,7 @@ namespace Business.Controllers
 					dto.MaxRankId,
 					dto.Color,
 					dto.AppendSubdivisionName,
-					dto.PermissionsId
+					dto.Permissions.ToList()
 				);
 				if (!newPost.IsSuccess)
 				{

@@ -73,15 +73,16 @@ namespace Business.Models
 		public Rank? GetMaxRank()
 		{
 			Rank? rank = null;
-			foreach (Post post in GetPosts())
+            List<Rank> higherRanks = new List<Rank>();
+            foreach (Post post in GetPosts())
 			{
 				if (rank != null)
 				{
-					if (rank.GetAllHigherRecursive().Contains(post.MaxRank))
-						rank = post.MaxRank;
+					if (!higherRanks.Contains(post.MaxRank))
+						continue;
 				}
-				else
-					rank = post.MaxRank;
+				rank = post.MaxRank;
+				higherRanks = rank.GetAllHigherRecursive();
 			}
 			return rank;
 		}
@@ -193,6 +194,23 @@ namespace Business.Models
 			return UnitStates.Where(us => us is Status && us.IsActive()).Select(us => (Status)us).ToList();
 		}
 
+		public Post? GetHighestPost()
+		{
+			Post? highestPost = null;
+			List<Post> higherPosts = new List<Post>();
+			foreach (Post post in GetPosts())
+			{
+				if (highestPost != null)
+				{
+					if (!higherPosts.Contains(post))
+						continue;
+				}
+				highestPost = post;
+				higherPosts = post.GetAllHeadsRecursive();
+			}
+			return highestPost;
+		}
+
 		public bool IsMale()
 		{
 			return Gender == Gender.Male;
@@ -223,9 +241,29 @@ namespace Business.Models
 			return Activities.Where(a => a.Date >= startDate).ToList();
 		}
 
-		public UnitCompressed ToCompressed()
+        /// <summary>
+        /// Выдаёт список активности, которая была зафиксирована в этом году, начиная с первого января включительно
+        /// </summary>
+        public List<Activity> GetYearActivity()
 		{
-			return new UnitCompressed
+			DateTime now = DateTime.UtcNow;
+			DateOnly startDate = new DateOnly(now.Year, 1, 1);
+			return Activities.Where(a => a.Date >= startDate).ToList();
+		}
+
+		public int? GetRankIndex()
+		{
+			return GetRank()?.GetIndex();
+        }
+
+		public int? GetPostIndex()
+		{
+			return GetHighestPost()?.GetIndex();
+		}
+
+		public UnitDto ToDto()
+		{
+			return new UnitDto
 			{
 				DiscordId = DiscordId.ToString(),
 				Nickname = Nickname,
@@ -233,10 +271,16 @@ namespace Business.Models
 				RankUpCounter = GetRankUpCounterString(),
 				Joined = GetRegistrationDateTimeString(),
 				Gender = (int)Gender,
+				RankIndex = GetRankIndex(),
+				PostIndex = GetPostIndex(),
 				RankId = GetRank()?.Id,
-				BackgroundPictureId = BackgroundPictureId,
+				BackgroundPicture = BackgroundPicture,
 				FavoriteKit = FavoriteKit,
-				PostsIds = GetPosts().Select(p => p.Id).ToList(),
+				PostsIds = GetPosts().OrderByDescending(p => p.GetIndex()).Select(p => p.Id).ToList(),
+				WeekActivityCount = GetWeekActivity().Count,
+				MonthActivityCount = GetMonthActivity().Count,
+				YearActivityCount = GetYearActivity().Count,
+				TotalActivityCount = Activities.Count,
 				AssignedRewardsIds = AssignedRewards.Select(ar => ar.Reward.Id).ToList()
 			};
 		}
@@ -248,9 +292,9 @@ namespace Business.Models
 	}
 
 	/// <summary>
-	/// Общеустановленный Unit DTO на экспорт
+	/// DTO бойца на экспорт с бэкенда бизнес-логики
 	/// </summary>
-	public class UnitCompressed
+	public class UnitDto
 	{
         public string DiscordId { get; set; } = string.Empty;
         public string Nickname { get; set; } = string.Empty;
@@ -258,13 +302,13 @@ namespace Business.Models
         public string RankUpCounter { get; set; } = string.Empty;
         public string Joined { get; set; } = string.Empty;
         public int Gender { get; set; }
-		public int RankIndex { get; set; } = 0;
-		public int PostIndex { get; set; } = 0;
+		public int? RankIndex { get; set; } = 0;
+		public int? PostIndex { get; set; } = 0;
 		public int WeekActivityCount { get; set; }
 		public int MonthActivityCount { get; set; }
 		public int YearActivityCount { get; set; }
 		public int TotalActivityCount { get; set; }
-        public int BackgroundPictureId { get; set; }
+        public BackgroundPicture BackgroundPicture { get; set; }
         public FavoriteKit FavoriteKit { get; set; }
         public int? RankId { get; set; }
         public List<int> PostsIds { get; set; } = new();

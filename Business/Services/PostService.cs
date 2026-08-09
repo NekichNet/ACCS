@@ -113,9 +113,9 @@ namespace Business.Services
 				action.Value = await _db.Posts.FindAsync(postId);
 
 				if (action.Value != null)
-					action.FormSuccess("PostId found", eventId: EventIds.Read);
+					action.FormSuccess($"Getting post succeed. Post {action.Value} with ID {postId} found", eventId: EventIds.Read);
 				else
-					action.FormFailure("PostId not found", eventId: EventIds.NotFound);
+					action.FormFailure($"Getting post failed. Post with ID {postId} not found", eventId: EventIds.NotFound);
 			}
 			catch (Exception ex)
 			{

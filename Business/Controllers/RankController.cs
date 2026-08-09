@@ -227,7 +227,7 @@ namespace Business.Controllers
                     return BadRequest(new { error = action.Message });
                 }
 
-                return Ok(action.Value.Select(u => u.ToCompressed()));
+                return Ok(action.Value.Select(u => u.ToDto()));
             }
             catch (Exception ex)
             {

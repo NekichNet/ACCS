@@ -36,7 +36,7 @@ namespace Business.Controllers
                     return BadRequest(new { error = result.Message });
                 }
 
-                IEnumerable<UnitCompressed> unitsDto = result.Value.Select(u => u.ToCompressed());
+                IEnumerable<UnitDto> unitsDto = result.Value.Select(u => u.ToDto());
 
                 return Ok(unitsDto);
             }
@@ -87,7 +87,7 @@ namespace Business.Controllers
                     return NotFound(new { error = "Unit not found" });
                 }
 
-                UnitCompressed unitResult = result.Value.ToCompressed();
+                UnitDto unitResult = result.Value.ToDto();
 
                 return Ok(unitResult);
             }
@@ -226,7 +226,7 @@ namespace Business.Controllers
 					return BadRequest(new { error = result.Message });
 				}
 
-				IEnumerable<UnitCompressed> unitsDto = result.Value.Select(u => u.ToCompressed());
+				IEnumerable<UnitDto> unitsDto = result.Value.Select(u => u.ToDto());
 
 				return Ok(unitsDto);
 			}
@@ -248,7 +248,7 @@ namespace Business.Controllers
                     return BadRequest(new { error = result.Message });
                 }
 
-				IEnumerable<UnitCompressed> unitsDto = result.Value.Select(u => u.ToCompressed());
+				IEnumerable<UnitDto> unitsDto = result.Value.Select(u => u.ToDto());
 
 				return Ok(unitsDto);
             }
@@ -270,7 +270,7 @@ namespace Business.Controllers
                     return BadRequest(new { error = result.Message });
                 }
 
-				IEnumerable<UnitCompressed> unitsDto = result.Value.Select(u => u.ToCompressed());
+				IEnumerable<UnitDto> unitsDto = result.Value.Select(u => u.ToDto());
 
 				return Ok(unitsDto);
 			}

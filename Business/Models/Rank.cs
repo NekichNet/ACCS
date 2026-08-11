@@ -110,23 +110,29 @@ namespace Business.Models
 		public List<Rank> GetAllHigherRecursive()
 		{
 			List<Rank> higherRanks = new List<Rank>();
-			if (Higher != null)
+			Rank? tempHigherRank = Higher;
+
+			while (tempHigherRank != null)
 			{
-				higherRanks.Add(Higher);
-				higherRanks.AddRange(Higher.GetAllHigherRecursive());
+				higherRanks.Add(tempHigherRank);
+				tempHigherRank = tempHigherRank.Higher;
 			}
+
 			return higherRanks;
 		}
 
 		public List<Rank> GetAllLowerRecursive()
 		{
-			List<Rank> higherRanks = new List<Rank>();
-			if (Lower != null)
+			List<Rank> lowerRanks = new List<Rank>();
+			Rank? tempLowerRank = Lower;
+
+			while (tempLowerRank != null)
 			{
-				higherRanks.Add(Lower);
-				higherRanks.AddRange(Lower.GetAllHigherRecursive());
+				lowerRanks.Add(tempLowerRank);
+				tempLowerRank = tempLowerRank.Lower;
 			}
-			return higherRanks;
+
+			return lowerRanks;
 		}
 
 		public int GetIndex()

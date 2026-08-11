@@ -7,6 +7,7 @@ using Business.Models.States.Abstraction;
 using Business.Models.States.Statuses;
 using Business.Models.Statuses;
 using Business.Models.Statuses.Abstraction;
+using Business.Models.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Reflection;
@@ -67,7 +68,7 @@ namespace Business.Database
         {
 			modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-			/* 1. Разрешения 
+			/* 1. Разрешения */
 
 			List<Permission> permissions = new List<Permission>();
             foreach (var permissionType in typeof(PermissionType).GetEnumValues())
@@ -77,16 +78,20 @@ namespace Business.Database
                 {
                     foreach (Attribute attribute in fieldInfo.GetCustomAttributes(false))
                     {
-                        if (attribute is Permission permission)
+                        if (attribute is PermissionAttribute permissionAttribute)
                         {
-                            permission.Type = (PermissionType)permissionType;
-                            permissions.Add(permission);
+                            permissions.Add(new Permission()
+                            {
+                                Type = (PermissionType)permissionType,
+                                Name = permissionAttribute.Name,
+                                Description = permissionAttribute.Description
+                            });
                         }
                     }
                 }
             }
             modelBuilder.Entity<Permission>().HasData(permissions);
-            */
+            
 
 			/* 2. Звания */
 			List<Rank> ranks = new List<Rank>()

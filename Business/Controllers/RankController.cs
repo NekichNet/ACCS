@@ -82,8 +82,8 @@ namespace Business.Controllers
                     return NotFound(new { error = "Rank not found" });
                 }
 
-                var permissionsIds = action.Value.GetPermissionsRecursive().Select(p => (int)p.Type).ToList();
-                return Ok(permissionsIds);
+                var permissions = action.Value.GetPermissionsRecursive();
+                return Ok(permissions);
             }
             catch (Exception ex)
             {

@@ -1,5 +1,4 @@
 ﻿using Business.Models.Enums;
-using Business.Models.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.ComponentModel.DataAnnotations;
@@ -14,12 +13,14 @@ namespace Business.Models
 	{
 		[Key]
 		[DatabaseGenerated(DatabaseGeneratedOption.None)]
-		public PermissionType Type { get; set; }
+		[JsonIgnore] public PermissionType Type { get; set; }
 		public string Name { get; set; }
 		public string Description { get; set; } = string.Empty;
 		[JsonIgnore] public virtual List<GivedPermission<Post>> PostPermissions { get; set; } = new List<GivedPermission<Post>>();
 		[JsonIgnore] public virtual List<GivedPermission<Rank>> RankPermissions { get; set; } = new List<GivedPermission<Rank>>();
 		[JsonIgnore] public virtual List<GivedPermission<Subdivision>> SubdivisionPermissions { get; set; } = new List<GivedPermission<Subdivision>>();
+
+		[NotMapped] public int Id { get { return (int)Type; } }
 
 		public override string ToString()
         {

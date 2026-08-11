@@ -120,13 +120,13 @@ namespace Business.Models
 
 		public List<Rank> GetAllLowerRecursive()
 		{
-			List<Rank> higherRanks = new List<Rank>();
+			List<Rank> lowerRanks = new List<Rank>();
 			if (Lower != null)
 			{
-				higherRanks.Add(Lower);
-				higherRanks.AddRange(Lower.GetAllHigherRecursive());
+				lowerRanks.Add(Lower);
+				lowerRanks.AddRange(Lower.GetAllLowerRecursive());
 			}
-			return higherRanks;
+			return lowerRanks;
 		}
 
 		public int GetIndex()

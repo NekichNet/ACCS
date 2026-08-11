@@ -33,8 +33,7 @@ namespace Business.Controllers
 					dto.HeadId,
 					dto.MaxRankId,
 					dto.Color,
-					dto.AppendSubdivisionName,
-					dto.Permissions.Select(p => (int)p.TypeId).ToList()
+					dto.AppendSubdivisionName
 				);
 				if (!newPost.IsSuccess)
 				{
@@ -94,7 +93,6 @@ namespace Business.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
-
 
         [HttpGet("{postId}/permission")]
         public async Task<IActionResult> GetPostPermissions([FromRoute] int postId)

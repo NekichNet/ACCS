@@ -64,7 +64,7 @@ namespace Business.Controllers
                     return StatusCode(500, new { error = "Internal server error" });
                 }
 
-                return Ok(action.Value.Select(p => p.ToDto()));
+                return Ok(action.Value.Select(p => p.ToDto()).ToList());
             }
             catch (Exception ex)
             {

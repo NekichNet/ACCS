@@ -8,8 +8,7 @@ using System.Text.Json.Serialization;
 
 namespace Business.Models
 {
-	[AttributeUsage(AttributeTargets.Field)]
-	public class Permission : Attribute
+	public class Permission
 	{
 		[Key]
 		[DatabaseGenerated(DatabaseGeneratedOption.None)]

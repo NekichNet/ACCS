@@ -67,7 +67,7 @@ namespace Business.Database
         {
 			modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-			/* 1. Разрешения */
+			/* 1. Разрешения 
 
 			List<Permission> permissions = new List<Permission>();
             foreach (var permissionType in typeof(PermissionType).GetEnumValues())
@@ -86,9 +86,10 @@ namespace Business.Database
                 }
             }
             modelBuilder.Entity<Permission>().HasData(permissions);
+            */
 
-            /* 2. Звания */
-            List<Rank> ranks = new List<Rank>()
+			/* 2. Звания */
+			List<Rank> ranks = new List<Rank>()
             {
                 new Rank { Id = 1, Name = "Рекрут", CounterToReach = 0, Color = "#098100", HigherId = 2 },
                 new Rank { Id = 2, Name = "Рядовой", CounterToReach = 7, Color = "#098100", LowerId = 1, HigherId = 3 },

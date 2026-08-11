@@ -134,8 +134,8 @@ namespace Business.Models
 				MaxRankId = MaxRankId,
 				SubdivisionId = SubdivisionId,
 				HeadId = HeadId,
-				Permissions = GivedPermissions.Select(gp => gp.Permission).ToList(),
-				AllPermissions = GetPermissionsRecursive().ToList()
+				Permissions = GivedPermissions.Select(gp => gp.Permission).ToHashSet(),
+				AllPermissions = GetPermissionsRecursive()
 			};
 		}
     }
@@ -170,12 +170,12 @@ namespace Business.Models
 		/// <summary>
 		/// Разрешения, выданные конкретно этой должности
 		/// </summary>
-		public List<Permission> Permissions { get; set; } = new();
+		public HashSet<Permission> Permissions { get; set; } = new();
 		/// <summary>
 		/// Все разрешения этой должности,
 		/// в том числе унаследованные от подчинённых.
 		/// </summary>
-		public List<Permission> AllPermissions { get; set; } = new();
+		public HashSet<Permission> AllPermissions { get; set; } = new();
 
 		public override string ToString()
 		{

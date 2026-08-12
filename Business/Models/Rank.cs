@@ -137,6 +137,8 @@ namespace Business.Models
 
 		public int GetIndex()
 		{
+			// Какого-то хрена это не работает правильно.
+			// Здесь должно быть GetAllHigherRecursive().Count
 			return GetAllLowerRecursive().Count;
 		}
     }

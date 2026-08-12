@@ -89,7 +89,33 @@ namespace Business.Controllers
             }
         }
 
-        [HttpGet("{subdivisionId}/discord-role")]
+		[HttpPost("{subdivisionId}/permission")]
+		[Authorize]
+		public async Task<IActionResult> SetSubdivisionPermissions(
+			[FromRoute] int subdivisionId,
+			[FromBody] List<GivePermissionDto> permissionDtos
+			)
+		{
+			try
+			{
+				var action = await _subdivisionService.UpdatePermissionsAsync(subdivisionId, permissionDtos);
+				if (action.IsSuccess)
+				{
+					return Ok();
+				}
+				else
+				{
+					return BadRequest(new { error = action.Message });
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in SetSubdivisionPermissions: {ex.Message}");
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
+
+		[HttpGet("{subdivisionId}/discord-role")]
         public async Task<IActionResult> GetSubdivisionDiscordRole([FromRoute] int subdivisionId)
         {
             try
@@ -127,8 +153,9 @@ namespace Business.Controllers
                     dto.AppendHeadName,
                     dto.Description,
                     dto.Color,
-                    dto.DiscordRoleId,
-                    dto.HeadId);
+                    dto.HeadId
+                );
+
                 if (!subdivision.IsSuccess)
                 {
                     return BadRequest(new { error = subdivision.Message });

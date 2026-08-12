@@ -119,8 +119,34 @@ namespace Business.Controllers
             }
         }
 
+		[HttpPost("{postId}/permission")]
+		[Authorize]
+		public async Task<IActionResult> SetPostPermissions(
+			[FromRoute] int postId,
+			[FromBody] List<GivePermissionDto> permissionDtos
+			)
+		{
+			try
+			{
+				var action = await _postService.UpdatePermissionsAsync(postId, permissionDtos);
+				if (action.IsSuccess)
+				{
+					return Ok();
+				}
+				else
+				{
+					return BadRequest(new { error = action.Message });
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in SetPostPermissions: {ex.Message}");
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
-        [HttpGet("{postId}/discord-role")]
+
+		[HttpGet("{postId}/discord-role")]
         public async Task<IActionResult> GetPostDiscordRole([FromRoute] int postId)
         {
             try
@@ -184,7 +210,17 @@ namespace Business.Controllers
             {
                 _postService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _postService.UpdateAsync(postId, dto.Name, dto.AppendSubdivisionName, dto.Description, dto.Color, dto.SubdivisionId, dto.MaxRankId, dto.HeadId);
+                var action = await _postService.UpdateAsync(
+                    postId,
+                    dto.Name,
+                    dto.AppendSubdivisionName,
+                    dto.Description,
+                    dto.Color,
+                    dto.SubdivisionId,
+                    dto.MaxRankId,
+                    dto.HeadId
+                );
+
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -231,7 +267,7 @@ namespace Business.Controllers
         }
 
         [HttpGet("{postId}/assign")]
-        public async Task<IActionResult> GetAssignedUnits([FromRoute] int postId)
+        public async Task<IActionResult> GetUnitsByPost([FromRoute] int postId)
         {
             try
             {

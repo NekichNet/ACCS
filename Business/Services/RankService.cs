@@ -35,12 +35,12 @@ namespace Business.Services
 
             try
             {
-                EmptyAction result = await CheckCanManageAsync();
+                EmptyAction result = await CheckCanManageRanksAsync();
                 if (!result.IsSuccess)
                     return action.FormFailure("Creating rank restricted. Permission check failed", eventId: EventIds.Forbidden);
 
                 if (lowerId == null)
-                    return action.FormFailure("Creating rank failed. Lower rank ID is not provided", eventId: EventIds.InvalidData);
+                    return action.FormFailure("Creating rank failed. Lower rank ID is not provided", eventId: EventIds.InvalidInput);
 
                 Rank? lowerRank = await _db.Ranks.FindAsync(lowerId);
                 if (lowerRank == null)
@@ -112,7 +112,7 @@ namespace Business.Services
 
             try
             {
-                EmptyAction result = await CheckCanManageAsync();
+                EmptyAction result = await CheckCanManageRanksAsync();
                 if (!result.IsSuccess)
                     return action.FormFailure("Rank deleting restricted. Permission check failed", eventId: EventIds.Forbidden);
 
@@ -152,7 +152,7 @@ namespace Business.Services
 
             try
             {
-                EmptyAction result = await CheckCanManageAsync();
+                EmptyAction result = await CheckCanManageRanksAsync();
                 if (!result.IsSuccess)
                     return action.FormFailure("Rank updating restricted. Permission check failed", eventId: EventIds.Forbidden);
 
@@ -161,7 +161,7 @@ namespace Business.Services
                     return action.FormFailure("Rank updating failed. Rank not found", eventId: EventIds.NotFound);
 
                 if (lowerId == null && rank.LowerId != null)
-                    return action.FormFailure("Rank updating failed. Lower ID is not provided", eventId: EventIds.InvalidData);
+                    return action.FormFailure("Rank updating failed. Lower ID is not provided", eventId: EventIds.InvalidInput);
 
                 Rank? lowerRank = await _db.Ranks.FindAsync(lowerId);
                 if (lowerRank == null)
@@ -194,13 +194,13 @@ namespace Business.Services
 
             try
             {
-                EmptyAction result = await CheckCanManageAsync();
+                EmptyAction result = await CheckCanManageRanksAsync();
                 if (!result.IsSuccess)
                     return action.FormFailure("Updating rank role restricted. Permission check failed", eventId: EventIds.Forbidden);
 
                 Rank? rank = await _db.Ranks.FindAsync(rankId);
                 if (rank == null)
-                    return action.FormFailure("Updating rank role failed. Rank not found", eventId: EventIds.NotFound);
+                    return action.FormFailure($"Updating rank role failed. Rank with ID {rankId} not found", eventId: EventIds.NotFound);
 
 				rank.UpdateRole();
                 action.Value = rank.DiscordRoleId;
@@ -208,7 +208,7 @@ namespace Business.Services
 				_db.Ranks.Update(rank);
                 await _db.SaveChangesAsync();
 
-                action.FormSuccess($"Rank {rank.Name} Discord role updated", eventId: EventIds.Updated);
+                action.FormSuccess($"Rank {rank.Name} with ID {rankId} Discord role updated", eventId: EventIds.Updated);
             }
             catch (Exception ex)
             {
@@ -218,7 +218,71 @@ namespace Business.Services
             return action;
         }
 
-        public async Task<ActionResult<List<Unit>>> GetUnitsByRankAsync(int rankId)
+		/// <summary>
+		/// Устанавливает званию разрешения по переданным permission ID.
+		/// Перезаписывает только разрешения, выданные конкретно этому званию,
+		/// а не унаследованные разрешения от более низких званий.
+		/// Попытка снять или установить разрешение, которого нет у пользователя
+		/// будет проигнорированна.
+		/// </summary>
+		public async Task<EmptyAction> UpdatePermissionsAsync(int rankId, List<GivePermissionDto> permissionDtos)
+		{
+			EmptyAction action = new EmptyAction(_logger);
+
+			try
+			{
+				EmptyAction result = await CheckCanManageRanksAsync();
+				if (!result.IsSuccess)
+					return action.FormFailure("Updating rank permissions restricted. Permission check failed", eventId: EventIds.Forbidden);
+
+                Rank? rank = await _db.Ranks.FindAsync(rankId);
+                if (rank == null)
+                    return action.FormFailure($"Updating rank permissions failed. Rank with ID {rankId} not found", eventId: EventIds.NotFound);
+
+				List<GivedPermission<Rank>> givedPermissions = rank.GivedPermissions.ToList();
+				int permissionsHad = givedPermissions.Count;
+
+				foreach (GivedPermission<Rank> givedPermission in givedPermissions)
+				{
+					if (Actor.HasPermission(givedPermission.PermissionType))
+						_db.RankPermissions.Remove(givedPermission);
+				}
+
+				foreach (GivePermissionDto permissionDto in permissionDtos)
+				{
+					if (permissionDto.PermissionId > 0 && permissionDto.PermissionId <= typeof(PermissionType).GetEnumValues().Length)
+					{
+						PermissionType permissionType = (PermissionType)permissionDto.PermissionId;
+						if (Actor.HasPermission(permissionType) && !rank.HasPermission(permissionType))
+						{
+							Permission? permission = await _db.Permissions.FindAsync(permissionType);
+							if (permission != null)
+							{
+                                _db.RankPermissions.Add(new GivedPermission<Rank>
+								{
+									Permission = permission,
+									Inherit = permissionDto.Inherit,
+									EntityId = rankId
+								});
+							}
+						}
+					}
+				}
+
+                await _db.SaveChangesAsync();
+
+				action.FormSuccess($"Rank {rank.Name} with ID {rankId} permissions updated." +
+					$"Then {permissionsHad}, now {rank.GivedPermissions.Count}", eventId: EventIds.Updated);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<ActionResult<List<Unit>>> GetUnitsByRankAsync(int rankId)
         {
 			ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
 
@@ -230,7 +294,7 @@ namespace Business.Services
 
                 action.Value = rank.AssignedRanks.Where(r => r.IsActive()).Select(ar => ar.Unit).ToList();
 
-                action.FormSuccess($"Units by {rank.Name} rank retrieved",
+                action.FormSuccess($"Units by {rank.Name} rank with ID {rankId} retrieved",
 					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
             }
             catch (Exception ex)
@@ -253,12 +317,13 @@ namespace Business.Services
 
                 Rank? rank = await _db.Ranks.FindAsync(rankId);
                 if (rank == null)
-                    return action.FormFailure("Rank assigning failed. Rank not found", eventId: EventIds.NotFound);
+                    return action.FormFailure($"Rank assigning failed. Rank with ID {rankId} not found", eventId: EventIds.NotFound);
 
                 AssignedRank currentAssignment = result.Value.GetAssignedRank();
 
                 if (currentAssignment.Rank.Id == rank.Id)
-                    return action.FormFailure($"Rank assigning failed. Unit {result.Value.Nickname} already assigned to this rank", eventId: EventIds.ImpossibleAction);
+                    return action.FormFailure($"Rank assigning failed. Unit {result.Value.Nickname}" +
+                        $" already assigned to rank {rank.Name} with ID {rankId}", eventId: EventIds.ImpossibleAction);
 
                 currentAssignment.Terminate();
 
@@ -309,7 +374,7 @@ namespace Business.Services
             return action;
         }
 
-        public async Task<EmptyAction> CheckCanManageAsync()
+        public async Task<EmptyAction> CheckCanManageRanksAsync()
         {
 			EmptyAction action = new EmptyAction(_logger);
 

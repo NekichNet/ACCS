@@ -36,7 +36,7 @@ namespace Business.Services
 
 				ulong discordId;
 				if (!ulong.TryParse(dto.DiscordId, out discordId))
-					return action.FormFailure($"Unit registration failed. Incorrect Discord ID", eventId: EventIds.BadData);
+					return action.FormFailure($"Unit registration failed. Incorrect Discord ID", eventId: EventIds.BadInput);
 
 				if ((await _db.Units.FindAsync(discordId)) != null)
 					return action.FormFailure($"Unit with ID {discordId} already registered", eventId: EventIds.ImpossibleAction);

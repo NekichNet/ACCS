@@ -181,7 +181,7 @@ namespace Business.Services
             return action;
         }
 
-        public async Task<ActionResult<List<AssignedReward>>> GetAssignedUnitsAsync(int rewardId)
+        public async Task<ActionResult<List<AssignedReward>>> GetRewardAssignmentsAsync(int rewardId)
         {
             ActionResult<List<AssignedReward>> action = new ActionResult<List<AssignedReward>>(_logger);
 
@@ -189,14 +189,9 @@ namespace Business.Services
             {
                 Reward? reward = await _db.Rewards.FindAsync(rewardId);
                 if (reward == null)
-                    return action.FormFailure($"Getting assigned units failed. Reward with ID {rewardId} not found", eventId: EventIds.NotFound);
+                    return action.FormFailure($"Getting reward assignments failed. Reward with ID {rewardId} not found", eventId: EventIds.NotFound);
 
-                var assigned = await _db.AssignedRewards
-                    .Where(ar => ar.RewardId == rewardId)
-                    .Include(ar => ar.Unit)
-                    .ToListAsync();
-
-                action.Value = assigned;
+                action.Value = reward.AssignedRewards.ToList();
                 action.FormSuccess($"Assigned {reward.Name} rewards retrieved, length: " + action.Value.Count,
 					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
             }
@@ -208,7 +203,29 @@ namespace Business.Services
             return action;
         }
 
-        public async Task<ActionResult<List<AssignedReward>>> AssignAsync(ulong[] unitIds, int[] rewardIds, int? docId = null)
+		public async Task<ActionResult<List<Unit>>> GetUnitsByRewardAsync(int rewardId)
+		{
+			ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
+
+			try
+			{
+				Reward? reward = await _db.Rewards.FindAsync(rewardId);
+				if (reward == null)
+					return action.FormFailure($"Getting units by reward failed. Reward with ID {rewardId} not found", eventId: EventIds.NotFound);
+
+				action.Value = reward.AssignedRewards.Select(ar => ar.Unit).ToList();
+				action.FormSuccess($"Units by {reward.Name} reward with ID {rewardId} retrieved, length: " + action.Value.Count,
+					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<ActionResult<List<AssignedReward>>> AssignAsync(ulong[] unitIds, int[] rewardIds, int? docId = null)
         {
             ActionResult<List<AssignedReward>> action = new ActionResult<List<AssignedReward>>(_logger);
 

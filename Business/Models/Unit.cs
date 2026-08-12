@@ -281,7 +281,7 @@ namespace Business.Models
 				MonthActivityCount = GetMonthActivity().Count,
 				YearActivityCount = GetYearActivity().Count,
 				TotalActivityCount = Activities.Count,
-				AssignedRewardsIds = AssignedRewards.Select(ar => ar.Reward.Id).ToList()
+				AssignedRewards = AssignedRewards
 			};
 		}
 
@@ -312,7 +312,7 @@ namespace Business.Models
         public FavoriteKit FavoriteKit { get; set; }
         public int? RankId { get; set; }
         public List<int> PostsIds { get; set; } = new();
-        public List<int> AssignedRewardsIds { get; set; } = new();
+        public List<AssignedReward> AssignedRewards { get; set; } = new();
 
         public override string ToString()
 		{

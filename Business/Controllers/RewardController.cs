@@ -201,11 +201,11 @@ namespace Business.Controllers
         }
 
         [HttpGet("{rewardId}/assign")]
-        public async Task<IActionResult> GetAssignedUnits([FromRoute] int rewardId)
+        public async Task<IActionResult> GetUnitsByReward([FromRoute] int rewardId)
         {
             try
             {
-                var action = await _rewardService.GetAssignedUnitsAsync(rewardId);
+                var action = await _rewardService.GetUnitsByRewardAsync(rewardId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -219,12 +219,36 @@ namespace Business.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in GetAssignedUnit: {ex.Message}");
+                _logger.LogError($"Error in GetUnitsByReward: {ex.Message}");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
 
-        /*
+		[HttpGet("{rewardId}/assignments")]
+		public async Task<IActionResult> GetAssignedRewards([FromRoute] int rewardId)
+		{
+			try
+			{
+				var action = await _rewardService.GetUnitsByRewardAsync(rewardId);
+				if (!action.IsSuccess)
+				{
+					return BadRequest(new { error = action.Message });
+				}
+				if (action.Value == null)
+				{
+					return NotFound(new { error = "Reward not found" });
+				}
+
+				return Ok(action.Value);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in GetAssignedRewards: {ex.Message}");
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
+
+		/*
         [HttpPost("{rewardId}/assign/{unitId}")]
         [Authorize]
         public async Task<IActionResult> AssignReward(
@@ -252,7 +276,7 @@ namespace Business.Controllers
         }
         */
 
-        [HttpGet("{rewardId}/assign/{unitId}")]
+		[HttpGet("{rewardId}/assign/{unitId}")]
         [Authorize]
         public async Task<IActionResult> GetAssignedUnit([FromRoute] int rewardId, [FromRoute] ulong unitId)
         {

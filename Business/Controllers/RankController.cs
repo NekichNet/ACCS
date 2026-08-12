@@ -91,6 +91,32 @@ namespace Business.Controllers
             }
         }
 
+		[HttpPost("{rankId}/permission")]
+        [Authorize]
+		public async Task<IActionResult> SetRankPermissions(
+            [FromRoute] int rankId,
+            [FromBody] List<GivePermissionDto> permissionDtos
+            )
+        {
+            try
+            {
+                var action = await _rankService.UpdatePermissionsAsync(rankId, permissionDtos);
+				if (action.IsSuccess)
+				{
+					return Ok();
+				}
+                else
+				{
+					return BadRequest(new { error = action.Message });
+				}
+			}
+            catch (Exception ex)
+            {
+				_logger.LogError($"Error in SetRankPermissions: {ex.Message}");
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+        }
+
         [HttpGet("{rankId}/discord-role")]
         public async Task<IActionResult> GetRankDiscordRole([FromRoute] int rankId)
         {

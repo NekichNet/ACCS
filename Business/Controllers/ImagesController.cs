@@ -75,7 +75,7 @@ namespace Business.Controllers
                 }
 
                 _rankService.Actor = actor;
-                var permissionCheck = await _rankService.CheckCanManageAsync();
+                var permissionCheck = await _rankService.CheckCanManageRanksAsync();
                 if (!permissionCheck.IsSuccess)
                 {
                     return StatusCode(403, new { error = permissionCheck.Message });

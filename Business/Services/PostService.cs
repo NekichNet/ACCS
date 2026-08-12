@@ -46,7 +46,7 @@ namespace Business.Services
             {
 				if (headId != null)
 				{
-					ActionResult<Post> headResult = await CheckCanManageAsync((int)headId);
+					ActionResult<Post> headResult = await CheckCanManagePostAsync((int)headId);
 					if (!headResult.IsSuccess)
 						return action.FormFailure("Creating post restricted. Permission check failed", eventId: EventIds.Forbidden);
 				}
@@ -61,7 +61,7 @@ namespace Business.Services
 				if (subdivisionId != null)
 				{
 					_subdivisionService.Actor = Actor;
-					ActionResult<Subdivision> subdivResult = await _subdivisionService.CheckCanManageAsync((int)subdivisionId);
+					ActionResult<Subdivision> subdivResult = await _subdivisionService.CheckCanManageSubdivisionAsync((int)subdivisionId);
 					if (!subdivResult.IsSuccess)
 						return action.FormFailure($"Can't assign post to subdivision with ID {subdivisionId}", eventId: EventIds.Forbidden);
 				}
@@ -93,7 +93,7 @@ namespace Business.Services
 				await _db.Posts.AddAsync(action.Value);
 				await _db.SaveChangesAsync();
 
-				action.FormSuccess($"PostId {action.Value.GetFullName()} created", eventId: EventIds.Created);
+				action.FormSuccess($"PostId {action.Value.GetFullName()} with ID {action.Value.Id} created", eventId: EventIds.Created);
 			}
             catch (Exception ex)
             {
@@ -132,7 +132,7 @@ namespace Business.Services
 			{
 				action.Value = await _db.Posts.ToListAsync();
 
-				action.FormSuccess("PostId list formed, length: " + action.Value.Count(),
+				action.FormSuccess("Posts list formed, length: " + action.Value.Count(),
 					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
 			}
 			catch (Exception ex)
@@ -158,57 +158,122 @@ namespace Business.Services
 
 			try
 			{
-				ActionResult<Post> result = await CheckCanManageAsync(postId);
-				if (!result.IsSuccess)
-					return action.FormFailure("Permission check failed", eventId: EventIds.Forbidden);
+				ActionResult<Post> postResult = await CheckCanManagePostAsync(postId);
+				if (!postResult.IsSuccess)
+					return action.FormFailure("Updating post restricted. Permission check failed", eventId: EventIds.Forbidden);
 
 				if (headId != null)
 				{
-					ActionResult<Post> headResult = await CheckCanManageAsync((int)headId);
+					ActionResult<Post> headResult = await CheckCanManagePostAsync((int)headId);
 					if (!headResult.IsSuccess)
-						return action.FormFailure("Creating post restricted. Permission check failed", eventId: EventIds.Forbidden);
+						return action.FormFailure($"Updating post restricted. Can't set head with ID {headId}", eventId: EventIds.Forbidden);
 				}
 				else
 				{
 					if (Actor == null)
-						return action.FormFailure("Creating post restricted. Unauthorized", eventId: EventIds.Unauthorized);
+						return action.FormFailure("Updating post restricted. Unauthorized", eventId: EventIds.Unauthorized);
 					if (!Actor.IsAdmin())
-						return action.FormFailure("Creating post restricted. Can't create post without head", eventId: EventIds.Forbidden);
+						return action.FormFailure("Updating post restricted. Can't set post's head to null", eventId: EventIds.Forbidden);
 				}
 
 				if (subdivisionId != null)
 				{
 					_subdivisionService.Actor = Actor;
-					ActionResult<Subdivision> subdivResult = await _subdivisionService.CheckCanManageAsync((int)subdivisionId);
+					ActionResult<Subdivision> subdivResult = await _subdivisionService.CheckCanManageSubdivisionAsync((int)subdivisionId);
 					if (!subdivResult.IsSuccess)
-						return action.FormFailure($"Can't assign post to subdivision with ID {subdivisionId}", eventId: EventIds.Forbidden);
+						return action.FormFailure($"Can't assign post {postResult.Value.Name} with ID {postId}" +
+							$" to subdivision with ID {subdivisionId}", eventId: EventIds.Forbidden);
 				}
 
-				Rank? rank = Actor.GetMaxRank();
-				if (rank == null)
-					return action.FormFailure("PostId updating failed. Can't get user's max available post", eventId: EventIds.NotFound);
+				Rank? actorMaxRank = Actor.GetMaxRank();
+				if (actorMaxRank == null)
+					return action.FormFailure($"Post {postResult.Value.Name} with ID {postId} updating failed. " +
+						$"Can't get user's max available rank", eventId: EventIds.HandledError);
 
 				ActionResult<Rank> rankResult = await _rankService.GetAsync(maxRankId);
 				if (!rankResult.IsSuccess)
-					return action.FormFailure($"PostId updating failed. Rank with ID {maxRankId} not found", eventId: EventIds.NotFound);
+					return action.FormFailure($"Post {postResult.Value.Name} with ID {postId} updating failed. " +
+						$"Rank with ID {maxRankId} not found", eventId: EventIds.NotFound);
 
-				if (rank.GetAllHigherRecursive().Contains(rankResult.Value))
-					return action.FormFailure($"PostId updating failed. Max post is higher, than user's max post", eventId: EventIds.Forbidden);
+				if (actorMaxRank.GetAllHigherRecursive().Contains(rankResult.Value))
+					return action.FormFailure($"Post {postResult.Value.Name} with ID {postId} updating failed. " +
+						$"Rank {rankResult.Value.Name} is higher, " +
+						$"than unit's {Actor.Nickname} max rank {actorMaxRank}", eventId: EventIds.Forbidden);
 
-				result.Value.Name = name;
-				result.Value.Description = description;
-				result.Value.SubdivisionId = subdivisionId;
-				result.Value.HeadId = headId;
-				result.Value.MaxRankId = maxRankId;
-				result.Value.Color = color;
-				result.Value.AppendSubdivisionName = appendSubdivisionName;
+				postResult.Value.Name = name;
+				postResult.Value.Description = description;
+				postResult.Value.SubdivisionId = subdivisionId;
+				postResult.Value.HeadId = headId;
+				postResult.Value.MaxRankId = maxRankId;
+				postResult.Value.Color = color;
+				postResult.Value.AppendSubdivisionName = appendSubdivisionName;
 
-				result.Value.UpdateRole();
+				postResult.Value.UpdateRole();
 
-				_db.Posts.Update(result.Value);
+				_db.Posts.Update(postResult.Value);
 				await _db.SaveChangesAsync();
 
-				action.FormSuccess("PostId updated", eventId: EventIds.Updated);
+				action.FormSuccess($"Post {postResult.Value.Name} with ID {postId} updated", eventId: EventIds.Updated);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		/// <summary>
+		/// Устанавливает должности разрешения по переданным permission ID.
+		/// Перезаписывает только разрешения, выданные конкретно этой должности,
+		/// а не унаследованные разрешения от подчинённых.
+		/// Попытка снять или установить разрешение, которого нет у пользователя
+		/// будет проигнорированна.
+		/// </summary>
+		public async Task<EmptyAction> UpdatePermissionsAsync(int postId, List<GivePermissionDto> permissionDtos)
+		{
+			EmptyAction action = new EmptyAction(_logger);
+
+			try
+			{
+				ActionResult<Post> postResult = await CheckCanManagePostAsync(postId);
+				if (!postResult.IsSuccess)
+					return action.FormFailure("Updating post permissions restricted. Permission check failed", eventId: EventIds.Forbidden);
+
+				List<GivedPermission<Post>> givedPermissions = postResult.Value.GivedPermissions.ToList();
+				int permissionsHad = givedPermissions.Count;
+
+				foreach (GivedPermission<Post> givedPermission in givedPermissions)
+				{
+					if (Actor.HasPermission(givedPermission.PermissionType))
+						_db.PostPermissions.Remove(givedPermission);
+				}
+
+				foreach (GivePermissionDto permissionDto in permissionDtos)
+				{
+					if (permissionDto.PermissionId > 0 && permissionDto.PermissionId <= typeof(PermissionType).GetEnumValues().Length)
+					{
+						PermissionType permissionType = (PermissionType)permissionDto.PermissionId;
+						if (Actor.HasPermission(permissionType) && !postResult.Value.HasPermission(permissionType))
+						{
+							Permission? permission = await _db.Permissions.FindAsync(permissionType);
+							if (permission != null)
+							{
+								_db.PostPermissions.Add(new GivedPermission<Post>
+								{
+									Permission = permission,
+									Inherit = permissionDto.Inherit,
+									EntityId = postId
+								});
+							}
+						}
+					}
+				}
+
+				await _db.SaveChangesAsync();
+
+				action.FormSuccess($"Post {postResult.Value.Name} with ID {postId} permissions updated." +
+					$"Then {permissionsHad}, now {postResult.Value.GivedPermissions.Count}", eventId: EventIds.Updated);
 			}
 			catch (Exception ex)
 			{
@@ -221,7 +286,6 @@ namespace Business.Services
 		/// <summary>
 		/// Обновляет Discord роль должности или создаёт её, если не существует
 		/// </summary>
-		/// <param name="postId">ID должности</param>
 		/// <returns>ActionResult с Discord ID роли должности</returns>
 		public async Task<ActionResult<ulong?>> UpdateRoleAsync(int postId)
 		{
@@ -229,17 +293,17 @@ namespace Business.Services
 
 			try
 			{
-				ActionResult<Post> result = await CheckCanManageAsync(postId);
+				ActionResult<Post> result = await CheckCanManagePostAsync(postId);
 
 				if (!result.IsSuccess)
-					return action.FormFailure("PostId updating. Permission check failed", eventId: EventIds.Forbidden);
+					return action.FormFailure("Post's role updating restricted. Permission check failed", eventId: EventIds.Forbidden);
 
 				result.Value.UpdateRole();
 				action.Value = result.Value.DiscordRoleId;
 
 				await _db.SaveChangesAsync();
 
-				action.FormSuccess($"PostId {result.Value.GetFullName()} Discord role updated", eventId: EventIds.Updated);
+				action.FormSuccess($"Post {result.Value.GetFullName()} Discord role updated", eventId: EventIds.Updated);
 			}
 			catch (Exception ex)
 			{
@@ -278,16 +342,16 @@ namespace Business.Services
 
 			try
 			{
-				ActionResult<Post> result = await CheckCanManageAsync(postId);
+				ActionResult<Post> result = await CheckCanManagePostAsync(postId);
 
 				if (!result.IsSuccess)
-					return action.FormFailure("Permission check failure", eventId: EventIds.Forbidden);
+					return action.FormFailure("Deleting post restricted. Permission check failure", eventId: EventIds.Forbidden);
 
 				_db.Posts.Remove(result.Value);
 
 				await _db.SaveChangesAsync();
 
-				action.FormSuccess($"PostId {result.Value.Name} deleted", eventId: EventIds.Deleted);
+				action.FormSuccess($"Post {result.Value.Name} deleted", eventId: EventIds.Deleted);
 			}
 			catch (Exception ex)
 			{
@@ -390,7 +454,7 @@ namespace Business.Services
 
 						int postsInResult = postsToKeep.Count() + postsToAssign.Count() - postsToDepose.Count();
 						if (postsInResult < 1)
-							return action.FormFailure($"Posts assigning failed. Posts in result cannot be under 1 ({postsInResult})",
+							return action.FormFailure($"Posts assigning failed. Posts in postResult cannot be under 1 ({postsInResult})",
 								eventId: EventIds.ImpossibleAction);
 
 						foreach (AssignedPost assignedPost in assignedPosts.IntersectBy(postsToDepose, ap => ap.Post))
@@ -515,7 +579,7 @@ namespace Business.Services
 			return action;
 		}
 
-		public async Task<ActionResult<Post>> CheckCanManageAsync(int postId, Post? post = null)
+		public async Task<ActionResult<Post>> CheckCanManagePostAsync(int postId, Post? post = null)
 		{
 			ActionResult<Post> action = new ActionResult<Post>(_logger);
 
@@ -643,11 +707,11 @@ namespace Business.Services
 				else
 				{
 					_unitService.Actor = Actor;
-					ActionResult<List<Unit>> result = await _unitService.GetAllNotHeadUnitsAsync();
-					if (!result.IsSuccess)
+					ActionResult<List<Unit>> postResult = await _unitService.GetAllNotHeadUnitsAsync();
+					if (!postResult.IsSuccess)
 						return action.FormFailure("Getting postsToAssign can assign failed." +
 							" Handled error in getting all not head units", eventId: EventIds.HandledError);
-					action.Value = result.Value;
+					action.Value = postResult.Value;
 				}
 
 				action.FormSuccess($"{Actor.Nickname}'s postsToAssign can assign retrieved. Length: {action.Value.Count()}",

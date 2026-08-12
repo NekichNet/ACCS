@@ -22,7 +22,6 @@ namespace Business.Services
             bool appendSubdivisionName,
             string description,
             string color,
-            ulong? discordRoleId,
             int? headId
             )
         {
@@ -39,7 +38,7 @@ namespace Business.Services
                 }
                 else
                 {
-                    ActionResult<Subdivision> result = await CheckCanManageAsync((int)headId);
+                    ActionResult<Subdivision> result = await CheckCanManageSubdivisionAsync((int)headId);
                     if (!result.IsSuccess)
                         return action.FormFailure("Permission check failed");
                 }
@@ -50,7 +49,6 @@ namespace Business.Services
                     AppendHeadName = appendSubdivisionName,
                     Description = description,
                     Color = color,
-                    DiscordRoleId = discordRoleId,
                     HeadId = headId
                 };
 
@@ -119,7 +117,7 @@ namespace Business.Services
 
             try
             {
-                ActionResult<Subdivision> result = await CheckCanManageAsync(subdivisionId);
+                ActionResult<Subdivision> result = await CheckCanManageSubdivisionAsync(subdivisionId);
 
                 if (!result.IsSuccess)
                     return action.FormFailure("Permission check failed");
@@ -156,7 +154,7 @@ namespace Business.Services
 
             try
             {
-                ActionResult<Subdivision> result = await CheckCanManageAsync(subdivisionId);
+                ActionResult<Subdivision> result = await CheckCanManageSubdivisionAsync(subdivisionId);
 
                 if (!result.IsSuccess)
                     return action.FormFailure("Permission check failed");
@@ -176,13 +174,73 @@ namespace Business.Services
             return action;
         }
 
-        public async Task<EmptyAction> DeleteAsync(int subdivisionId)
+		/// <summary>
+		/// Устанавливает подразделению разрешения по переданным permission ID.
+		/// Перезаписывает только разрешения, выданные конкретно этому подразделению,
+		/// а не унаследованные разрешения от подразделений выше по уровню.
+		/// Попытка снять или установить разрешение, которого нет у пользователя
+		/// будет проигнорированна.
+		/// </summary>
+		public async Task<EmptyAction> UpdatePermissionsAsync(int subdivisionId, List<GivePermissionDto> permissionDtos)
+		{
+			EmptyAction action = new EmptyAction(_logger);
+
+			try
+			{
+				ActionResult<Subdivision> subdivisionResult = await CheckCanManageSubdivisionAsync(subdivisionId);
+				if (!subdivisionResult.IsSuccess)
+					return action.FormFailure("Updating subdivision permissions restricted. Permission check failed", eventId: EventIds.Forbidden);
+
+				List<GivedPermission<Subdivision>> givedPermissions = subdivisionResult.Value.GivedPermissions.ToList();
+				int permissionsHad = givedPermissions.Count;
+
+				foreach (GivedPermission<Subdivision> givedPermission in givedPermissions)
+				{
+					if (Actor.HasPermission(givedPermission.PermissionType))
+						_db.SubdivisionPermissions.Remove(givedPermission);
+				}
+
+				foreach (GivePermissionDto permissionDto in permissionDtos)
+				{
+					if (permissionDto.PermissionId > 0 && permissionDto.PermissionId <= typeof(PermissionType).GetEnumValues().Length)
+					{
+						PermissionType permissionType = (PermissionType)permissionDto.PermissionId;
+						if (Actor.HasPermission(permissionType) && !subdivisionResult.Value.HasPermission(permissionType))
+						{
+							Permission? permission = await _db.Permissions.FindAsync(permissionType);
+							if (permission != null)
+							{
+								_db.SubdivisionPermissions.Add(new GivedPermission<Subdivision>
+								{
+									Permission = permission,
+									Inherit = permissionDto.Inherit,
+									EntityId = subdivisionId
+								});
+							}
+						}
+					}
+				}
+
+				await _db.SaveChangesAsync();
+
+				action.FormSuccess($"Subdivision {subdivisionResult.Value.Name} with ID {subdivisionId} permissions updated." +
+					$"Then {permissionsHad}, now {subdivisionResult.Value.GivedPermissions.Count}", eventId: EventIds.Updated);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<EmptyAction> DeleteAsync(int subdivisionId)
         {
             EmptyAction action = new EmptyAction(_logger);
 
             try
             {
-                ActionResult<Subdivision> result = await CheckCanManageAsync(subdivisionId);
+                ActionResult<Subdivision> result = await CheckCanManageSubdivisionAsync(subdivisionId);
 
                 if (!result.IsSuccess)
                     return action.FormFailure("Permission check failed", eventId: EventIds.Forbidden);
@@ -201,7 +259,7 @@ namespace Business.Services
             return action;
         }
 
-        public async Task<ActionResult<Subdivision>> CheckCanManageAsync(int subdivisionId)
+        public async Task<ActionResult<Subdivision>> CheckCanManageSubdivisionAsync(int subdivisionId)
         {
             ActionResult<Subdivision> action = new ActionResult<Subdivision>(_logger);
 

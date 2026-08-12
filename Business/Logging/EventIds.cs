@@ -57,7 +57,7 @@
 		/// <summary>
 		/// Не удалось считать входные данные
 		/// </summary>
-		public const int BadData = 301;
+		public const int BadInput = 301;
 		/// <summary>
 		/// Пользователь неавторизован
 		/// </summary>
@@ -65,7 +65,7 @@
 		/// <summary>
 		/// Некорректные входные данные
 		/// </summary>
-		public const int InvalidData = 303;
+		public const int InvalidInput = 303;
 		/// <summary>
 		/// У пользователя недостаточно прав
 		/// </summary>

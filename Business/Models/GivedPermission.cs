@@ -15,6 +15,15 @@ namespace Business.Models
         public bool Inherit { get; set; } = true;
     }
 
+	/// <summary>
+	/// DTO для выдачи разрешения какой-либо сущности
+	/// </summary>
+	public class GivePermissionDto
+	{
+		public int PermissionId { get; set; }
+		public bool Inherit { get; set; } = true;
+	}
+
 	public class PostPermissionConfiguration : IEntityTypeConfiguration<GivedPermission<Post>>
 	{
 		public void Configure(EntityTypeBuilder<GivedPermission<Post>> builder)

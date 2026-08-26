@@ -1,4 +1,5 @@
 ﻿using Business.Models;
+using Business.Models.Acts;
 using Business.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -261,18 +262,15 @@ namespace Business.Controllers
             }
         }
 
-        [HttpPost("{rankId}/assign/{unitId}")]
+        [HttpPost("assign")]
         [Authorize]
-        public async Task<IActionResult> AssignRank(
-            [FromRoute] int rankId,
-            [FromRoute] ulong unitId,
-			[FromQuery(Name = "doc")] int? docId = null)
+        public async Task<IActionResult> AssignRank([FromBody] RankAssignActDto actDto)
         {
             try
             {
                 _rankService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _rankService.AssignRankAsync(rankId, unitId, docId);
+                var action = await _rankService.AssignMultipleAsync(actDto.UnitIds, actDto.RankId, actDto.DocId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });

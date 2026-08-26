@@ -361,7 +361,7 @@ namespace Business.Services
 			return action;
 		}
 
-		public async Task<ActionResult<List<AssignedPost>>> AssignPostsAsync(ulong[] unitIds, int[] postIds, bool overwrite = false, int? docId = null)
+		public async Task<ActionResult<List<AssignedPost>>> AssignMultipleAsync(HashSet<ulong> unitIds, HashSet<int> postIds, bool overwrite = false, int? docId = null)
 		{
 			ActionResult<List<AssignedPost>> action = new ActionResult<List<AssignedPost>>(_logger);
 
@@ -385,16 +385,28 @@ namespace Business.Services
 				if (!canAssignResult.IsSuccess)
 					return action.FormFailure("Posts assigning failed. Unknown handled error", eventId: EventIds.HandledError);
 
+				action.Value = new List<AssignedPost>();
 				List<Unit> units = new List<Unit>();
 
 				foreach (ulong unitId in unitIds)
 				{
 					Unit? unit = await _db.Units.FindAsync(unitId);
 					if (unit == null)
-						return action.FormFailure($"Posts assigning failed. Unit with ID {unitId} not found", eventId: EventIds.NotFound);
+					{
+						_logger.LogWarning(eventId: EventIds.NotFound,
+							$"Posts assigning failed. Unit with ID {unitId} not found");
+						continue;
+					}
 					if (!unit.IsActive() && !Actor.IsAdmin())
-						return action.FormFailure($"Posts assigning failed. Unit {unit.Nickname} is in retirement or dismissed", eventId: EventIds.Forbidden);
+					{
+						_logger.LogWarning(eventId: EventIds.Forbidden,
+							$"Posts assigning failed. Unit {unit.Nickname} is in retirement or dismissed");
+						continue;
+					}
+					units.Add(unit);
+				}
 
+				foreach (Unit unit in units) {
 					List<Post> posts = unit.GetPosts();
 					HashSet<Post> postsToKeep = new HashSet<Post>();
 					HashSet<Post> postsToAssign = new HashSet<Post>();
@@ -442,7 +454,7 @@ namespace Business.Services
 								continue;
 							if (!canChange.Contains(assignedPost.Post))
 							{
-								_logger.LogDebug(
+								_logger.LogWarning(
 									eventId: EventIds.Forbidden,
 									$"Post deposing restricted. Actor {Actor.Nickname} with Discord ID {Actor.DiscordId}" +
 									$" cannot depose from post {assignedPost.Post.GetFullName()} with ID {assignedPost.Post.Id}");
@@ -454,8 +466,11 @@ namespace Business.Services
 
 						int postsInResult = postsToKeep.Count() + postsToAssign.Count() - postsToDepose.Count();
 						if (postsInResult < 1)
-							return action.FormFailure($"Posts assigning failed. Posts in postResult cannot be under 1 ({postsInResult})",
-								eventId: EventIds.ImpossibleAction);
+						{
+							_logger.LogDebug(eventId: EventIds.ImpossibleAction,
+								$"Posts assigning failed. Posts in postResult cannot be under 1 ({postsInResult})");
+							continue;
+						}
 
 						foreach (AssignedPost assignedPost in assignedPosts.IntersectBy(postsToDepose, ap => ap.Post))
 						{
@@ -467,23 +482,21 @@ namespace Business.Services
 
 					foreach (Post postToAssign in postsToAssign)
 					{
-						unit.UnitStates.Add(new AssignedPost()
+						AssignedPost assignedPost = new AssignedPost()
 						{
 							Post = postToAssign,
 							Start = start,
 							DocId = docId,
-						});
+							Unit = unit
+						};
+						await _db.AssignedPosts.AddAsync(assignedPost);
+						action.Value.Add(assignedPost);
 					}
 				}
 
 				await _db.SaveChangesAsync();
 
-				// Не закончено.
-
-				//action.FormSuccess(
-				//	$"Unit {unit.Nickname} was assigned to " +
-				//	$"{postsToAssign.Count()}/{postsToAssign.Count() + failedToAssign.Count()} and deposed" +
-				//	$"from {postsToDepose.Count()}/{postsToDepose.Count() + failedToDepose.Count()} posts", eventId: EventIds.Updated);
+				action.FormSuccess($"Formed {action.Value.Count} post assignments to {units.Count} units", eventId: EventIds.Updated);
 			}
 			catch (Exception ex)
 			{
@@ -493,7 +506,8 @@ namespace Business.Services
 			return action;
 		}
 
-		public async Task<ActionResult<AssignedPost>> AssignAsync(ulong unitDiscordId, int postId, Unit? unit = null, int? docId = null)
+		/* На некоторое время оставляем только метод множественного назначения AssignMultipleAsync
+		public async Task<ActionResult<AssignedPost>> AssignMultipleAsync(ulong unitDiscordId, int postId, Unit? unit = null, int? docId = null)
 		{
 			ActionResult<AssignedPost> action = new ActionResult<AssignedPost>(_logger);
 
@@ -536,6 +550,7 @@ namespace Business.Services
 
 			return action;
 		}
+		*/
 
 		public async Task<EmptyAction> DeposeAsync(ulong unitDiscordId, int postId, Unit? unit = null, AssignedPost? assignedPost = null)
 		{
@@ -631,7 +646,7 @@ namespace Business.Services
 						$" PostId with ID {postId} not found", eventId: EventIds.NotFound);
 
 				if (!Actor.HasPermission(PermissionType.AssignPosts))
-					return action.FormFailure($"{Actor.Nickname} don't have AssignPostsAsync permission", eventId: EventIds.Forbidden);
+					return action.FormFailure($"{Actor.Nickname} don't have AssignMultipleAsync permission", eventId: EventIds.Forbidden);
 
 				List<Post> actorHeads = Actor.GetPosts().SelectMany(p => p.GetAllHeadsRecursive()).ToList();
 
@@ -659,7 +674,7 @@ namespace Business.Services
 					return action.FormFailure("Getting postsToAssign can assign failed. Unauthorized", eventId: EventIds.Unauthorized);
 
 				if (!Actor.HasPermission(PermissionType.AssignPosts))
-					return action.FormFailure($"{Actor.Nickname} don't have AssignPostsAsync permission", eventId: EventIds.Forbidden);
+					return action.FormFailure($"{Actor.Nickname} don't have AssignMultipleAsync permission", eventId: EventIds.Forbidden);
 
 				if (Actor.IsAdmin())
 				{
@@ -697,8 +712,8 @@ namespace Business.Services
 				if (Actor == null)
 					return action.FormFailure("Getting units can change postsToAssign failed. Unauthorized", eventId: EventIds.Unauthorized);
 
-				if (!Actor.HasPermission(PermissionType.AssignPostsAsync))
-					return action.FormFailure($"{Actor.Nickname} don't have AssignPostsAsync permission", eventId: EventIds.Forbidden);
+				if (!Actor.HasPermission(PermissionType.AssignMultipleAsync))
+					return action.FormFailure($"{Actor.Nickname} don't have AssignMultipleAsync permission", eventId: EventIds.Forbidden);
 
 				if (Actor.IsAdmin())
 				{

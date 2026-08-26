@@ -1,4 +1,5 @@
 ﻿using Business.Models;
+using Business.Models.Acts;
 using Business.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -286,16 +287,15 @@ namespace Business.Controllers
             }
         }
 
-        /*
-        [HttpPost("{postId}/assign/{unitId}")] // Todo: переделать на "{postId}/assign/{unitId}"
+        [HttpPost("assign")]
         [Authorize]
-        public async Task<IActionResult> AssignPost([FromRoute] int postId, [FromRoute] ulong unitId, [FromBody] PostDto dto)
+        public async Task<IActionResult> AssignPost([FromBody] PostAssignActDto actDto)
         {
             try
             {
                 _postService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _postService.AssignAsync(discordId, postId);
+                var action = await _postService.AssignMultipleAsync(actDto.UnitIds, actDto.PostIds, actDto.Overwrite, actDto.DocId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -308,7 +308,6 @@ namespace Business.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
-        */
 
         [HttpGet("{postId}/assign/{unitId}")]
         public async Task<IActionResult> GetInfoAssignedUnit([FromRoute] int postId, [FromRoute] ulong unitId)

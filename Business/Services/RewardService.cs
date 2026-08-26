@@ -225,7 +225,7 @@ namespace Business.Services
 			return action;
 		}
 
-		public async Task<ActionResult<List<AssignedReward>>> AssignAsync(ulong[] unitIds, int[] rewardIds, int? docId = null)
+		public async Task<ActionResult<List<AssignedReward>>> AssignMultipleAsync(HashSet<ulong> unitIds, HashSet<int> rewardIds, int? docId = null)
         {
             ActionResult<List<AssignedReward>> action = new ActionResult<List<AssignedReward>>(_logger);
 

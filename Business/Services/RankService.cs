@@ -305,39 +305,51 @@ namespace Business.Services
             return action;
         }
 
-        public async Task<ActionResult<AssignedRank>> AssignRankAsync(int rankId, ulong unitId, int? docId = null)
+        public async Task<ActionResult<List<AssignedRank>>> AssignMultipleAsync(HashSet<ulong> unitIds, int rankId, int? docId = null)
         {
-			ActionResult<AssignedRank> action = new ActionResult<AssignedRank>(_logger);
+			ActionResult<List<AssignedRank>> action = new ActionResult<List<AssignedRank>>(_logger);
 
             try
             {
-                ActionResult<Unit> result = await CheckCanChangeRankAsync(unitId);
-                if (!result.IsSuccess)
-                    return action.FormFailure("Rank assigning restricted. Permission check failed", eventId: EventIds.Forbidden);
+				if (Actor == null)
+					return action.FormFailure("Permission check failed. Unauthorized", eventId: EventIds.Unauthorized);
+				if (!Actor.HasPermission(PermissionType.AssignRanks))
+					return action.FormFailure($"{Actor.Nickname} don't have AssignRanks permission", eventId: EventIds.Forbidden);
 
-                Rank? rank = await _db.Ranks.FindAsync(rankId);
-                if (rank == null)
-                    return action.FormFailure($"Rank assigning failed. Rank with ID {rankId} not found", eventId: EventIds.NotFound);
+				Rank? rank = await _db.Ranks.FindAsync(rankId);
+				if (rank == null)
+					return action.FormFailure($"Rank assigning failed. Rank with ID {rankId} not found", eventId: EventIds.NotFound);
 
-                AssignedRank currentAssignment = result.Value.GetAssignedRank();
+				List<AssignedRank> assignedRanks = new List<AssignedRank>();
 
-                if (currentAssignment.Rank.Id == rank.Id)
-                    return action.FormFailure($"Rank assigning failed. Unit {result.Value.Nickname}" +
-                        $" already assigned to rank {rank.Name} with ID {rankId}", eventId: EventIds.ImpossibleAction);
-
-                currentAssignment.Terminate();
-
-                var newAssignedRank = new AssignedRank
+                foreach (ulong unitId in unitIds)
                 {
-                    UnitId = result.Value.DiscordId,
-                    RankId = rankId,
-                    Start = DateTime.UtcNow
-                };
+					ActionResult<Unit> result = await CheckCanChangeRankAsync(unitId);
+					if (!result.IsSuccess)
+						return action.FormFailure("Rank assigning restricted. Permission check failed", eventId: EventIds.Forbidden);
 
-                await _db.AssignedRanks.AddAsync(newAssignedRank);
+					AssignedRank currentAssignment = result.Value.GetAssignedRank();
+
+					if (currentAssignment.Rank.Id == rank.Id)
+						return action.FormFailure($"Rank assigning failed. Unit {result.Value.Nickname}" +
+							$" already assigned to rank {rank.Name} with ID {rankId}", eventId: EventIds.ImpossibleAction);
+
+					currentAssignment.Terminate();
+
+					var newAssignedRank = new AssignedRank
+					{
+						UnitId = result.Value.DiscordId,
+						RankId = rankId,
+						Start = DateTime.UtcNow
+					};
+
+					await _db.AssignedRanks.AddAsync(newAssignedRank);
+                    assignedRanks.Add(newAssignedRank);
+				}
+				
                 await _db.SaveChangesAsync();
 
-                action.FormSuccess($"Unit {result.Value.Nickname} assigned to rank {rank.Name}", eventId: EventIds.Created);
+                action.FormSuccess($"{assignedRanks.Count} units were assigned to rank {rank.Name}", eventId: EventIds.Updated);
             }
             catch (Exception ex)
             {
@@ -347,7 +359,7 @@ namespace Business.Services
             return action;
         }
 
-        public async Task<ActionResult<AssignedRank>> GetAssignedRankAsync(int rankId, ulong unitDiscordId)
+		public async Task<ActionResult<AssignedRank>> GetAssignedRankAsync(int rankId, ulong unitDiscordId)
         {
             ActionResult<AssignedRank> action = new ActionResult<AssignedRank>(_logger);
 
@@ -412,7 +424,7 @@ namespace Business.Services
                     return action.FormFailure("Permission check failed. Unit not found", eventId: EventIds.NotFound);
                 action.Value = unit;
 
-                if (!unit.IsActive())
+                if (!unit.IsActive() && !Actor.IsAdmin())
                     return action.FormFailure($"Permission check failed." +
                         $" Unit {unit.Nickname} is in retirement or dismissed", eventId: EventIds.Forbidden);
 

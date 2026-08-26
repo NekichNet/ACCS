@@ -2,7 +2,7 @@
 
 namespace Business.Models.Acts
 {
-    public class RankChangingActDto : ActDto
+    public class RankChangeActDto : ActDto
     {
         public int Steps { get; set; }
         public bool IgnorePostMaxRank { get; set; } = false;

@@ -1,4 +1,5 @@
 ﻿using Business.Models;
+using Business.Models.Acts;
 using Business.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -248,19 +249,15 @@ namespace Business.Controllers
 			}
 		}
 
-		/*
-        [HttpPost("{rewardId}/assign/{unitId}")]
+        [HttpPost("assign")]
         [Authorize]
-        public async Task<IActionResult> AssignReward(
-            [FromRoute] int rewardId,
-            [FromRoute] ulong unitId,
-			[FromQuery(Name = "doc")] int? docId = null)
+        public async Task<IActionResult> AssignReward([FromBody] RewardAssignActDto actDto)
         {
             try
             {
                 _rewardService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var action = await _rewardService.AssignAsync(rewardId, unitId, docId);
+                var action = await _rewardService.AssignMultipleAsync(actDto.UnitIds, actDto.RewardIds, actDto.DocId);
                 if (!action.IsSuccess)
                 {
                     return BadRequest(new { error = action.Message });
@@ -274,7 +271,6 @@ namespace Business.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
-        */
 
 		[HttpGet("{rewardId}/assign/{unitId}")]
         [Authorize]

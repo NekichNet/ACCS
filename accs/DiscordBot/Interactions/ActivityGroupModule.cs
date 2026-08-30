@@ -95,7 +95,7 @@ namespace accs.DiscordBot.Interactions
 					return;
                 }
 
-                DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+                DateOnly date = DateOnly.FromDateTime(DateTime.Today);
 
                 // OCR
                 if (!Directory.Exists("temp"))
@@ -113,7 +113,7 @@ namespace accs.DiscordBot.Interactions
 
                 await _db.Activities.LoadAsync();
                 foreach (Unit unit in detectedUnits)
-                    units.Add(unit, unit.Activities.Any(a => a.Date == today));
+                    units.Add(unit, unit.Activities.Any(a => a.Date == date));
 
                 if (units.Any())
                 {
@@ -125,7 +125,7 @@ namespace accs.DiscordBot.Interactions
 					if (units.Any(p => !p.Value))
 						component.WithButton("Подтвердить", customId: customId, ButtonStyle.Success);
 
-					EmbedBuilder embedBuilder = GetResultsEmbedBuilder(units, today)
+					EmbedBuilder embedBuilder = GetResultsEmbedBuilder(units, date)
 						.WithAuthor((await _db.Units.FindAsync(Context.User.Id)).Nickname, Context.User.GetDisplayAvatarUrl());
 
                     await DeleteOriginalResponseAsync();
@@ -147,13 +147,46 @@ namespace accs.DiscordBot.Interactions
         [SlashCommand("user", "Зафиксировать активность указанного бойца.")]
         public async Task FixUserCommand(
             [Summary(description: "Боец клана. Если не указывать, зафиксируете собственную активность")]
-            IUser? user = null)
+            IUser? user = null,
+			[Summary(name: "date", description: "Дата в формате: 'ММ/ДД/ГГГГ'. По умолчанию берётся текущая дата")]
+			string? dateString = null)
         {
             try
             {
-                DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+				DateOnly date;
 
-                Unit? unit;
+				if (dateString == null)
+				{
+					date = DateOnly.FromDateTime(DateTime.UtcNow);
+				}
+                else
+                {
+                    Unit? actor = await _db.Units.FindAsync(Context.User.Id);
+
+                    if (actor == null)
+                    {
+						await RespondAsync("Ошибка. Вы не найдены в системе!");
+						return;
+					}
+                    else if (!actor.HasPermission(PermissionType.ConfirmActivity))
+                    {
+						await RespondAsync("У вас пока нет прав устанавливать дату фиксации.");
+						return;
+					}
+
+					if (!DateOnly.TryParse(dateString, out date))
+					{
+						await RespondAsync("Не удалось распознать введённую дату.");
+						return;
+					}
+					else if (date > DateOnly.FromDateTime(DateTime.UtcNow))
+					{
+						await RespondAsync("Введённая дата ещё не наступила.");
+						return;
+					}
+				}
+
+				Unit? unit;
                 if (user != null)
                 {
                     unit = await _db.Units.FindAsync(user.Id);
@@ -173,7 +206,7 @@ namespace accs.DiscordBot.Interactions
 
 				Dictionary<Unit, bool> dict = new Dictionary<Unit, bool> 
                 { 
-                    { unit, unit.Activities.Any(a => a.Date == today) } 
+                    { unit, unit.Activities.Any(a => a.Date == date) } 
                 };
 
 				string customId = $"confirm-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
@@ -184,7 +217,7 @@ namespace accs.DiscordBot.Interactions
                     builder.WithButton("Подтвердить", customId: customId, ButtonStyle.Success);
 				}
 
-				EmbedBuilder embedBuilder = GetResultsEmbedBuilder(dict, today)
+				EmbedBuilder embedBuilder = GetResultsEmbedBuilder(dict, date)
                     .WithAuthor((await _db.Units.FindAsync(Context.User.Id)).Nickname, Context.User.GetDisplayAvatarUrl());
 
                 await RespondAsync(components: builder.Build(), embed: embedBuilder.Build());

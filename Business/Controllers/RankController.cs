@@ -284,7 +284,36 @@ namespace Business.Controllers
             }
         }
 
-        [HttpGet("{rankId}/assign/{unitId}")]
+		[HttpPost("change")]
+		[Authorize]
+		public async Task<IActionResult> ChangeRank([FromBody] RankChangeActDto actDto)
+		{
+			try
+			{
+				_rankService.Actor = HttpContext.Items["Actor"] as Unit;
+
+				var action = await _rankService.ChangeMultipleAsync(
+                    actDto.UnitIds,
+                    actDto.Steps,
+                    actDto.IgnorePostMaxRank,
+                    actDto.IsDowngrade,
+                    actDto.DocId
+                    );
+
+				if (!action.IsSuccess)
+				{
+					return BadRequest(new { error = action.Message });
+				}
+				return Ok(new { message = action.Message });
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in ChangeRank: {ex.Message}");
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
+
+		[HttpGet("{rankId}/assign/{unitId}")]
         public async Task<IActionResult> GetAssignedUnit([FromRoute] int rankId, [FromRoute] ulong unitId)
         {
             try

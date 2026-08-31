@@ -162,11 +162,14 @@ namespace Business.Services
 				if (!postResult.IsSuccess)
 					return action.FormFailure("Updating post restricted. Permission check failed", eventId: EventIds.Forbidden);
 
+				Post? headPost = null;
+
 				if (headId != null)
 				{
 					ActionResult<Post> headResult = await CheckCanManagePostAsync((int)headId);
 					if (!headResult.IsSuccess)
 						return action.FormFailure($"Updating post restricted. Can't set head with ID {headId}", eventId: EventIds.Forbidden);
+					headPost = headResult.Value;
 				}
 				else
 				{
@@ -185,20 +188,28 @@ namespace Business.Services
 							$" to subdivision with ID {subdivisionId}", eventId: EventIds.Forbidden);
 				}
 
-				Rank? actorMaxRank = Actor.GetMaxRank();
-				if (actorMaxRank == null)
-					return action.FormFailure($"Post {postResult.Value.Name} with ID {postId} updating failed. " +
-						$"Can't get user's max available rank", eventId: EventIds.HandledError);
+				Rank? availableMaxRank = null;
+				if (headPost == null)
+				{
+					availableMaxRank = Actor.GetMaxRank();
+					if (availableMaxRank == null)
+						return action.FormFailure($"Post {postResult.Value.Name} with ID {postId} updating failed. " +
+							$"Can't get user's max available rank", eventId: EventIds.HandledError);
+				}
+				else
+				{
+					availableMaxRank = headPost.MaxRank;
+				}
 
 				ActionResult<Rank> rankResult = await _rankService.GetAsync(maxRankId);
 				if (!rankResult.IsSuccess)
 					return action.FormFailure($"Post {postResult.Value.Name} with ID {postId} updating failed. " +
 						$"Rank with ID {maxRankId} not found", eventId: EventIds.NotFound);
 
-				if (actorMaxRank.GetAllHigherRecursive().Contains(rankResult.Value))
+				if (rankResult.Value.GetIndex() < availableMaxRank.GetIndex())
 					return action.FormFailure($"Post {postResult.Value.Name} with ID {postId} updating failed. " +
 						$"Rank {rankResult.Value.Name} is higher, " +
-						$"than unit's {Actor.Nickname} max rank {actorMaxRank}", eventId: EventIds.Forbidden);
+						$"than unit's {Actor.Nickname} max available rank {availableMaxRank.Name}", eventId: EventIds.Forbidden);
 
 				postResult.Value.Name = name;
 				postResult.Value.Description = description;
@@ -259,7 +270,7 @@ namespace Business.Services
 							Permission? permission = await _db.Permissions.FindAsync(permissionType);
 							if (permission != null)
 							{
-								_db.PostPermissions.Add(new GivedPermission<Post>
+								await _db.PostPermissions.AddAsync(new GivedPermission<Post>
 								{
 									Permission = permission,
 									Inherit = permissionDto.Inherit,
@@ -385,6 +396,10 @@ namespace Business.Services
 				if (!canAssignResult.IsSuccess)
 					return action.FormFailure("Posts assigning failed. Unknown handled error", eventId: EventIds.HandledError);
 
+				List<Post> canChange = canAssignResult.Value;
+				if (!canChange.Any())
+					return action.FormFailure("Posts assigning failed. Can't set any currentPosts", eventId: EventIds.Failed);
+
 				action.Value = new List<AssignedPost>();
 				List<Unit> units = new List<Unit>();
 
@@ -406,43 +421,44 @@ namespace Business.Services
 					units.Add(unit);
 				}
 
+				List<Post> posts = new List<Post>();
+
+				foreach (int postId in postIds)
+				{
+					Post? post = await _db.Posts.FindAsync(postId);
+					if (post == null)
+					{
+						_logger.LogWarning(eventId: EventIds.NotFound, $"Post assigning failed. Post with ID {postId} not found");
+						continue;
+					}
+					if (!canChange.Contains(post))
+					{
+						_logger.LogWarning(
+							eventId: EventIds.Forbidden,
+							$"Post assigning restricted. Actor {Actor.Nickname} with Discord ID " +
+							$"{Actor.DiscordId} cannot assign post {post.GetFullName()} with ID {postId}");
+						continue;
+					}
+					posts.Add(post);
+				}
+
 				foreach (Unit unit in units) {
-					List<Post> posts = unit.GetPosts();
+					List<Post> currentPosts = unit.GetPosts();
 					HashSet<Post> postsToKeep = new HashSet<Post>();
 					HashSet<Post> postsToAssign = new HashSet<Post>();
 					HashSet<Post> postsToDepose = new HashSet<Post>();
-					HashSet<Post> failedToAssign = new HashSet<Post>();
 					HashSet<Post> failedToDepose = new HashSet<Post>();
-					List<Post> canChange = canAssignResult.Value;
 
-					if (!canChange.Any())
-						return action.FormFailure("Posts assigning failed. Can't set any posts", eventId: EventIds.Failed);
-
-					foreach (int postId in postIds)
+					foreach (Post post in posts)
 					{
-						Post? postToAssign = await _db.Posts.FindAsync(postId);
-						if (postToAssign == null)
+						if (currentPosts.Contains(post))
 						{
-							_logger.LogWarning(eventId: EventIds.NotFound, $"Post assigning failed. Post with ID {postId} not found");
-							continue;
-						}
-						if (!canChange.Contains(postToAssign))
-						{
-							failedToAssign.Add(postToAssign);
-							_logger.LogWarning(
-								eventId: EventIds.Forbidden,
-								$"Post assigning restricted. Actor {Actor.Nickname} with Discord ID " +
-								$"{Actor.DiscordId} cannot assign post {postToAssign.GetFullName()} with ID {postId}");
-							continue;
-						}
-						if (posts.Contains(postToAssign))
-						{
-							postsToKeep.Add(postToAssign);
+							postsToKeep.Add(post);
 							_logger.LogDebug(eventId: EventIds.Processing,
-								$"Posts assigning in process. Post {postToAssign.Name} with ID {postId} keeped.");
+								$"Posts assigning in process. Post {post.Name} with ID {post.Id} keeped.");
 							continue;
 						}
-						postsToAssign.Add(postToAssign);
+						postsToAssign.Add(post);
 					}
 
 					if (overwrite)
@@ -507,7 +523,7 @@ namespace Business.Services
 		}
 
 		/* На некоторое время оставляем только метод множественного назначения AssignMultipleAsync
-		public async Task<ActionResult<AssignedPost>> AssignMultipleAsync(ulong unitDiscordId, int postId, Unit? unit = null, int? docId = null)
+		public async Task<ActionResult<AssignedPost>> AssignPostAsync(ulong unitDiscordId, int postId, Unit? unit = null, int? docId = null)
 		{
 			ActionResult<AssignedPost> action = new ActionResult<AssignedPost>(_logger);
 

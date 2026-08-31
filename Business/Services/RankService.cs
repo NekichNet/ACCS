@@ -326,13 +326,27 @@ namespace Business.Services
                 {
 					ActionResult<Unit> result = await CheckCanChangeRankAsync(unitId);
 					if (!result.IsSuccess)
-						return action.FormFailure("Rank assigning restricted. Permission check failed", eventId: EventIds.Forbidden);
+                    {
+						_logger.LogWarning(eventId: EventIds.Forbidden,
+                            $"Rank assigning to unit with Discord ID {unitId} restricted. Permission check failed");
+                        continue;
+					}
 
-					AssignedRank currentAssignment = result.Value.GetAssignedRank();
+					AssignedRank? currentAssignment = result.Value.GetAssignedRank();
+
+                    if (currentAssignment == null)
+                    {
+						_logger.LogError(eventId: EventIds.HandledError,
+                            $"Rank assigning to unit with Discord ID {unitId} failed. Can't achieve current assignment");
+						continue;
+					}
 
 					if (currentAssignment.Rank.Id == rank.Id)
-						return action.FormFailure($"Rank assigning failed. Unit {result.Value.Nickname}" +
-							$" already assigned to rank {rank.Name} with ID {rankId}", eventId: EventIds.ImpossibleAction);
+                    {
+						_logger.LogInformation(eventId: EventIds.Forbidden, $"Rank assigning failed. Unit {result.Value.Nickname}" +
+							$" already assigned to rank {rank.Name} with ID {rankId}");
+						continue;
+					}
 
 					currentAssignment.Terminate();
 
@@ -346,8 +360,10 @@ namespace Business.Services
 					await _db.AssignedRanks.AddAsync(newAssignedRank);
                     assignedRanks.Add(newAssignedRank);
 				}
-				
-                await _db.SaveChangesAsync();
+
+				action.Value = assignedRanks;
+
+				await _db.SaveChangesAsync();
 
                 action.FormSuccess($"{assignedRanks.Count} units were assigned to rank {rank.Name}", eventId: EventIds.Updated);
             }
@@ -358,6 +374,106 @@ namespace Business.Services
 
             return action;
         }
+
+		public async Task<ActionResult<List<AssignedRank>>> ChangeMultipleAsync(
+            HashSet<ulong> unitIds,
+            int steps = 1,
+            bool ignorePostMaxRank = false,
+            bool isDowngrade = false,
+            int? docId = null
+            )
+		{
+			ActionResult<List<AssignedRank>> action = new ActionResult<List<AssignedRank>>(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Changing rank restricted. Unauthorized", eventId: EventIds.Unauthorized);
+				if (!Actor.HasPermission(PermissionType.AssignRanks))
+					return action.FormFailure($"Changing rank restricted." +
+                        $" {Actor.Nickname} don't have AssignRanks permission", eventId: EventIds.Forbidden);
+
+                if (isDowngrade)
+                    steps = -steps;
+
+				List<AssignedRank> assignedRanks = new List<AssignedRank>();
+
+				foreach (ulong unitId in unitIds)
+				{
+					ActionResult<Unit> result = await CheckCanChangeRankAsync(unitId);
+					if (!result.IsSuccess)
+					{
+						_logger.LogWarning(eventId: EventIds.Forbidden,
+                            $"Unit with Discord Id {unitId} Rank changing restricted. Permission check failed");
+						continue;
+					}
+
+                    AssignedRank? currentAssignment = result.Value.GetAssignedRank();
+                    
+					if (currentAssignment == null)
+					{
+						_logger.LogError(eventId: EventIds.HandledError,
+							$"Unit {result.Value.Nickname} rank changing failed. Can't get unit's current rank");
+						continue;
+					}
+
+					Rank currentRank = currentAssignment.Rank;
+					Rank? maxRank = result.Value.GetMaxRank();
+
+					if (maxRank == null)
+					{
+						_logger.LogError(eventId: EventIds.HandledError,
+							$"Unit {result.Value.Nickname} rank changing failed. Can't get unit's max rank");
+						continue;
+					}
+
+					Rank targetRank = currentRank;
+                    for (int i = 0; i < Math.Abs(steps); i++)
+                    {
+                        if (targetRank.Higher != null)
+                        {
+                            if (ignorePostMaxRank || targetRank.Higher.GetIndex() >= maxRank.GetIndex())
+                            {
+                                targetRank = targetRank.Higher;
+                            }
+                        }
+                    }
+
+					if (targetRank == currentRank)
+                    {
+						_logger.LogWarning(eventId: EventIds.ImpossibleAction,
+							$"Unit {result.Value.Nickname} rank changing failed. Already achieved rank bounds");
+						continue;
+					}
+
+					currentAssignment.Terminate();
+
+					var newAssignedRank = new AssignedRank
+					{
+						Unit = result.Value,
+						Rank = targetRank,
+						Start = DateTime.UtcNow
+					};
+
+					await _db.AssignedRanks.AddAsync(newAssignedRank);
+					assignedRanks.Add(newAssignedRank);
+				}
+
+                action.Value = assignedRanks;
+
+				await _db.SaveChangesAsync();
+
+				action.FormSuccess($"{assignedRanks.Count} units' ranks were " + 
+                    (steps > 0 ? "upgraded" : "downgraded") + $" by {steps} steps",
+                    eventId: EventIds.Updated);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
 
 		public async Task<ActionResult<AssignedRank>> GetAssignedRankAsync(int rankId, ulong unitDiscordId)
         {

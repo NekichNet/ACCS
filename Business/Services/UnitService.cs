@@ -335,7 +335,8 @@ namespace Business.Services
 			DateTime? start = null,
 			DateTime? end = null,
 			int days = 7,
-			int? docId = null)
+			int? docId = null
+			)
         {
             ActionResult<Status> action = new ActionResult<Status>(_logger);
 
@@ -385,6 +386,12 @@ namespace Business.Services
 				{
 					await _db.Statuses.AddAsync(newStatus);
 					await _db.SaveChangesAsync();
+					action.Value = newStatus;
+					action.FormSuccess($"Set {newStatus.Name} to {unit.Nickname}", eventId: EventIds.Updated);
+				}
+				else
+				{
+					action.FormFailure($"Applying status to {unit.Nickname} failed. Invalid status type", eventId: EventIds.HandledError);
 				}
 			}
             catch (Exception ex)
@@ -395,7 +402,50 @@ namespace Business.Services
             return action;
         }
 
-        /* Говно галимое. Переделать, пока на сайте не реализовали.
+		public async Task<ActionResult<List<Status>>> ApplyStatusMultipleAsync(
+			StatusType statusType,
+			HashSet<ulong> unitIds,
+			bool overwrite = false,
+			DateTime? start = null,
+			DateTime? end = null,
+			int days = 7,
+			int? docId = null
+			)
+		{
+			ActionResult<List<Status>> action = new ActionResult<List<Status>>(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Applying status restricted. Unauthorized", eventId: EventIds.Unauthorized);
+				if (!Actor.HasPermission(PermissionType.AssignStatuses))
+					return action.FormFailure("Applying status restricted", eventId: EventIds.Forbidden);
+
+				if (start == null)
+					start = DateTime.UtcNow;
+				if (end == null)
+					end = ((DateTime)start).AddDays(days);
+
+				List<Status> assignedStatuses = new List<Status>();
+				foreach (ulong unitId in unitIds)
+				{
+					ActionResult<Status> result = await ApplyStatusAsync(statusType, unitId, overwrite, start, end);
+					if (result.IsSuccess)
+						assignedStatuses.Add(result.Value);
+				}
+				action.Value = assignedStatuses;
+
+				action.FormSuccess($"Applyed statuses to {assignedStatuses.Count} units", eventId: EventIds.Updated);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		/* Говно галимое. Переделать, пока на сайте не реализовали.
 		public async Task<EmptyAction> UpdateAsync(Unit unit)
 		{
 			EmptyAction action = new EmptyAction(_logger);
@@ -516,7 +566,7 @@ namespace Business.Services
         }
         */
 
-        public async Task<ActionResult<HashSet<Permission>>> GetPermissionsAsync(ulong unitId)
+		public async Task<ActionResult<HashSet<Permission>>> GetPermissionsAsync(ulong unitId)
         {
             ActionResult<HashSet<Permission>> action = new ActionResult<HashSet<Permission>> (_logger);
 

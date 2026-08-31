@@ -5,6 +5,9 @@ namespace Business.Models.Acts
     public class StatusAssignActDto : ActDto
     {
         public ushort StatusKey { get; set; }
-        public bool Override { get; set; } = false;
-    }
+        public bool Ovewrite { get; set; } = false;
+		public DateTime? Start { get; set; } = null;
+		public DateTime? End { get; set; } = null;
+        public int Days { get; set; } = 7;
+	}
 }

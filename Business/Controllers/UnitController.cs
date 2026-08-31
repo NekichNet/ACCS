@@ -1,5 +1,6 @@
 ﻿using Business.Logging;
 using Business.Models;
+using Business.Models.Acts;
 using Business.Models.States.Statuses;
 using Business.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -142,7 +143,41 @@ namespace Business.Controllers
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError($"Error in ApplyStatusAsync: {ex.Message}", ex, EventIds.HandledError);
+				_logger.LogError($"Error in AppendStatus: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
+
+		[HttpPost("status")]
+		public async Task<IActionResult> AppendMultipleStatus([FromBody] StatusAssignActDto actDto)
+		{
+			try
+			{
+				if (actDto.StatusKey > typeof(StatusType).GetEnumValues().Length)
+				{
+					return BadRequest(new { error = "Appending status failed. Invalid status key" });
+				}
+
+				var result = await _unitService.ApplyStatusMultipleAsync(
+                    (StatusType)actDto.StatusKey,
+                    actDto.UnitIds,
+                    actDto.Ovewrite,
+                    actDto.Start,
+                    actDto.End,
+                    actDto.Days,
+                    actDto.DocId
+                    );
+
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
+
+				return Ok(result.Value);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in AppendMultipleStatus: {ex.Message}", ex, EventIds.HandledError);
 				return StatusCode(500, new { error = "Internal server error" });
 			}
 		}

@@ -1,6 +1,7 @@
 ﻿using Business.Logging;
 using Business.Models;
 using Business.Models.Acts;
+using Business.Models.Acts.Abstraction;
 using Business.Models.States.Statuses;
 using Business.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -119,40 +120,14 @@ namespace Business.Controllers
             }
         }
 
-		[HttpPost("{unitId}/status/{statusKey}")]
-		public async Task<IActionResult> AppendStatus(
-            [FromRoute] ulong unitId,
-            [FromRoute] ushort statusKey,
-            [FromQuery(Name = "override")] bool overwrite = false,
-			[FromQuery(Name = "doc")] int? docId = null)
-		{
-			try
-			{
-                if (statusKey > typeof(StatusType).GetEnumValues().Length)
-                {
-					return BadRequest(new { error = "Appending status failed. Invalid status key" });
-				}
-
-				var result = await _unitService.ApplyStatusAsync((StatusType)statusKey, unitId, docId: docId);
-				if (!result.IsSuccess)
-				{
-					return BadRequest(new { error = result.Message });
-				}
-
-				return Ok(result.Value);
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Error in AppendStatus: {ex.Message}", ex, EventIds.HandledError);
-				return StatusCode(500, new { error = "Internal server error" });
-			}
-		}
-
 		[HttpPost("status")]
+        [Authorize]
 		public async Task<IActionResult> AppendMultipleStatus([FromBody] StatusAssignActDto actDto)
 		{
 			try
 			{
+				_unitService.Actor = HttpContext.Items["Actor"] as Unit;
+
 				if (actDto.StatusKey > typeof(StatusType).GetEnumValues().Length)
 				{
 					return BadRequest(new { error = "Appending status failed. Invalid status key" });
@@ -316,17 +291,38 @@ namespace Business.Controllers
             }
         }
 
-        [HttpDelete("{unitId}")]
+		[HttpPost("retirement")]
+		[Authorize]
+		public async Task<IActionResult> AssignRetirementMultipleUnits([FromBody] ActDto actDto)
+		{
+			try
+			{
+				_unitService.Actor = HttpContext.Items["Actor"] as Unit;
+
+				var result = await _unitService.AssignRetirenmentMultipleAsync(actDto.UnitIds, actDto.DocId);
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
+
+				return Ok(result.Value);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in AssignRetirementMultipleUnits: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
+
+		[HttpDelete]
         [Authorize]
-        public async Task<IActionResult> DismissUnit(
-            [FromRoute] ulong unitId,
-			[FromQuery(Name = "doc")] int? docId = null)
+        public async Task<IActionResult> DismissMultipleUnit([FromBody] ActDto actDto)
         {
             try
             {
                 _unitService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var result = await _unitService.DismissAsync(unitId, docId);
+                var result = await _unitService.DismissMultipleAsync(actDto.UnitIds, actDto.DocId);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });

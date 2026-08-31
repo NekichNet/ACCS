@@ -273,7 +273,6 @@ namespace Business.Controllers
         }
 
 		[HttpGet("{rewardId}/assign/{unitId}")]
-        [Authorize]
         public async Task<IActionResult> GetAssignedUnit([FromRoute] int rewardId, [FromRoute] ulong unitId)
         {
             try

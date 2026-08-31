@@ -4,6 +4,7 @@ using Business.Models;
 using Business.Models.Enums;
 using Business.Models.SingleDayEvents;
 using Business.Models.SingleDayEvents.Abstraction;
+using Business.Models.States;
 using Business.Models.States.Abstraction;
 using Business.Models.States.Statuses;
 using Business.Models.Statuses;
@@ -17,10 +18,12 @@ namespace Business.Services
 	public class UnitService : BusinessService
 	{
 		private readonly AppDbContext _db;
+		private readonly DocService _docService;
 
-        public UnitService(AppDbContext db, ILogger logger) : base(logger)
+        public UnitService(AppDbContext db, DocService docService, ILogger logger) : base(logger)
         {
 			_db = db;
+			_docService = docService;
         }
 
         public async Task<EmptyAction> RegisterAsync(NewUnitDto dto)
@@ -190,6 +193,14 @@ namespace Business.Services
 				{
 					if (Actor.HasPermission(PermissionType.DismissUnits))
 					{
+						if (docId != null)
+						{
+							_docService.Actor = Actor;
+							var docResult = await _docService.GetAsync((int)docId);
+							if (!docResult.IsSuccess)
+								return action.FormFailure($"Dismissing unit failed. Doc with ID {docId} not found", eventId: EventIds.NotFound);
+						}
+
 						_logger.LogTrace(EventIds.Processing, $"Searching for unit: {unitId}");
 						Unit? unit = await _db.Units.FindAsync(unitId);
 
@@ -213,7 +224,8 @@ namespace Business.Services
 							_logger.LogTrace(EventIds.Processing, $"Creating UnitDismissingEvent");
 							UnitDismissingEvent dismissingEvent = new UnitDismissingEvent()
 							{
-								Units = new List<Unit> { unit }
+								Units = new List<Unit> { unit },
+								DocId = docId
 							};
 							_db.UnitDismissingEvents.Add(dismissingEvent);
 							_logger.LogTrace(EventIds.Created, $"Created UnitDismissingEvent: {dismissingEvent.ToString()}");
@@ -225,7 +237,7 @@ namespace Business.Services
 						}
 						else
 						{
-							action.FormFailure("Unit not found", eventId: EventIds.NotFound);
+							action.FormFailure("Unit dismissing failed. Unit not found", eventId: EventIds.NotFound);
 						}
 					}
 					else
@@ -237,6 +249,161 @@ namespace Business.Services
 				{
 					action.FormFailure("Unit dismissing restricted. Unauthorized", eventId: EventIds.Unauthorized);
 				}
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<EmptyAction> DismissMultipleAsync(HashSet<ulong> unitIds, int? docId = null)
+		{
+			EmptyAction action = new EmptyAction(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Dismissing units restricted. Unauthorized", eventId: EventIds.Unauthorized);
+				if (!Actor.HasPermission(PermissionType.DismissUnits))
+					return action.FormFailure("Dismissing units restricted", eventId: EventIds.Forbidden);
+
+				if (docId != null)
+				{
+					_docService.Actor = Actor;
+					var docResult = await _docService.GetAsync((int)docId);
+					if (!docResult.IsSuccess)
+						return action.FormFailure($"Dismissing units failed. Doc with ID {docId} not found", eventId: EventIds.NotFound);
+				}
+
+				uint dismissedCounter = 0u;
+				foreach (ulong unitId in unitIds)
+				{
+					EmptyAction result = await DismissAsync(unitId, docId);
+					if (result.IsSuccess)
+						dismissedCounter++;
+				}
+
+				action.FormSuccess($"Dismissed {dismissedCounter} units", eventId: EventIds.Updated);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		/// <summary>
+		/// Отправить бойца в отставку
+		/// </summary>
+		public async Task<EmptyAction> AssignRetirementAsync(ulong unitId, int? docId = null)
+		{
+			EmptyAction action = new EmptyAction(_logger);
+
+			try
+			{
+				if (Actor != null)
+				{
+					if (Actor.HasPermission(PermissionType.AssignRetirement))
+					{
+						if (docId != null)
+						{
+							_docService.Actor = Actor;
+							var docResult = await _docService.GetAsync((int)docId);
+							if (!docResult.IsSuccess)
+								return action.FormFailure($"Assigning retirement failed. Doc with ID {docId} not found",
+									eventId: EventIds.NotFound);
+						}
+
+						_logger.LogTrace(EventIds.Processing, $"Searching for unit: {unitId}");
+						Unit? unit = await _db.Units.FindAsync(unitId);
+
+						if (unit != null)
+						{
+							_logger.LogTrace(EventIds.Read, $"Unit found: {unit.ToString()}");
+							foreach (AssignedPost assignedPost in unit.GetAssignedPosts())
+							{
+								_logger.LogTrace(EventIds.Processing, $"Termination AssignedPost: {assignedPost.ToString()}");
+								assignedPost.Terminate();
+								_logger.LogTrace(EventIds.Updated, $"AssignedPost terminated: {assignedPost.ToString()}");
+							}
+
+							foreach (AssignedRank assignedRank in unit.UnitStates.Where(us => us is AssignedRank && us.IsActive()))
+							{
+								_logger.LogTrace(EventIds.Processing, $"Termination AssignedRank: {assignedRank.ToString()}");
+								assignedRank.Terminate();
+								_logger.LogTrace(EventIds.Updated, $"AssignedRank terminated: {assignedRank.ToString()}");
+							}
+
+							_logger.LogTrace(EventIds.Processing, $"Creating Retirement state");
+							Retirement retirement = new Retirement()
+							{
+								Unit = unit,
+								Start = DateTime.UtcNow,
+								DocId = docId
+							};
+							_db.Retirements.Add(retirement);
+							_logger.LogTrace(EventIds.Created, $"Created Retirement state: {retirement.ToString()}");
+
+							_logger.LogTrace(EventIds.Saving, $"Saving changes");
+							await _db.SaveChangesAsync();
+
+							action.FormSuccess($"Assigned retirement for unit {unit.Nickname}", eventId: EventIds.Updated);
+						}
+						else
+						{
+							action.FormFailure($"Assigning retirement failed. Unit with Discord ID {unitId} not found",
+								eventId: EventIds.NotFound);
+						}
+					}
+					else
+					{
+						action.FormFailure("Assigning retirement restricted", eventId: EventIds.Forbidden);
+					}
+				}
+				else
+				{
+					action.FormFailure("Assigning retirement restricted. Unauthorized", eventId: EventIds.Unauthorized);
+				}
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<ActionResult<Retirement>> AssignRetirenmentMultipleAsync(HashSet<ulong> unitIds, int? docId = null)
+		{
+			ActionResult<Retirement> action = new ActionResult<Retirement>(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Assigning retirements restricted. Unauthorized", eventId: EventIds.Unauthorized);
+				if (!Actor.HasPermission(PermissionType.AssignRetirement))
+					return action.FormFailure("Assigning retirements restricted", eventId: EventIds.Forbidden);
+
+				if (docId != null)
+				{
+					_docService.Actor = Actor;
+					var docResult = await _docService.GetAsync((int)docId);
+					if (!docResult.IsSuccess)
+						return action.FormFailure($"Assigning retirements failed. Doc with ID {docId} not found", eventId: EventIds.NotFound);
+				}
+
+				uint retirementsCounter = 0u;
+				foreach (ulong unitId in unitIds)
+				{
+					EmptyAction result = await AssignRetirementAsync(unitId, docId);
+					if (result.IsSuccess)
+						retirementsCounter++;
+				}
+
+				action.FormSuccess($"Assigned retirement for {retirementsCounter} units", eventId: EventIds.Updated);
 			}
 			catch (Exception ex)
 			{

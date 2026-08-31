@@ -129,6 +129,8 @@ namespace Business.Controllers
 		{
 			try
 			{
+				_postService.Actor = HttpContext.Items["Actor"] as Unit;
+
 				var action = await _postService.UpdatePermissionsAsync(postId, permissionDtos);
 				if (action.IsSuccess)
 				{

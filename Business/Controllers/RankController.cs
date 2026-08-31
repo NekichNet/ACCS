@@ -101,7 +101,9 @@ namespace Business.Controllers
         {
             try
             {
-                var action = await _rankService.UpdatePermissionsAsync(rankId, permissionDtos);
+				_rankService.Actor = HttpContext.Items["Actor"] as Unit;
+
+				var action = await _rankService.UpdatePermissionsAsync(rankId, permissionDtos);
 				if (action.IsSuccess)
 				{
 					return Ok();

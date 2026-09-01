@@ -205,13 +205,13 @@ namespace Business.Controllers
 
         [HttpPut("{unitId}/activity")]
         [Authorize]
-        public async Task<IActionResult> FixActivity([FromRoute] ulong unitId, [])
+        public async Task<IActionResult> FixActivity([FromRoute] ulong unitId, [FromBody] DateOnly date)
         {
             try
             {
                 _unitService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var result = await _unitService.FixActivityAsync(unitId);
+                var result = await _unitService.FixActivityAsync(unitId, date);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(new { error = result.Message });
@@ -227,13 +227,13 @@ namespace Business.Controllers
 
 		[HttpPut("activity")]
 		[Authorize]
-		public async Task<IActionResult> FixMultipleActivity([FromRoute] ulong unitId, [FromBody] MultipleActivityDto dto)
+		public async Task<IActionResult> FixMultipleActivity([FromBody] MultipleActivityDto dto)
 		{
 			try
 			{
 				_unitService.Actor = HttpContext.Items["Actor"] as Unit;
 
-				var result = await _unitService.FixActivityAsync(unitId);
+				var result = await _unitService.FixMultipleActivityAsync(dto.UnitIds, dto.Date);
 				if (!result.IsSuccess)
 				{
 					return BadRequest(new { error = result.Message });

@@ -1,4 +1,4 @@
-﻿namespace Business.Models.Acts.Abstraction
+﻿namespace Business.Models.Dto.Acts.Abstraction
 {
     public class ActDto
     {

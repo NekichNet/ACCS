@@ -1,6 +1,6 @@
-﻿using Business.Models.Acts.Abstraction;
+﻿using Business.Models.Dto.Acts.Abstraction;
 
-namespace Business.Models.Acts
+namespace Business.Models.Dto.Acts
 {
     public class RankChangeActDto : ActDto
     {

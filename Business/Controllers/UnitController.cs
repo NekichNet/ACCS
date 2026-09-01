@@ -1,7 +1,8 @@
 ﻿using Business.Logging;
 using Business.Models;
-using Business.Models.Acts;
-using Business.Models.Acts.Abstraction;
+using Business.Models.Dto;
+using Business.Models.Dto.Acts;
+using Business.Models.Dto.Acts.Abstraction;
 using Business.Models.States.Statuses;
 using Business.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -137,7 +138,6 @@ namespace Business.Controllers
                     (StatusType)actDto.StatusKey,
                     actDto.UnitIds,
                     actDto.Ovewrite,
-                    actDto.Start,
                     actDto.End,
                     actDto.Days,
                     actDto.DocId
@@ -205,7 +205,7 @@ namespace Business.Controllers
 
         [HttpPut("{unitId}/activity")]
         [Authorize]
-        public async Task<IActionResult> FixActivity([FromRoute] ulong unitId)
+        public async Task<IActionResult> FixActivity([FromRoute] ulong unitId, [])
         {
             try
             {
@@ -224,6 +224,28 @@ namespace Business.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+
+		[HttpPut("activity")]
+		[Authorize]
+		public async Task<IActionResult> FixMultipleActivity([FromRoute] ulong unitId, [FromBody] MultipleActivityDto dto)
+		{
+			try
+			{
+				_unitService.Actor = HttpContext.Items["Actor"] as Unit;
+
+				var result = await _unitService.FixActivityAsync(unitId);
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
+				return Ok(new { message = result.Message });
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in FixMultipleActivity: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
 		[HttpGet("actual")]
 		public async Task<IActionResult> GetActiveUnits()
@@ -478,7 +500,7 @@ namespace Business.Controllers
 					return BadRequest(new { error = result.Message });
 				}
 
-				return Ok(result.Value);
+				return Ok(result.Value.Select(p => p.ToDto()));
 			}
 			catch (Exception ex)
 			{

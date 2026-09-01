@@ -298,9 +298,9 @@ namespace Business.Services
 		/// <summary>
 		/// Отправить бойца в отставку
 		/// </summary>
-		public async Task<EmptyAction> AssignRetirementAsync(ulong unitId, int? docId = null)
+		public async Task<ActionResult<Retirement>> AssignRetirementAsync(ulong unitId, int? docId = null)
 		{
-			EmptyAction action = new EmptyAction(_logger);
+			ActionResult<Retirement> action = new ActionResult<Retirement>(_logger);
 
 			try
 			{
@@ -350,6 +350,7 @@ namespace Business.Services
 							_logger.LogTrace(EventIds.Saving, $"Saving changes");
 							await _db.SaveChangesAsync();
 
+							action.Value = retirement;
 							action.FormSuccess($"Assigned retirement for unit {unit.Nickname}", eventId: EventIds.Updated);
 						}
 						else
@@ -376,9 +377,9 @@ namespace Business.Services
 			return action;
 		}
 
-		public async Task<ActionResult<Retirement>> AssignRetirenmentMultipleAsync(HashSet<ulong> unitIds, int? docId = null)
+		public async Task<ActionResult<List<Retirement>>> AssignRetirenmentMultipleAsync(HashSet<ulong> unitIds, int? docId = null)
 		{
-			ActionResult<Retirement> action = new ActionResult<Retirement>(_logger);
+			ActionResult<List<Retirement>> action = new ActionResult<List<Retirement>>(_logger);
 
 			try
 			{
@@ -395,15 +396,15 @@ namespace Business.Services
 						return action.FormFailure($"Assigning retirements failed. Doc with ID {docId} not found", eventId: EventIds.NotFound);
 				}
 
-				uint retirementsCounter = 0u;
+				List<Retirement> retirements = new List<Retirement>();
 				foreach (ulong unitId in unitIds)
 				{
-					EmptyAction result = await AssignRetirementAsync(unitId, docId);
+					ActionResult<Retirement> result = await AssignRetirementAsync(unitId, docId);
 					if (result.IsSuccess)
-						retirementsCounter++;
+						retirements.Add(result.Value);
 				}
 
-				action.FormSuccess($"Assigned retirement for {retirementsCounter} units", eventId: EventIds.Updated);
+				action.FormSuccess($"Assigned retirement for {retirements.Count} units", eventId: EventIds.Updated);
 			}
 			catch (Exception ex)
 			{
@@ -412,6 +413,41 @@ namespace Business.Services
 
 			return action;
 		}
+
+		/* ToDo: закончить
+		public async Task<ActionResult<List<Unit>>> ReturnToActiveMultipleAsync(
+			HashSet<ulong> unitIds,
+			HashSet<int> postIds,
+			int rankId,
+			int? docId = null)
+		{
+			ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Assigning retirements restricted. Unauthorized", eventId: EventIds.Unauthorized);
+				if (!Actor.HasPermission(PermissionType.AssignRetirement))
+					return action.FormFailure("Assigning retirements restricted", eventId: EventIds.Forbidden);
+
+				if (docId != null)
+				{
+					_docService.Actor = Actor;
+					var docResult = await _docService.GetAsync((int)docId);
+					if (!docResult.IsSuccess)
+						return action.FormFailure($"Assigning retirements failed. Doc with ID {docId} not found", eventId: EventIds.NotFound);
+				}
+
+
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+		*/
 
 		public async Task<ActionResult<List<Status>>> GetUnitStatusesAsync(ulong unitId)
         {
@@ -463,9 +499,9 @@ namespace Business.Services
             return action;
         }
 
-		public async Task<EmptyAction> FixActivityAsync(ulong unitId)
+		public async Task<ActionResult<Activity>> FixActivityAsync(ulong unitId, DateOnly date)
 		{
-			EmptyAction action = new EmptyAction(_logger);
+			ActionResult<Activity> action = new ActionResult<Activity>(_logger);
 
 			try
 			{
@@ -478,12 +514,15 @@ namespace Business.Services
 				if (unit == null)
 					return action.FormFailure($"Activity fixation failed. Unit with Discord ID {unitId} not found", eventId: EventIds.NotFound);
 
-				unit.Activities.Add(new Activity
+				Activity activity = new Activity
 				{
 					UnitId = unitId,
-					Date = DateOnly.FromDateTime(DateTime.UtcNow)
-				});
+					Date = date
+				};
+				unit.Activities.Add(activity);
                 unit.RankUpCounter++;
+
+				action.Value = activity;
 
 				await _db.SaveChangesAsync();
 			}
@@ -495,11 +534,54 @@ namespace Business.Services
 			return action;
 		}
 
-        public async Task<ActionResult<Status>> ApplyStatusAsync(
+		public async Task<ActionResult<List<Activity>>> FixMultipleActivityAsync(HashSet<ulong> unitIds, DateOnly date)
+		{
+			ActionResult<List<Activity>> action = new ActionResult<List<Activity>>(_logger);
+
+			try
+			{
+				if (Actor == null)
+					return action.FormFailure("Multiple activity fixation restricted. Unauthorized", eventId: EventIds.Unauthorized);
+				if (!Actor.HasPermission(PermissionType.FixActivity))
+					return action.FormFailure("Multiple activity fixation restricted", eventId: EventIds.Forbidden);
+
+				List<Activity> activities = new List<Activity>();
+
+				foreach (ulong unitId in unitIds)
+				{
+					Unit? unit = await _db.Units.FindAsync(unitId);
+					if (unit == null)
+					{
+						_logger.LogWarning(eventId: EventIds.NotFound,
+							$"Multiple activity fixation failed. Unit with Discord ID {unitId} not found");
+						continue;
+					}
+
+					Activity activity = new Activity
+					{
+						UnitId = unitId,
+						Date = date
+					};
+					unit.Activities.Add(activity);
+					unit.RankUpCounter++;
+
+					activities.Add(activity);
+				}
+
+				await _db.SaveChangesAsync();
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
+
+			return action;
+		}
+
+		public async Task<ActionResult<Status>> ApplyStatusAsync(
 			StatusType statusType,
 			ulong unitId,
 			bool overwrite = false,
-			DateTime? start = null,
 			DateTime? end = null,
 			int days = 7,
 			int? docId = null
@@ -518,8 +600,8 @@ namespace Business.Services
 				if (unit == null)
 					return action.FormFailure($"Applying status failed. Unit with Discord ID {unitId} not found", eventId: EventIds.NotFound);
 
-				if (start == null)
-					start = DateTime.UtcNow;
+				
+				DateTime start = DateTime.UtcNow;
 				if (end == null)
 					end = ((DateTime)start).AddDays(days);
 
@@ -537,13 +619,13 @@ namespace Business.Services
 				switch (statusType)
 				{
 					case StatusType.Gratitude:
-						newStatus = new Gratitude { Unit = unit, Start = (DateTime)start, End = end };
+						newStatus = new Gratitude { Unit = unit, Start = start, End = end };
 						break;
 					case StatusType.Reprimand:
-						newStatus = new Reprimand { Unit = unit, Start = (DateTime)start, End = end };
+						newStatus = new Reprimand { Unit = unit, Start = start, End = end };
 						break;
 					case StatusType.SevereReprimand:
-						newStatus = new SevereReprimand { Unit = unit, Start = (DateTime)start, End = end };
+						newStatus = new SevereReprimand { Unit = unit, Start = start, End = end };
 						break;
 					default:
 						break;
@@ -573,7 +655,6 @@ namespace Business.Services
 			StatusType statusType,
 			HashSet<ulong> unitIds,
 			bool overwrite = false,
-			DateTime? start = null,
 			DateTime? end = null,
 			int days = 7,
 			int? docId = null
@@ -584,19 +665,25 @@ namespace Business.Services
 			try
 			{
 				if (Actor == null)
-					return action.FormFailure("Applying status restricted. Unauthorized", eventId: EventIds.Unauthorized);
+					return action.FormFailure("Applying statuses restricted. Unauthorized", eventId: EventIds.Unauthorized);
 				if (!Actor.HasPermission(PermissionType.AssignStatuses))
-					return action.FormFailure("Applying status restricted", eventId: EventIds.Forbidden);
+					return action.FormFailure("Applying statuses restricted", eventId: EventIds.Forbidden);
 
-				if (start == null)
-					start = DateTime.UtcNow;
+				if (docId != null)
+				{
+					_docService.Actor = Actor;
+					var docResult = await _docService.GetAsync((int)docId);
+					if (!docResult.IsSuccess)
+						return action.FormFailure($"Applying statuses failed. Doc with ID {docId} not found", eventId: EventIds.NotFound);
+				}
+
 				if (end == null)
-					end = ((DateTime)start).AddDays(days);
+					end = DateTime.UtcNow.AddDays(days);
 
 				List<Status> assignedStatuses = new List<Status>();
 				foreach (ulong unitId in unitIds)
 				{
-					ActionResult<Status> result = await ApplyStatusAsync(statusType, unitId, overwrite, start, end);
+					ActionResult<Status> result = await ApplyStatusAsync(statusType, unitId, overwrite, end, docId: docId);
 					if (result.IsSuccess)
 						assignedStatuses.Add(result.Value);
 				}

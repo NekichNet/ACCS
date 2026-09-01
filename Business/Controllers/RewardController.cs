@@ -1,5 +1,5 @@
 ﻿using Business.Models;
-using Business.Models.Acts;
+using Business.Models.Dto.Acts;
 using Business.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

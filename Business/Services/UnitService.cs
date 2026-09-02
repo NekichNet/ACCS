@@ -19,23 +19,30 @@ namespace Business.Services
 	{
 		private readonly AppDbContext _db;
 		private readonly DocService _docService;
+		private readonly PostService _postService;
 
-        public UnitService(AppDbContext db, DocService docService, ILogger logger) : base(logger)
-        {
+		public UnitService(
+			AppDbContext db,
+			DocService docService,
+			PostService postService,
+			ILogger logger
+			) : base(logger)
+		{
 			_db = db;
 			_docService = docService;
-        }
+			_postService = postService;
+		}
 
-        public async Task<EmptyAction> RegisterAsync(NewUnitDto dto)
+		public async Task<EmptyAction> RegisterAsync(NewUnitDto dto)
 		{
 			ActionResult<Unit> action = new ActionResult<Unit>(_logger);
 
 			try
 			{
-                if (Actor == null)
+				if (Actor == null)
 					return action.FormFailure("Unit registration restricted. Unauthorized", eventId: EventIds.Unauthorized);
-                if (!Actor.HasPermission(PermissionType.RegisterNewUnits))
-                    return action.FormFailure("Unit registration restricted", eventId: EventIds.Forbidden);
+				if (!Actor.HasPermission(PermissionType.RegisterNewUnits))
+					return action.FormFailure("Unit registration restricted", eventId: EventIds.Forbidden);
 
 				ulong discordId;
 				if (!ulong.TryParse(dto.DiscordId, out discordId))
@@ -43,7 +50,7 @@ namespace Business.Services
 
 				if ((await _db.Units.FindAsync(discordId)) != null)
 					return action.FormFailure($"Unit with ID {discordId} already registered", eventId: EventIds.ImpossibleAction);
-                
+				
 				action.Value = new Unit
 				{
 					DiscordId = discordId,
@@ -53,7 +60,7 @@ namespace Business.Services
 				UnitRegistrationEvent registrationEvent = new UnitRegistrationEvent
 				{
 					Initiator = Actor,
-                    Units = new List<Unit> { action.Value }
+					Units = new List<Unit> { action.Value }
 				};
 
 				await _db.Units.AddAsync(action.Value);
@@ -90,9 +97,9 @@ namespace Business.Services
 			return action;
 		}
 
-        /// <summary>
-        /// Получить список абсолютно всех зарегистрированных бойцов
-        /// </summary>
+		/// <summary>
+		/// Получить список абсолютно всех зарегистрированных бойцов
+		/// </summary>
 		public async Task<ActionResult<List<Unit>>> GetAllUnitsAsync()
 		{
 			ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
@@ -112,11 +119,11 @@ namespace Business.Services
 			return action;
 		}
 
-        /// <summary>
-        /// Получить всех бойцов, которые на текущий момент в клане
-        /// </summary>
-        public async Task<ActionResult<List<Unit>>> GetActiveUnitsAsync()
-        {
+		/// <summary>
+		/// Получить всех бойцов, которые на текущий момент в клане
+		/// </summary>
+		public async Task<ActionResult<List<Unit>>> GetActiveUnitsAsync()
+		{
 			ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
 
 			try
@@ -134,51 +141,51 @@ namespace Business.Services
 			return action;
 		}
 
-        /// <summary>
-        /// Получить список всех уволенных бойцов
-        /// </summary>
-        public async Task<ActionResult<List<Unit>>> GetDismissedUnitsAsync()
-        {
-            ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
+		/// <summary>
+		/// Получить список всех уволенных бойцов
+		/// </summary>
+		public async Task<ActionResult<List<Unit>>> GetDismissedUnitsAsync()
+		{
+			ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
 
-            try
-            {
-                action.Value = await _db.Units
-                    .Where(u => !u.IsActive())
-                    .Where(u => !u.IsInRetirement())
-                    .ToListAsync();
+			try
+			{
+				action.Value = await _db.Units
+					.Where(u => !u.IsActive())
+					.Where(u => !u.IsInRetirement())
+					.ToListAsync();
 
-                action.FormSuccess("Dismissed units list formed. Length: " + action.Value.Count(),
-                    eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+				action.FormSuccess("Dismissed units list formed. Length: " + action.Value.Count(),
+					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
 
-            return action;
-        }
+			return action;
+		}
 
-        public async Task<ActionResult<List<Unit>>> GetRetiredUnitsAsync()
-        {
-            ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
+		public async Task<ActionResult<List<Unit>>> GetRetiredUnitsAsync()
+		{
+			ActionResult<List<Unit>> action = new ActionResult<List<Unit>>(_logger);
 
-            try
-            {
-                action.Value = await _db.Units
-                    .Where(u => u.IsInRetirement())
-                    .ToListAsync();
+			try
+			{
+				action.Value = await _db.Units
+					.Where(u => u.IsInRetirement())
+					.ToListAsync();
 
-                action.FormSuccess("Units in retirenment list formed. Length: " + action.Value.Count(),
-                    eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+				action.FormSuccess("Units in retirenment list formed. Length: " + action.Value.Count(),
+					eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
 
-            return action;
-        }
+			return action;
+		}
 
 		/// <summary>
 		/// Уволить бойца
@@ -414,7 +421,6 @@ namespace Business.Services
 			return action;
 		}
 
-		/* ToDo: закончить
 		public async Task<ActionResult<List<Unit>>> ReturnToActiveMultipleAsync(
 			HashSet<ulong> unitIds,
 			HashSet<int> postIds,
@@ -426,19 +432,100 @@ namespace Business.Services
 			try
 			{
 				if (Actor == null)
-					return action.FormFailure("Assigning retirements restricted. Unauthorized", eventId: EventIds.Unauthorized);
-				if (!Actor.HasPermission(PermissionType.AssignRetirement))
-					return action.FormFailure("Assigning retirements restricted", eventId: EventIds.Forbidden);
+					return action.FormFailure("Returning inactive units restricted. Unauthorized", eventId: EventIds.Unauthorized);
+				if (!Actor.HasPermission(PermissionType.AssignRetirement) && !Actor.HasPermission(PermissionType.DismissUnits))
+					return action.FormFailure("Returning inactive units restricted", eventId: EventIds.Forbidden);
 
 				if (docId != null)
 				{
 					_docService.Actor = Actor;
 					var docResult = await _docService.GetAsync((int)docId);
 					if (!docResult.IsSuccess)
-						return action.FormFailure($"Assigning retirements failed. Doc with ID {docId} not found", eventId: EventIds.NotFound);
+						return action.FormFailure($"Returning inactive units failed. Doc with ID {docId} not found", eventId: EventIds.NotFound);
 				}
 
+				Rank? rankToAssign = await _db.Ranks.FindAsync(rankId);
+				if (rankToAssign == null)
+					return action.FormFailure($"Returning inactive units failed. Rank with ID {rankId} not found", eventId: EventIds.NotFound);
 
+				_postService.Actor = Actor;
+				ActionResult<List<Post>> postsResult = await _postService.GetPostsCanAssignAsync();
+				if (!postsResult.IsSuccess)
+					return action.FormFailure($"Returning inactive units failed. Getting actor's posts can assign failed",
+						eventId: EventIds.Failed);
+
+				List<Post> postsToAssign = new List<Post>();
+
+				foreach (int postId in postIds)
+				{
+					Post? post = postsResult.Value.FirstOrDefault(p => p.Id == postId);
+					if (post != null)
+					{
+						postsToAssign.Add(post);
+					}
+					else
+					{
+						_logger.LogWarning(eventId: EventIds.Failed,
+							$"Setting returning units to post with ID {postId} failed. Forbidded or not found");
+					}
+				}
+
+				List<Unit> units = new List<Unit>();
+
+				foreach (ulong unitId in unitIds)
+				{
+					Unit? unit = await _db.Units.FindAsync(unitId);
+					if (unit != null)
+					{
+						if (!unit.IsActive())
+						{
+							AssignedRank? assignedRank = unit.GetAssignedRank();
+							if (assignedRank != null)
+								assignedRank.Terminate();
+
+							List<AssignedPost> assignedPosts = unit.GetAssignedPosts();
+							foreach (AssignedPost assignedPost in assignedPosts)
+								assignedPost.Terminate();
+
+							await _db.AssignedRanks.AddAsync(new AssignedRank
+							{
+								Unit = unit,
+								Rank = rankToAssign,
+								DocId = docId
+							});
+
+							await _db.AssignedPosts.AddRangeAsync(postsToAssign.Select(p => new AssignedPost
+							{
+								Unit = unit,
+								Post = p,
+								DocId = docId
+							}));
+
+							Retirement? retirement = unit.GetRetirement();
+							if (retirement != null)
+								retirement.Terminate();
+
+							units.Add(unit);
+						}
+						else
+						{
+							_logger.LogWarning(eventId: EventIds.ImpossibleAction, $"Returning already active unit {unit.Nickname} failed");
+						}
+					}
+					else
+					{
+						_logger.LogWarning(eventId: EventIds.NotFound, $"Returning unit with Discord ID {unitId} failed. Not found");
+					}
+				}
+
+				await _db.SaveChangesAsync();
+
+				action.Value = units;
+				action.FormSuccess(
+					$"Returned {units.Count} to active. " +
+					$"Assigned to {rankToAssign.Name} rank and to posts: " +
+					String.Join(", ", postsToAssign.Select(p => p.Name))
+					);
 			}
 			catch (Exception ex)
 			{
@@ -447,57 +534,56 @@ namespace Business.Services
 
 			return action;
 		}
-		*/
 
 		public async Task<ActionResult<List<Status>>> GetUnitStatusesAsync(ulong unitId)
-        {
-            ActionResult<List<Status>> action = new ActionResult<List<Status>>(_logger);
+		{
+			ActionResult<List<Status>> action = new ActionResult<List<Status>>(_logger);
 
-            try
-            {
-                Unit? unit = await _db.Units.FindAsync(unitId);
-                if (unit == null)
+			try
+			{
+				Unit? unit = await _db.Units.FindAsync(unitId);
+				if (unit == null)
 					return action.FormFailure($"Getting unit statuses failed. Unit with Discord ID {unitId} not found", eventId: EventIds.NotFound);
 
-                action.Value = unit.GetActiveStatuses();
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+				action.Value = unit.GetActiveStatuses();
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
 
-            return action;
-        }
+			return action;
+		}
 
-        public async Task<ActionResult<List<string>>> GetUnitActivityAsync(ulong unitId)
-        {
-            ActionResult<List<string>> action = new ActionResult<List<string>>(_logger);
+		public async Task<ActionResult<List<string>>> GetUnitActivityAsync(ulong unitId)
+		{
+			ActionResult<List<string>> action = new ActionResult<List<string>>(_logger);
 
-            try
-            {
-                var unit = await _db.Units
-                    .Include(u => u.Activities)
-                    .FirstOrDefaultAsync(u => u.DiscordId == unitId);
-                if (unit != null)
-                {
-                    action.Value = unit.Activities
-                         .OrderBy(a => a.Date)
-                        .Select(ad => ad.Date.ToString("dd.MM.yyyy"))
-                        .ToList();
-                    action.FormSuccess("Unit activity retrieved", eventId: EventIds.Read);
-                }
-                else
-                {
-                    action.FormFailure("Unit not found", eventId: EventIds.NotFound);
-                }
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+			try
+			{
+				var unit = await _db.Units
+					.Include(u => u.Activities)
+					.FirstOrDefaultAsync(u => u.DiscordId == unitId);
+				if (unit != null)
+				{
+					action.Value = unit.Activities
+						 .OrderBy(a => a.Date)
+						.Select(ad => ad.Date.ToString("dd.MM.yyyy"))
+						.ToList();
+					action.FormSuccess("Unit activity retrieved", eventId: EventIds.Read);
+				}
+				else
+				{
+					action.FormFailure("Unit not found", eventId: EventIds.NotFound);
+				}
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
 
-            return action;
-        }
+			return action;
+		}
 
 		public async Task<ActionResult<Activity>> FixActivityAsync(ulong unitId, DateOnly date)
 		{
@@ -520,7 +606,7 @@ namespace Business.Services
 					Date = date
 				};
 				unit.Activities.Add(activity);
-                unit.RankUpCounter++;
+				unit.RankUpCounter++;
 
 				action.Value = activity;
 
@@ -586,12 +672,12 @@ namespace Business.Services
 			int days = 7,
 			int? docId = null
 			)
-        {
-            ActionResult<Status> action = new ActionResult<Status>(_logger);
+		{
+			ActionResult<Status> action = new ActionResult<Status>(_logger);
 
-            try
-            {
-                if (Actor == null)
+			try
+			{
+				if (Actor == null)
 					return action.FormFailure("Applying status restricted. Unauthorized", eventId: EventIds.Unauthorized);
 				if (!Actor.HasPermission(PermissionType.AssignStatuses))
 					return action.FormFailure("Applying status restricted", eventId: EventIds.Forbidden);
@@ -643,13 +729,13 @@ namespace Business.Services
 					action.FormFailure($"Applying status to {unit.Nickname} failed. Invalid status type", eventId: EventIds.HandledError);
 				}
 			}
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
 
-            return action;
-        }
+			return action;
+		}
 
 		public async Task<ActionResult<List<Status>>> ApplyStatusMultipleAsync(
 			StatusType statusType,
@@ -740,198 +826,198 @@ namespace Business.Services
 		}
 
 		public async Task<EmptyAction> UpdateUnitStatusAsync(ulong unitId, int statusId)
-        {
-            EmptyAction action = new EmptyAction(_logger);
+		{
+			EmptyAction action = new EmptyAction(_logger);
 
-            try
-            {
-                if (Actor != null)
-                {
-                    if (Actor.HasPermission(PermissionType.Administrator))
-                    {
-                        var unit = await _db.Units.FindAsync(unitId);
-                        if (unit != null)
-                        {
-                            _db.Units.Update(unit);
-                            await _db.SaveChangesAsync();
-                            action.FormSuccess("Unit status updated");
-                        }
-                        else
-                        {
-                            action.FormFailure("Unit not found");
-                        }
-                    }
-                    else
-                    {
-                        action.FormFailure("Unit status update restricted");
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Unit status update restricted. Unauthorized");
-                }
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+			try
+			{
+				if (Actor != null)
+				{
+					if (Actor.HasPermission(PermissionType.Administrator))
+					{
+						var unit = await _db.Units.FindAsync(unitId);
+						if (unit != null)
+						{
+							_db.Units.Update(unit);
+							await _db.SaveChangesAsync();
+							action.FormSuccess("Unit status updated");
+						}
+						else
+						{
+							action.FormFailure("Unit not found");
+						}
+					}
+					else
+					{
+						action.FormFailure("Unit status update restricted");
+					}
+				}
+				else
+				{
+					action.FormFailure("Unit status update restricted. Unauthorized");
+				}
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
 
-            return action;
-        }
+			return action;
+		}
 
-        public async Task<EmptyAction> DeleteStatusAsync(int statusId)
-        {
-            EmptyAction action = new EmptyAction(_logger);
+		public async Task<EmptyAction> DeleteStatusAsync(int statusId)
+		{
+			EmptyAction action = new EmptyAction(_logger);
 
-            try
-            {
-                if (Actor != null)
-                {
-                    if (Actor.HasPermission(PermissionType.Administrator))
-                    {
-                        var unitStatus = await _db.Statuses.FindAsync(statusId);
-                        if (unitStatus != null)
-                        {
-                            _db.Statuses.Remove(unitStatus);
-                            await _db.SaveChangesAsync();
-                            action.FormSuccess("Status deleted", eventId: EventIds.Deleted);
-                        }
-                        else
-                        {
-                            action.FormFailure("Status not found", eventId: EventIds.NotFound);
-                        }
-                    }
-                    else
-                    {
-                        action.FormFailure("Status deletion restricted", eventId: EventIds.Forbidden);
-                    }
-                }
-                else
-                {
-                    action.FormFailure("Status deletion restricted. Unauthorized");
-                }
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+			try
+			{
+				if (Actor != null)
+				{
+					if (Actor.HasPermission(PermissionType.Administrator))
+					{
+						var unitStatus = await _db.Statuses.FindAsync(statusId);
+						if (unitStatus != null)
+						{
+							_db.Statuses.Remove(unitStatus);
+							await _db.SaveChangesAsync();
+							action.FormSuccess("Status deleted", eventId: EventIds.Deleted);
+						}
+						else
+						{
+							action.FormFailure("Status not found", eventId: EventIds.NotFound);
+						}
+					}
+					else
+					{
+						action.FormFailure("Status deletion restricted", eventId: EventIds.Forbidden);
+					}
+				}
+				else
+				{
+					action.FormFailure("Status deletion restricted. Unauthorized");
+				}
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
 
-            return action;
-        }
-        */
+			return action;
+		}
+		*/
 
 		public async Task<ActionResult<HashSet<Permission>>> GetPermissionsAsync(ulong unitId)
-        {
-            ActionResult<HashSet<Permission>> action = new ActionResult<HashSet<Permission>> (_logger);
+		{
+			ActionResult<HashSet<Permission>> action = new ActionResult<HashSet<Permission>> (_logger);
 
-            try
-            {
-                Unit? unit = await _db.Units.FindAsync(unitId);
+			try
+			{
+				Unit? unit = await _db.Units.FindAsync(unitId);
 
-                if (unit != null)
-                {
-                    action.Value = unit.GetPermissions();
-                    action.FormSuccess($"{unit.Nickname}'s permissions retrieved. Length: " + action.Value.Count(),
-					    eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
+				if (unit != null)
+				{
+					action.Value = unit.GetPermissions();
+					action.FormSuccess($"{unit.Nickname}'s permissions retrieved. Length: " + action.Value.Count(),
+						eventId: action.Value.Count() > 0 ? EventIds.Read : EventIds.NoData);
 				}
-                else
-                {
-                    action.FormFailure($"Getting unit permissions failed. Unit with Discord ID {unitId} not found", eventId: EventIds.NotFound);
-                }
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+				else
+				{
+					action.FormFailure($"Getting unit permissions failed. Unit with Discord ID {unitId} not found", eventId: EventIds.NotFound);
+				}
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
 
-            return action;
-        }
+			return action;
+		}
 
-        public async Task<ActionResult<Status>> GetUnitStatusAsync(ulong unitId, int statusId)
-        {
-            ActionResult<Status> action = new ActionResult<Status>(_logger);
+		public async Task<ActionResult<Status>> GetUnitStatusAsync(ulong unitId, int statusId)
+		{
+			ActionResult<Status> action = new ActionResult<Status>(_logger);
 
-            try
-            {
-                Unit? unit = await _db.Units.FindAsync(unitId);
+			try
+			{
+				Unit? unit = await _db.Units.FindAsync(unitId);
 
-                if (unit == null)
-                    action.FormFailure($"Unit with Discord ID {unitId} not found", eventId: EventIds.NotFound);
+				if (unit == null)
+					action.FormFailure($"Unit with Discord ID {unitId} not found", eventId: EventIds.NotFound);
 
-                Status? unitStatus = unit.UnitStates
-                    .Where(us => us is Status)
-                    .Select(us => (Status)us)
-                    .FirstOrDefault(us => us.Id == statusId);
-                if (unitStatus == null)
-                {
-                    action.FormFailure($"Status with ID {statusId} not found", eventId: EventIds.NotFound);
-                }
+				Status? unitStatus = unit.UnitStates
+					.Where(us => us is Status)
+					.Select(us => (Status)us)
+					.FirstOrDefault(us => us.Id == statusId);
+				if (unitStatus == null)
+				{
+					action.FormFailure($"Status with ID {statusId} not found", eventId: EventIds.NotFound);
+				}
 
-                action.FormSuccess("Status retrieved", eventId: EventIds.Read);
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+				action.FormSuccess("Status retrieved", eventId: EventIds.Read);
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
 
-            return action;
-        }
+			return action;
+		}
 
-        public async Task<ActionResult<List<UnitState>>> GetUnitStatesAsync(ulong discordId)
-        {
-            ActionResult<List<UnitState>> action = new ActionResult<List<UnitState>>(_logger);
+		public async Task<ActionResult<List<UnitState>>> GetUnitStatesAsync(ulong discordId)
+		{
+			ActionResult<List<UnitState>> action = new ActionResult<List<UnitState>>(_logger);
 
-            try
-            {
-                var unit = await _db.Units
-                    .FindAsync(discordId);
+			try
+			{
+				var unit = await _db.Units
+					.FindAsync(discordId);
 
-                if (unit != null)
-                {
-                    action.Value = unit.UnitStates.OrderByDescending(us => us.Start).ToList();
-                    action.FormSuccess($"States history for unit {discordId} formed. Length: " + action.Value.Count,
-                        eventId: action.Value.Count > 0 ? EventIds.Read : EventIds.NoData);
-                }
-                else
-                {
-                    action.FormFailure($"Unit with Discord ID {discordId} not found", eventId: EventIds.NotFound);
-                }
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+				if (unit != null)
+				{
+					action.Value = unit.UnitStates.OrderByDescending(us => us.Start).ToList();
+					action.FormSuccess($"States history for unit {discordId} formed. Length: " + action.Value.Count,
+						eventId: action.Value.Count > 0 ? EventIds.Read : EventIds.NoData);
+				}
+				else
+				{
+					action.FormFailure($"Unit with Discord ID {discordId} not found", eventId: EventIds.NotFound);
+				}
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
 
-            return action;
-        }
+			return action;
+		}
 
-        public async Task<ActionResult<List<SingleDayEvent>>> GetUnitEventsAsync(ulong unitId)
-        {
-            ActionResult<List<SingleDayEvent>> action = new ActionResult<List<SingleDayEvent>>(_logger);
+		public async Task<ActionResult<List<SingleDayEvent>>> GetUnitEventsAsync(ulong unitId)
+		{
+			ActionResult<List<SingleDayEvent>> action = new ActionResult<List<SingleDayEvent>>(_logger);
 
-            try
-            {
-                var unit = await _db.Units
-                    .FindAsync(unitId);
+			try
+			{
+				var unit = await _db.Units
+					.FindAsync(unitId);
 
-                if (unit != null)
-                {
-                    action.Value = unit.SingleDayEvents.OrderByDescending(e => e.DateTime).ToList();
-                    action.FormSuccess($"Events history for unit {unitId} formed. Length: " + action.Value.Count,
-                        eventId: action.Value.Count > 0 ? EventIds.Read : EventIds.NoData);
-                }
-                else
-                {
-                    action.FormFailure($"Unit with Discord ID {unitId} not found", eventId: EventIds.NotFound);
-                }
-            }
-            catch (Exception ex)
-            {
-                action.FormException(ex);
-            }
+				if (unit != null)
+				{
+					action.Value = unit.SingleDayEvents.OrderByDescending(e => e.DateTime).ToList();
+					action.FormSuccess($"Events history for unit {unitId} formed. Length: " + action.Value.Count,
+						eventId: action.Value.Count > 0 ? EventIds.Read : EventIds.NoData);
+				}
+				else
+				{
+					action.FormFailure($"Unit with Discord ID {unitId} not found", eventId: EventIds.NotFound);
+				}
+			}
+			catch (Exception ex)
+			{
+				action.FormException(ex);
+			}
 
-            return action;
-        }
+			return action;
+		}
 
 		public async Task<ActionResult<List<FavoriteKit>>> GetAvailableKits()
 		{
@@ -939,8 +1025,8 @@ namespace Business.Services
 
 			try
 			{
-                if (Actor == null)
-                    return action.FormFailure("Getting available kits failed. Unauthorized", eventId: EventIds.Unauthorized);
+				if (Actor == null)
+					return action.FormFailure("Getting available kits failed. Unauthorized", eventId: EventIds.Unauthorized);
 
 				action.Value = await _db.FavoriteKits.ToListAsync();
 

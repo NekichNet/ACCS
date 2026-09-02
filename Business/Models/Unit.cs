@@ -49,7 +49,11 @@ namespace Business.Models
         public AssignedRank? GetAssignedRank(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;
-			return UnitStates.Where(us => us is AssignedRank).Select(us => (AssignedRank)us).AsEnumerable().FirstOrDefault(ar => ar.IsActive(dateTime));
+			return UnitStates
+				.Where(us => us is AssignedRank)
+				.Select(us => (AssignedRank)us)
+				.AsEnumerable()
+				.FirstOrDefault(ar => ar.IsActive(dateTime));
 		}
 
 		public Rank? GetRank(DateTime? dateTime = null)
@@ -124,13 +128,22 @@ namespace Business.Models
 		public List<AssignedPost> GetAssignedPosts(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;
-			return UnitStates.Where(us => us is AssignedPost).Select(us => (AssignedPost)us).Where(ap => ap.IsActive(dateTime)).ToList();
+			return UnitStates
+				.Where(us => us is AssignedPost)
+				.Select(us => (AssignedPost)us)
+				.Where(ap => ap.IsActive(dateTime))
+				.ToList();
 		}
 
 		public List<Post> GetPosts(DateTime? dateTime = null)
 		{
 			dateTime = dateTime ?? DateTime.UtcNow;
-			return UnitStates.Where(us => us is AssignedPost).Select(us => (AssignedPost)us).Where(ap => ap.IsActive(dateTime)).Select(ap => ap.Post).ToList();
+			return UnitStates
+				.Where(us => us is AssignedPost)
+				.Select(us => (AssignedPost)us)
+				.Where(ap => ap.IsActive(dateTime))
+				.Select(ap => ap.Post)
+				.ToList();
 		}
 
 		public HashSet<Permission> GetPermissions()
@@ -153,6 +166,16 @@ namespace Business.Models
 		public bool IsAdmin()
 		{
 			return GetPermissions().Any(p => p.Type == PermissionType.Administrator);
+		}
+
+		public Retirement? GetRetirement(DateTime? dateTime = null)
+		{
+			dateTime = dateTime ?? DateTime.UtcNow;
+			return UnitStates
+				.Where(us => us is Retirement)
+				.Select(us => (Retirement)us)
+				.AsEnumerable()
+				.FirstOrDefault(ar => ar.IsActive(dateTime));
 		}
 
 		public void CheckRoles()

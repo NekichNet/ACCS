@@ -338,7 +338,7 @@ namespace Business.Controllers
 
 		[HttpDelete]
         [Authorize]
-        public async Task<IActionResult> DismissMultipleUnit([FromBody] ActDto actDto)
+        public async Task<IActionResult> DismissMultipleUnits([FromBody] ActDto actDto)
         {
             try
             {
@@ -353,10 +353,38 @@ namespace Business.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in DeleteUnit: {ex.Message}", ex, EventIds.HandledError);
+                _logger.LogError($"Error in DismissMultipleUnit: {ex.Message}", ex, EventIds.HandledError);
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+
+        [HttpPost("return")]
+        [Authorize]
+        public async Task<IActionResult> ReturnToActiveMultipleUnits([FromBody] ReturnToActiveActDto actDto)
+        {
+            try
+            {
+                _unitService.Actor = HttpContext.Items["Actor"] as Unit;
+
+                var result = await _unitService.ReturnToActiveMultipleAsync(
+                    actDto.UnitIds,
+                    actDto.PostIds,
+                    actDto.RankId,
+                    actDto.DocId
+                    );
+
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
+				return Ok(new { message = result.Message });
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in DismissMultipleUnit: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
         [HttpGet("{unitId}/states")]
         public async Task<IActionResult> GetUnitStates([FromRoute] ulong unitId)

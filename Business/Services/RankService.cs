@@ -12,16 +12,13 @@ namespace Business.Services
     public class RankService : BusinessService
     {
         private readonly AppDbContext _db;
-        private readonly UnitService _unitService;
 
         public RankService(
             AppDbContext db,
-            UnitService unitService,
 			ILogger logger)
             : base(logger)
         {
             _db = db;
-            _unitService = unitService;
         }
 
         public async Task<ActionResult<Rank>> CreateAsync(
@@ -579,12 +576,13 @@ namespace Business.Services
                 }
                 else
                 {
-					_unitService.Actor = Actor;
-					ActionResult<List<Unit>> result = await _unitService.GetAllNotHeadUnitsAsync();
-					if (!result.IsSuccess)
-						return action.FormFailure($"Getting available units to change rank failed." +
-							$" Handled error in getting all not head units", eventId: EventIds.HandledError);
-					action.Value = result.Value.Where(u => u.IsActive()).ToList();
+					HashSet<Unit> actorHeads = Actor
+                        .GetPosts()
+					    .SelectMany(p => p.GetAllHeadsRecursive())
+					    .SelectMany(p => p.AssignedPosts.Select(ap => ap.Unit))
+					    .ToHashSet();
+
+					action.Value = (await _db.Units.Except(actorHeads).ToListAsync()).Where(u => u.IsActive()).ToList();
 				}
 
 				action.FormSuccess($"{Actor.Nickname}'s available units to change ranks list formed. Length: {action.Value.Count()}",

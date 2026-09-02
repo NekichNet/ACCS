@@ -11,118 +11,118 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Business.Controllers
 {
-    [Route("api/v1/[controller]")]
-    [ApiController]
-    public class UnitController : ControllerBase
-    {
-        private readonly UnitService _unitService;
-        private readonly RankService _rankService;
-        private readonly PostService _postService;
-        private readonly ILogger<UnitController> _logger;
+	[Route("api/v1/[controller]")]
+	[ApiController]
+	public class UnitController : ControllerBase
+	{
+		private readonly UnitService _unitService;
+		private readonly RankService _rankService;
+		private readonly PostService _postService;
+		private readonly ILogger<UnitController> _logger;
 
-        public UnitController(UnitService unitService, RankService rankService, PostService postService, ILogger<UnitController> logger)
-        {
-            _unitService = unitService;
-            _rankService = rankService;
-            _postService = postService;
-            _logger = logger;
-        }
+		public UnitController(UnitService unitService, RankService rankService, PostService postService, ILogger<UnitController> logger)
+		{
+			_unitService = unitService;
+			_rankService = rankService;
+			_postService = postService;
+			_logger = logger;
+		}
 
-        [HttpGet]
-        public async Task<IActionResult> GetUnits()
-        {
-            try
-            {
-                var result = await _unitService.GetAllUnitsAsync();
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(new { error = result.Message });
-                }
+		[HttpGet]
+		public async Task<IActionResult> GetUnits()
+		{
+			try
+			{
+				var result = await _unitService.GetAllUnitsAsync();
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
 
-                IEnumerable<UnitDto> unitsDto = result.Value.Select(u => u.ToDto());
+				IEnumerable<UnitDto> unitsDto = result.Value.Select(u => u.ToDto());
 
-                return Ok(unitsDto);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetUnits: {ex.Message}", ex, EventIds.HandledError);
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
+				return Ok(unitsDto);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in GetUnits: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
-        [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> RegisterUnit([FromBody] NewUnitDto newUnit)
-        {
-            try
-            {
-                _unitService.Actor = HttpContext.Items["Actor"] as Unit;
+		[HttpPost]
+		[Authorize]
+		public async Task<IActionResult> RegisterUnit([FromBody] NewUnitDto newUnit)
+		{
+			try
+			{
+				_unitService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var result = await _unitService.RegisterAsync(newUnit);
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(new { error = result.Message });
-                }
+				var result = await _unitService.RegisterAsync(newUnit);
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
 
-                return Ok(new { message = result.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in RegisterUnit: {ex.Message}", ex, EventIds.HandledError);
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
+				return Ok(new { message = result.Message });
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in RegisterUnit: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
-        [HttpGet("{unitId}")]
-        public async Task<IActionResult> GetUnit([FromRoute] ulong unitId)
-        {
-            try
-            {
-                var result = await _unitService.GetAsync(unitId);
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(new { error = result.Message });
-                }
+		[HttpGet("{unitId}")]
+		public async Task<IActionResult> GetUnit([FromRoute] ulong unitId)
+		{
+			try
+			{
+				var result = await _unitService.GetAsync(unitId);
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
 
-                if (result.Value == null)
-                {
-                    _logger.LogWarning($"Unit not found: Discord ID {unitId}");
-                    return NotFound(new { error = "Unit not found" });
-                }
+				if (result.Value == null)
+				{
+					_logger.LogWarning($"Unit not found: Discord ID {unitId}");
+					return NotFound(new { error = "Unit not found" });
+				}
 
-                UnitDto unitResult = result.Value.ToDto();
+				UnitDto unitResult = result.Value.ToDto();
 
-                return Ok(unitResult);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetUnit: {ex.Message}", ex, EventIds.HandledError);
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
+				return Ok(unitResult);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in GetUnit: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
-        [HttpGet("{unitId}/status")]
-        public async Task<IActionResult> GetUnitStatuses([FromRoute] ulong unitId)
-        {
-            try
-            {
-                var result = await _unitService.GetUnitStatusesAsync(unitId);
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(new { error = result.Message });
-                }
+		[HttpGet("{unitId}/status")]
+		public async Task<IActionResult> GetUnitStatuses([FromRoute] ulong unitId)
+		{
+			try
+			{
+				var result = await _unitService.GetUnitStatusesAsync(unitId);
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
 
-                return Ok(result.Value);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetUnitStatuses: {ex.Message}", ex, EventIds.HandledError);
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
+				return Ok(result.Value);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in GetUnitStatuses: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
 		[HttpPost("status")]
-        [Authorize]
+		[Authorize]
 		public async Task<IActionResult> AppendMultipleStatus([FromBody] StatusAssignActDto actDto)
 		{
 			try
@@ -135,13 +135,13 @@ namespace Business.Controllers
 				}
 
 				var result = await _unitService.ApplyStatusMultipleAsync(
-                    (StatusType)actDto.StatusKey,
-                    actDto.UnitIds,
-                    actDto.Ovewrite,
-                    actDto.End,
-                    actDto.Days,
-                    actDto.DocId
-                    );
+					(StatusType)actDto.StatusKey,
+					actDto.UnitIds,
+					actDto.Ovewrite,
+					actDto.End,
+					actDto.Days,
+					actDto.DocId
+					);
 
 				if (!result.IsSuccess)
 				{
@@ -158,72 +158,72 @@ namespace Business.Controllers
 		}
 
 		[HttpGet("{unitId}/activity")]
-        public async Task<IActionResult> GetUnitActivity([FromRoute] ulong unitId)
-        {
-            try
-            {
-                var result = await _unitService.GetUnitActivityAsync(unitId);
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(new { error = result.Message });
-                }
+		public async Task<IActionResult> GetUnitActivity([FromRoute] ulong unitId)
+		{
+			try
+			{
+				var result = await _unitService.GetUnitActivityAsync(unitId);
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
 
-                if (result.Value == null)
-                {
-                    _logger.LogWarning($"Unit not found: Discord ID {unitId}");
-                    return NotFound(new { error = "Unit not found" });
-                }
-                return Ok(result.Value);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetUnitActivity: {ex.Message}", ex, EventIds.HandledError);
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
+				if (result.Value == null)
+				{
+					_logger.LogWarning($"Unit not found: Discord ID {unitId}");
+					return NotFound(new { error = "Unit not found" });
+				}
+				return Ok(result.Value);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in GetUnitActivity: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
-        [HttpGet("{unitId}/permissions")]
-        public async Task<IActionResult> GetUnitPermissions([FromRoute] ulong unitId)
-        {
-            try
-            {
-                var result = await _unitService.GetPermissionsAsync(unitId);
+		[HttpGet("{unitId}/permissions")]
+		public async Task<IActionResult> GetUnitPermissions([FromRoute] ulong unitId)
+		{
+			try
+			{
+				var result = await _unitService.GetPermissionsAsync(unitId);
 
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(new { error = result.Message });
-                }
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
 
-                return Ok(result.Value);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetUnitPermissions: {ex.Message}", ex, EventIds.HandledError);
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
+				return Ok(result.Value);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in GetUnitPermissions: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
-        [HttpPut("{unitId}/activity")]
-        [Authorize]
-        public async Task<IActionResult> FixActivity([FromRoute] ulong unitId, [FromBody] DateOnly date)
-        {
-            try
-            {
-                _unitService.Actor = HttpContext.Items["Actor"] as Unit;
+		[HttpPut("{unitId}/activity")]
+		[Authorize]
+		public async Task<IActionResult> FixActivity([FromRoute] ulong unitId, [FromBody] DateOnly date)
+		{
+			try
+			{
+				_unitService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var result = await _unitService.FixActivityAsync(unitId, date);
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(new { error = result.Message });
-                }
-                return Ok(new { message = result.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in FixActivity: {ex.Message}", ex, EventIds.HandledError);
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
+				var result = await _unitService.FixActivityAsync(unitId, date);
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
+				return Ok(new { message = result.Message });
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in FixActivity: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
 		[HttpPut("activity")]
 		[Authorize]
@@ -269,49 +269,77 @@ namespace Business.Controllers
 			}
 		}
 
+		[HttpPost("actual")]
+		[Authorize]
+		public async Task<IActionResult> ReturnToActiveMultipleUnits([FromBody] ReturnToActiveActDto actDto)
+		{
+			try
+			{
+				_unitService.Actor = HttpContext.Items["Actor"] as Unit;
+
+				var result = await _unitService.ReturnToActiveMultipleAsync(
+					actDto.UnitIds,
+					actDto.PostIds,
+					actDto.RankId,
+					actDto.DocId
+					);
+
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
+				return Ok(new { message = result.Message });
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in DismissMultipleUnit: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
+
 		[HttpGet("dismissed")]
-        public async Task<IActionResult> GetDismissedUnits()
-        {
-            try
-            {
-                var result = await _unitService.GetDismissedUnitsAsync();
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(new { error = result.Message });
-                }
-
-				IEnumerable<UnitDto> unitsDto = result.Value.Select(u => u.ToDto());
-
-				return Ok(unitsDto);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetDismissedUnits: {ex.Message}", ex, EventIds.HandledError);
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
-
-        [HttpGet("retirement")]
-        public async Task<IActionResult> GetRetiredUnits()
-        {
-            try
-            {
-                var result = await _unitService.GetRetiredUnitsAsync();
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(new { error = result.Message });
-                }
+		public async Task<IActionResult> GetDismissedUnits()
+		{
+			try
+			{
+				var result = await _unitService.GetDismissedUnitsAsync();
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
 
 				IEnumerable<UnitDto> unitsDto = result.Value.Select(u => u.ToDto());
 
 				return Ok(unitsDto);
 			}
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetRetiredUnits: {ex.Message}", ex, EventIds.HandledError);
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in GetDismissedUnits: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
+
+		[HttpGet("retirement")]
+		public async Task<IActionResult> GetRetiredUnits()
+		{
+			try
+			{
+				var result = await _unitService.GetRetiredUnitsAsync();
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
+
+				IEnumerable<UnitDto> unitsDto = result.Value.Select(u => u.ToDto());
+
+				return Ok(unitsDto);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in GetRetiredUnits: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
 		[HttpPost("retirement")]
 		[Authorize]
@@ -337,42 +365,14 @@ namespace Business.Controllers
 		}
 
 		[HttpDelete]
-        [Authorize]
-        public async Task<IActionResult> DismissMultipleUnits([FromBody] ActDto actDto)
-        {
-            try
-            {
-                _unitService.Actor = HttpContext.Items["Actor"] as Unit;
+		[Authorize]
+		public async Task<IActionResult> DismissMultipleUnits([FromBody] ActDto actDto)
+		{
+			try
+			{
+				_unitService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var result = await _unitService.DismissMultipleAsync(actDto.UnitIds, actDto.DocId);
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(new { error = result.Message });
-                }
-                return Ok(new { message = result.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in DismissMultipleUnit: {ex.Message}", ex, EventIds.HandledError);
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
-
-        [HttpPost("return")]
-        [Authorize]
-        public async Task<IActionResult> ReturnToActiveMultipleUnits([FromBody] ReturnToActiveActDto actDto)
-        {
-            try
-            {
-                _unitService.Actor = HttpContext.Items["Actor"] as Unit;
-
-                var result = await _unitService.ReturnToActiveMultipleAsync(
-                    actDto.UnitIds,
-                    actDto.PostIds,
-                    actDto.RankId,
-                    actDto.DocId
-                    );
-
+				var result = await _unitService.DismissMultipleAsync(actDto.UnitIds, actDto.DocId);
 				if (!result.IsSuccess)
 				{
 					return BadRequest(new { error = result.Message });
@@ -386,46 +386,46 @@ namespace Business.Controllers
 			}
 		}
 
-        [HttpGet("{unitId}/states")]
-        public async Task<IActionResult> GetUnitStates([FromRoute] ulong unitId)
-        {
-            try
-            {
-                var result = await _unitService.GetUnitStatesAsync(unitId);
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(new { error = result.Message });
-                }
+		[HttpGet("{unitId}/states")]
+		public async Task<IActionResult> GetUnitStates([FromRoute] ulong unitId)
+		{
+			try
+			{
+				var result = await _unitService.GetUnitStatesAsync(unitId);
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
 
 				return Ok(result.Value);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetUnitState: {ex.Message}", ex, EventIds.HandledError);
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in GetUnitState: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
 
-        [HttpGet("{unitId}/events")]
-        public async Task<IActionResult> GetSingleDayEvents([FromRoute] ulong unitId)
-        {
-            try
-            {
-                var result = await _unitService.GetUnitEventsAsync(unitId);
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(new { error = result.Message });
-                }
+		[HttpGet("{unitId}/events")]
+		public async Task<IActionResult> GetSingleDayEvents([FromRoute] ulong unitId)
+		{
+			try
+			{
+				var result = await _unitService.GetUnitEventsAsync(unitId);
+				if (!result.IsSuccess)
+				{
+					return BadRequest(new { error = result.Message });
+				}
 
-                return Ok(result.Value);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetSingleDayEvent: {ex.Message}", ex, EventIds.HandledError);
-                return StatusCode(500, new { error = "Internal server error" });
-            }
-        }
+				return Ok(result.Value);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in GetSingleDayEvent: {ex.Message}", ex, EventIds.HandledError);
+				return StatusCode(500, new { error = "Internal server error" });
+			}
+		}
 
 		[HttpGet("backgrounds")]
 		public async Task<IActionResult> GetAvailableBackgrounds()
@@ -471,20 +471,20 @@ namespace Business.Controllers
 			}
 		}
 
-        [HttpGet("can/rank")]
-        public async Task<IActionResult> GetRankChangeList()
-        {
-            try
-            {
+		[HttpGet("can/rank")]
+		public async Task<IActionResult> GetRankChangeList()
+		{
+			try
+			{
 				_rankService.Actor = HttpContext.Items["Actor"] as Unit;
 
-                var result = await _rankService.GetCanChangeRankUnitsAsync();
+				var result = await _rankService.GetCanChangeRankUnitsAsync();
 				if (!result.IsSuccess)
 				{
 					return BadRequest(new { error = result.Message });
 				}
 
-                return Ok(result.Value);
+				return Ok(result.Value);
 			}
 			catch (Exception ex)
 			{
@@ -517,7 +517,7 @@ namespace Business.Controllers
 
 		[HttpGet("can/posts")]
 		public async Task<IActionResult> GetPostsCanAssign()
-        {
+		{
 			try
 			{
 				_postService.Actor = HttpContext.Items["Actor"] as Unit;

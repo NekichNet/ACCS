@@ -470,6 +470,11 @@ namespace Business.Services
 					}
 				}
 
+				if (!postsToAssign.Any())
+					return action.FormFailure(
+						"Returning inactive units failed. There is no posts actor can assign",
+						eventId: EventIds.NoData);
+
 				List<Unit> units = new List<Unit>();
 
 				foreach (ulong unitId in unitIds)

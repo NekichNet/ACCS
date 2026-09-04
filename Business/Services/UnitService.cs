@@ -694,7 +694,9 @@ namespace Business.Services
 				
 				DateTime start = DateTime.UtcNow;
 				if (end == null)
-					end = ((DateTime)start).AddDays(days);
+					end = start.AddDays(days);
+				else
+					end = ((DateTime)end).ToUniversalTime();
 
 				if (!overwrite)
 				{
